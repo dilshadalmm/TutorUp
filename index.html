@@ -80,34 +80,43 @@
       background-color: var(--secondary);
     }
 
-    /* Search Container */
-    .search-container {
-      flex: 1;
+    /* Auth Buttons Container */
+    .auth-container {
+      display: flex;
+      gap: 10px;
       margin: 0 15px;
-      position: relative;
     }
 
-    .search-box {
-      width: 100%;
-      padding: 12px 20px;
-      border: none;
+    .auth-btn {
+      padding: 10px 20px;
       border-radius: 8px;
-      background: white;
-      color: var(--dark);
-      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
       transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    .search-box::placeholder {
-      color: #888;
-      text-align: center;
-      font-weight: 500;
+    .login-btn {
+      background: white;
+      color: var(--primary);
     }
 
-    .search-box:focus {
-      outline: none;
-      box-shadow: 0 3px 8px rgba(67, 97, 238, 0.3);
+    .register-btn {
+      background: var(--accent);
+      color: white;
+    }
+
+    .auth-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .auth-btn i {
+      font-size: 0.9rem;
     }
 
     /* Brand Logo */
@@ -192,6 +201,15 @@
       box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
     }
 
+    .join-class-btn {
+      background: #e63946;
+      color: white;
+    }
+
+    .join-class-btn:hover {
+      background: #d62839;
+    }
+
     /* Course Container */
     .main-container {
       padding: 20px;
@@ -263,7 +281,8 @@
       position: relative;
       height: 180px;
       overflow: hidden;
-      background: linear-gradient(120deg, #e0c3fc, #8ec5fc);
+      background-size: cover;
+      background-position: center;
     }
 
     .course-thumbnail::before {
@@ -372,6 +391,37 @@
       display: flex;
       align-items: center;
       box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .enroll-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      border-radius: 100%;
+      transform: scale(1, 1) translate(-50%);
+      transform-origin: 50% 50%;
+    }
+
+    .enroll-btn:focus:not(:active)::after {
+      animation: ripple 0.6s ease-out;
+    }
+
+    @keyframes ripple {
+      0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+      }
+      100% {
+        transform: scale(20, 20);
+        opacity: 0;
+      }
     }
 
     .enroll-btn:hover {
@@ -488,6 +538,11 @@
       .course-container {
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       }
+      
+      .auth-btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+      }
     }
 
     @media (max-width: 576px) {
@@ -500,13 +555,18 @@
         height: 40px;
       }
       
-      .search-box {
-        padding: 10px 15px;
-        font-size: 0.9rem;
-      }
-      
       .brand {
         font-size: 1.4rem;
+      }
+      
+      .auth-container {
+        gap: 5px;
+        margin: 0 10px;
+      }
+      
+      .auth-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
       }
     }
 
@@ -558,34 +618,17 @@
     .login-container {
       width: 100%;
       max-width: 380px;
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.95);
       border-radius: 20px;
       overflow: hidden;
       box-shadow: 0 15px 50px rgba(0,0,0,0.2);
       transform: scale(0.8);
       transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       border: 1px solid rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
     }
     
     .modal-overlay.active .login-container {
       transform: scale(1);
-    }
-    
-    /* Login Panel Header */
-    .login-header {
-      background: linear-gradient(to right, var(--primary), var(--secondary));
-      color: white;
-      padding: 25px;
-      text-align: center;
-      position: relative;
-    }
-    
-    .login-header h2 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
     }
     
     /* Login Panel Body */
@@ -614,7 +657,7 @@
       border-radius: 10px;
       font-size: 15px;
       transition: var(--transition);
-      background: rgba(255,255,255,0.8);
+      background: white;
     }
     
     .form-group input:focus {
@@ -644,26 +687,6 @@
       box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
     }
     
-    /* Form Toggle */
-    .form-toggle {
-      text-align: center;
-      margin: 20px 0 10px;
-      font-size: 14px;
-      color: #666;
-    }
-    
-    .toggle-link {
-      color: var(--primary);
-      cursor: pointer;
-      font-weight: 600;
-      transition: var(--transition);
-      display: inline-block;
-    }
-    
-    .toggle-link:hover {
-      text-decoration: underline;
-    }
-    
     /* Close Button */
     .close-btn {
       position: absolute;
@@ -689,72 +712,69 @@
       transform: rotate(90deg);
     }
     
-    /* Social Login */
-    .social-login {
-      margin-top: 25px;
+    /* Access Message */
+    .access-message {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: #555;
       text-align: center;
+      line-height: 1.5;
     }
     
-    .social-login p {
-      color: #777;
-      font-size: 14px;
-      margin-bottom: 15px;
-      position: relative;
-    }
-    
-    .social-login p::before,
-    .social-login p::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 25%;
-      height: 1px;
-      background: #ddd;
-    }
-    
-    .social-login p::before {
-      left: 0;
-    }
-    
-    .social-login p::after {
-      right: 0;
-    }
-    
-    .social-buttons {
+    .contact-icons {
       display: flex;
       justify-content: center;
       gap: 15px;
+      margin-top: 15px;
     }
     
-    .social-btn {
-      width: 45px;
-      height: 45px;
+    .contact-icon {
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
+      background: #f0f2f5;
       display: flex;
       align-items: center;
       justify-content: center;
+      color: var(--primary);
+      font-size: 1.2rem;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    
+    .contact-icon:hover {
+      background: var(--primary);
       color: white;
-      font-size: 1.1rem;
+      transform: translateY(-3px);
+    }
+    
+    /* User Type Selector */
+    .user-type-selector {
+      display: flex;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .user-type-btn {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      background: white;
+      border: none;
       cursor: pointer;
       transition: var(--transition);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      font-weight: 500;
+      color: #666;
     }
     
-    .social-btn.google {
-      background: #DB4437;
-    }
-    
-    .social-btn.facebook {
-      background: #4267B2;
-    }
-    
-    .social-btn.apple {
-      background: #000;
-    }
-    
-    .social-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    .user-type-btn.active {
+      background: var(--primary);
+      color: white;
     }
     
     /* Responsive Adjustments */
@@ -781,9 +801,14 @@
       </div>
     </div>
     
-    <!-- Search Container -->
-    <div class="search-container">
-      <input type="text" class="search-box" placeholder="SEARCH COURSES">
+    <!-- Auth Buttons -->
+    <div class="auth-container">
+      <button class="auth-btn login-btn" id="headerLoginBtn">
+        <i class="fas fa-sign-in-alt"></i> LOGIN
+      </button>
+      <button class="auth-btn register-btn" id="headerRegisterBtn">
+        <i class="fas fa-user-plus"></i> REGISTER
+      </button>
     </div>
     
     <!-- Brand Logo -->
@@ -794,12 +819,12 @@
   <section class="category-section">
     <h2 class="section-title"><i class="fas fa-layer-group"></i> Browse Categories</h2>
     <div class="category-buttons">
+      <button class="category join-class-btn"><i class="fas fa-video"></i> JOIN CLASS</button>
       <button class="category active"><i class="fas fa-graduation-cap"></i> SEE</button>
       <button class="category"><i class="fas fa-flask"></i> NEB SCIENCE</button>
       <button class="category"><i class="fas fa-bridge"></i> BRIDGE COURSE</button>
-      <button class="category"><i class="fas fa-calculator"></i> MATH</button>
-      <button class="category"><i class="fas fa-code"></i> PROGRAMMING</button>
-      <button class="category"><i class="fas fa-book"></i> ENGLISH</button>
+      <button class="category"><i class="fas fa-chart-line"></i> NEB COMMERCE</button>
+      <button class="category"><i class="fas fa-landmark"></i> LOKSEWA</button>
     </div>
   </section>
 
@@ -816,7 +841,7 @@
           <h3 class="course-platform">TutorUps E-learning</h3>
         </div>
         
-        <div class="course-thumbnail">
+        <div class="course-thumbnail" style="background-image: url('see_preparation_thumbnail.jpg');">
           <div class="course-title-overlay">SEE Preparation Course</div>
         </div>
         
@@ -854,7 +879,7 @@
           <h3 class="course-platform">TutorUps E-learning</h3>
         </div>
         
-        <div class="course-thumbnail">
+        <div class="course-thumbnail" style="background-image: url('neb_science_thumbnail.jpg');">
           <div class="course-title-overlay">NEB Science Program</div>
         </div>
         
@@ -891,7 +916,7 @@
           <h3 class="course-platform">TutorUps E-learning</h3>
         </div>
         
-        <div class="course-thumbnail">
+        <div class="course-thumbnail" style="background-image: url('bridge_course_thumbnail.jpg');">
           <div class="course-title-overlay">Bridge Course</div>
         </div>
         
@@ -953,7 +978,7 @@
           <li><a href="#"><i class="fas fa-chevron-right"></i> SEE Preparation</a></li>
           <li><a href="#"><i class="fas fa-chevron-right"></i> NEB Science</a></li>
           <li><a href="#"><i class="fas fa-chevron-right"></i> Bridge Course</a></li>
-          <li><a href="#"><i class="fas fa-chevron-right"></i> Mathematics</a></li>
+          <li><a href="#"><i class="fas fa-chevron-right"></i> NEB Commerce</a></li>
         </ul>
       </div>
       
@@ -977,11 +1002,14 @@
   <div class="modal-overlay" id="loginModal">
     <div class="login-container">
       <button class="close-btn" id="closeModal">&times;</button>
-      <div class="login-header">
-        <h2>Welcome to TutorUps</h2>
-      </div>
       
       <div class="login-body">
+        <!-- User Type Selector -->
+        <div class="user-type-selector">
+          <button class="user-type-btn active" id="studentBtn">Student</button>
+          <button class="user-type-btn" id="adminBtn">Admin</button>
+        </div>
+        
         <!-- Login Form -->
         <div id="loginForm">
           <div class="form-group">
@@ -992,48 +1020,18 @@
             <label for="password">Password</label>
             <input type="password" id="password" placeholder="Enter your password">
           </div>
-          <button class="submit-btn" id="loginBtn">Sign In</button>
-          <div class="form-toggle">
-            Don't have an account? <span class="toggle-link" id="showRegister">Create Account</span>
-          </div>
+          <button class="submit-btn" id="loginBtn">LOGIN</button>
           
-          <div class="social-login">
-            <p>Or sign in with</p>
-            <div class="social-buttons">
-              <div class="social-btn google">
-                <i class="fab fa-google"></i>
-              </div>
-              <div class="social-btn facebook">
-                <i class="fab fa-facebook-f"></i>
-              </div>
-              <div class="social-btn apple">
-                <i class="fab fa-apple"></i>
-              </div>
+          <div class="access-message">
+            Access is given only to paid users. To get access, contact us with your payment receipt or screenshot. Send it directly via:
+            <div class="contact-icons">
+              <a href="https://wa.me/qr/KEH6E4IRGABRK1" target="_blank" class="contact-icon">
+                <i class="fab fa-whatsapp"></i>
+              </a>
+              <a href="mailto:dilshad17600@gmail.com" class="contact-icon">
+                <i class="fas fa-envelope"></i>
+              </a>
             </div>
-          </div>
-        </div>
-        
-        <!-- Register Form (Hidden by default) -->
-        <div id="registerForm" style="display:none">
-          <div class="form-group">
-            <label for="fullName">Full Name</label>
-            <input type="text" id="fullName" placeholder="Enter your full name">
-          </div>
-          <div class="form-group">
-            <label for="regEmail">Email Address</label>
-            <input type="email" id="regEmail" placeholder="Enter your email">
-          </div>
-          <div class="form-group">
-            <label for="regPassword">Password</label>
-            <input type="password" id="regPassword" placeholder="Create a password (min 8 chars)">
-          </div>
-          <div class="form-group">
-            <label for="confirmPassword">Confirm Password</label>
-            <input type="password" id="confirmPassword" placeholder="Confirm your password">
-          </div>
-          <button class="submit-btn" id="registerBtn">Create Account</button>
-          <div class="form-toggle">
-            Already have an account? <span class="toggle-link" id="showLogin">Sign In</span>
           </div>
         </div>
       </div>
@@ -1049,25 +1047,44 @@
     const loginModal = document.getElementById('loginModal');
     const closeModal = document.getElementById('closeModal');
     const enrollButtons = document.querySelectorAll('.enroll-btn');
+    const headerLoginBtn = document.getElementById('headerLoginBtn');
+    const headerRegisterBtn = document.getElementById('headerRegisterBtn');
+    const studentBtn = document.getElementById('studentBtn');
+    const adminBtn = document.getElementById('adminBtn');
     
-    // Toggle between login and register forms
-    showRegister.addEventListener('click', () => {
-      loginForm.style.display = 'none';
-      registerForm.style.display = 'block';
+    // Toggle between student and admin login
+    studentBtn.addEventListener('click', () => {
+      studentBtn.classList.add('active');
+      adminBtn.classList.remove('active');
     });
     
-    showLogin.addEventListener('click', () => {
-      registerForm.style.display = 'none';
-      loginForm.style.display = 'block';
+    adminBtn.addEventListener('click', () => {
+      adminBtn.classList.add('active');
+      studentBtn.classList.remove('active');
     });
     
     // Open modal when enroll button is clicked
     enrollButtons.forEach(button => {
-      button.addEventListener('click', () => {
+      button.addEventListener('click', (e) => {
+        // Prevent the click from affecting the parent elements
+        e.stopPropagation();
+        
         // Show modal
         loginModal.classList.add('active');
         document.body.style.overflow = 'hidden';
       });
+    });
+    
+    // Open modal when header login button is clicked
+    headerLoginBtn.addEventListener('click', () => {
+      loginModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+    
+    // Open modal when header register button is clicked
+    headerRegisterBtn.addEventListener('click', () => {
+      loginModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
     });
     
     // Close modal
@@ -1084,10 +1101,11 @@
       }
     });
     
-    // Form submission handlers (placeholder - would connect to backend in real implementation)
+    // Form submission handler
     document.getElementById('loginBtn').addEventListener('click', () => {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+      const isAdmin = adminBtn.classList.contains('active');
       
       if (!email || !password) {
         alert('Please fill in all fields');
@@ -1095,36 +1113,16 @@
       }
       
       // Here you would typically send this data to your backend
-      alert('Login successful!');
+      alert(`${isAdmin ? 'Admin' : 'Student'} login successful!`);
       loginModal.classList.remove('active');
       document.body.style.overflow = 'auto';
     });
     
-    document.getElementById('registerBtn').addEventListener('click', () => {
-      const fullName = document.getElementById('fullName').value;
-      const email = document.getElementById('regEmail').value;
-      const password = document.getElementById('regPassword').value;
-      const confirmPassword = document.getElementById('confirmPassword').value;
-      
-      if (!fullName || !email || !password || !confirmPassword) {
-        alert('Please fill in all fields');
-        return;
-      }
-      
-      if (password !== confirmPassword) {
-        alert('Passwords do not match');
-        return;
-      }
-      
-      if (password.length < 8) {
-        alert('Password must be at least 8 characters');
-        return;
-      }
-      
-      // Here you would typically send this data to your backend
-      alert('Account created successfully!');
-      loginModal.classList.remove('active');
-      document.body.style.overflow = 'auto';
+    // Fix button ripple effect to only affect the button
+    document.querySelectorAll('button').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.stopPropagation();
+      });
     });
   </script>
 </body>
