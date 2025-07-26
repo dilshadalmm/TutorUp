@@ -3,209 +3,1128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TutorUps - E-Learning Platform</title>
+  <title>TutorUps - Modern E-Learning Platform</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* [Previous CSS styles remain exactly the same] */
-    /* ... (all your existing styles) ... */
+    :root {
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --accent: #4cc9f0;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --success: #4CAF50;
+      --warning: #ffb703;
+      --danger: #e63946;
+      --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Header Styles */
+    .header {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      display: flex;
+      align-items: center;
+      padding: 15px 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 70px;
+    }
+
+    /* Hamburger Menu */
+    .hamburger-container {
+      background: white;
+      width: 45px;
+      height: 45px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .hamburger {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 24px;
+      height: 18px;
+    }
+
+    .hamburger div {
+      height: 3px;
+      background-color: var(--primary);
+      border-radius: 2px;
+      transition: var(--transition);
+    }
+
+    .hamburger-container:hover .hamburger div {
+      background-color: var(--secondary);
+    }
+
+    /* Search Container */
+    .search-container {
+      flex: 1;
+      margin: 0 15px;
+      position: relative;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      background: white;
+      color: var(--dark);
+      font-size: 1rem;
+      transition: var(--transition);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .search-box::placeholder {
+      color: #888;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .search-box:focus {
+      outline: none;
+      box-shadow: 0 3px 8px rgba(67, 97, 238, 0.3);
+    }
+
+    /* Brand Logo */
+    .brand {
+      color: white;
+      font-size: 1.8rem;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Category Buttons */
+    .category-section {
+      padding: 20px 20px 10px;
+      background: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: var(--secondary);
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+    }
+
+    .section-title i {
+      margin-right: 10px;
+    }
+
+    .category-buttons {
+      display: flex;
+      overflow-x: auto;
+      gap: 12px;
+      padding-bottom: 5px;
+      scrollbar-width: thin;
+    }
+
+    .category-buttons::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .category-buttons::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    .category-buttons::-webkit-scrollbar-thumb {
+      background: #c5c5c5;
+      border-radius: 10px;
+    }
+
+    .category {
+      padding: 10px 20px;
+      border-radius: 30px;
+      border: none;
+      font-weight: 500;
+      background: #edf2ff;
+      color: var(--primary);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+      min-width: max-content;
+    }
+
+    .category i {
+      margin-right: 8px;
+      font-size: 0.9rem;
+    }
+
+    .category:hover {
+      background: #dbe4ff;
+    }
+
+    .category.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+    }
+
+    /* Course Container */
+    .main-container {
+      padding: 20px;
+    }
+
+    .course-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 25px;
+      margin-top: 20px;
+    }
+
+    /* Course Card */
+    .course-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .course-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .course-header {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px;
+      color: white;
+    }
+
+    .course-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    .course-platform {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .badge-new {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: var(--warning);
+      color: var(--dark);
+      font-size: 0.8rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      z-index: 2;
+    }
+
+    .course-thumbnail {
+      position: relative;
+      height: 180px;
+      overflow: hidden;
+      background: linear-gradient(120deg, #e0c3fc, #8ec5fc);
+    }
+
+    .course-thumbnail::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5));
+    }
+
+    .course-title-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 15px;
+      color: white;
+      font-weight: 600;
+      font-size: 1.2rem;
+      z-index: 1;
+    }
+
+    .course-content {
+      padding: 20px;
+    }
+
+    .course-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    .course-instructor {
+      display: flex;
+      align-items: center;
+    }
+
+    .instructor-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, var(--accent), var(--primary));
+      margin-right: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.7rem;
+    }
+
+    .rating {
+      display: flex;
+      align-items: center;
+    }
+
+    .rating i {
+      color: var(--warning);
+      font-size: 0.9rem;
+      margin-right: 3px;
+    }
+
+    .course-description {
+      margin-bottom: 20px;
+      color: #555;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .course-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px 20px;
+    }
+
+    .price-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .old-price {
+      text-decoration: line-through;
+      color: #999;
+      font-size: 0.9rem;
+    }
+
+    .new-price {
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--primary);
+    }
+
+    .enroll-btn {
+      background: linear-gradient(90deg, var(--success) 0%, #2e8b57 100%);
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      font-weight: 600;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    }
+
+    .enroll-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    }
+
+    .enroll-btn i {
+      margin-right: 8px;
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--dark);
+      color: white;
+      padding: 40px 20px 20px;
+      margin-top: 50px;
+      border-top-left-radius: 30px;
+      border-top-right-radius: 30px;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .footer-column h3 {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      position: relative;
+      padding-bottom: 10px;
+    }
+
+    .footer-column h3::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 50px;
+      height: 3px;
+      background: var(--accent);
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: #aaa;
+      text-decoration: none;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+    }
+
+    .footer-links a:hover {
+      color: white;
+      transform: translateX(5px);
+    }
+
+    .footer-links i {
+      margin-right: 10px;
+      width: 20px;
+    }
+
+    .social-icons {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .social-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+      transition: var(--transition);
+    }
+
+    .social-icon:hover {
+      transform: translateY(-3px);
+      background: var(--primary);
+    }
+
+    .copyright {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #444;
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .header {
+        padding: 15px;
+      }
+      
+      .brand {
+        font-size: 1.5rem;
+      }
+      
+      .course-container {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      }
+    }
+
+    @media (max-width: 576px) {
+      .header {
+        padding: 10px 15px;
+      }
+      
+      .hamburger-container {
+        width: 40px;
+        height: 40px;
+      }
+      
+      .search-box {
+        padding: 10px 15px;
+        font-size: 0.9rem;
+      }
+      
+      .brand {
+        font-size: 1.4rem;
+      }
+    }
+
+    /* Animation for cards */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .course-card {
+      animation: fadeInUp 0.5s ease-out;
+      animation-fill-mode: both;
+    }
+
+    .course-card:nth-child(1) { animation-delay: 0.1s; }
+    .course-card:nth-child(2) { animation-delay: 0.2s; }
+    .course-card:nth-child(3) { animation-delay: 0.3s; }
+    .course-card:nth-child(4) { animation-delay: 0.4s; }
+    
+    /* Modern Login Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+    
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .login-container {
+      width: 100%;
+      max-width: 380px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+      transform: scale(0.8);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+    }
+    
+    .modal-overlay.active .login-container {
+      transform: scale(1);
+    }
+    
+    /* Login Panel Header */
+    .login-header {
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: white;
+      padding: 25px;
+      text-align: center;
+      position: relative;
+    }
+    
+    .login-header h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    
+    /* Login Panel Body */
+    .login-body {
+      padding: 30px;
+    }
+    
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 25px;
+      position: relative;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: #555;
+      font-size: 0.95rem;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 14px 20px;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 10px;
+      font-size: 15px;
+      transition: var(--transition);
+      background: rgba(255,255,255,0.8);
+    }
+    
+    .form-group input:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+    
+    /* Submit Button */
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+    }
+    
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+    }
+    
+    /* Form Toggle */
+    .form-toggle {
+      text-align: center;
+      margin: 20px 0 10px;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .toggle-link {
+      color: var(--primary);
+      cursor: pointer;
+      font-weight: 600;
+      transition: var(--transition);
+      display: inline-block;
+    }
+    
+    .toggle-link:hover {
+      text-decoration: underline;
+    }
+    
+    /* Close Button */
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 1rem;
+      color: white;
+      cursor: pointer;
+      z-index: 10;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .close-btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: rotate(90deg);
+    }
+    
+    /* Social Login */
+    .social-login {
+      margin-top: 25px;
+      text-align: center;
+    }
+    
+    .social-login p {
+      color: #777;
+      font-size: 14px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    
+    .social-login p::before,
+    .social-login p::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 25%;
+      height: 1px;
+      background: #ddd;
+    }
+    
+    .social-login p::before {
+      left: 0;
+    }
+    
+    .social-login p::after {
+      right: 0;
+    }
+    
+    .social-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+    
+    .social-btn {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    .social-btn.google {
+      background: #DB4437;
+    }
+    
+    .social-btn.facebook {
+      background: #4267B2;
+    }
+    
+    .social-btn.apple {
+      background: #000;
+    }
+    
+    .social-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 480px) {
+      .login-container {
+        max-width: 90%;
+      }
+      
+      .login-body {
+        padding: 25px 20px;
+      }
+    }
   </style>
 </head>
 <body>
-  <!-- Home Page (index.html) -->
-  <div id="home-page" class="page active">
-    <header class="header">
-      <!-- [Previous header content remains the same] -->
-    </header>
-    <main class="main-container">
-      <h2 class="section-title"><i class="fas fa-fire"></i> Featured Courses</h2>
-      <p>Welcome to TutorUps E-Learning Platform. Please login to access courses.</p>
-    </main>
-  </div>
+  <!-- Modern Header -->
+  <header class="header">
+    <!-- Hamburger Menu -->
+    <div class="hamburger-container">
+      <div class="hamburger">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+    </div>
+    
+    <!-- Search Container -->
+    <div class="search-container">
+      <input type="text" class="search-box" placeholder="SEARCH COURSES">
+    </div>
+    
+    <!-- Brand Logo -->
+    <div class="brand">TutorUps</div>
+  </header>
 
-  <!-- Admin Login Page -->
-  <div id="admin-login" class="page">
-    <!-- [Previous admin login content remains the same] -->
-  </div>
+  <!-- Category Section -->
+  <section class="category-section">
+    <h2 class="section-title"><i class="fas fa-layer-group"></i> Browse Categories</h2>
+    <div class="category-buttons">
+      <button class="category active"><i class="fas fa-graduation-cap"></i> SEE</button>
+      <button class="category"><i class="fas fa-flask"></i> NEB SCIENCE</button>
+      <button class="category"><i class="fas fa-bridge"></i> BRIDGE COURSE</button>
+      <button class="category"><i class="fas fa-calculator"></i> MATH</button>
+      <button class="category"><i class="fas fa-code"></i> PROGRAMMING</button>
+      <button class="category"><i class="fas fa-book"></i> ENGLISH</button>
+    </div>
+  </section>
 
-  <!-- Student Login Page -->
-  <div id="student-login" class="page">
+  <!-- Main Content -->
+  <main class="main-container">
+    <h2 class="section-title"><i class="fas fa-fire"></i> Featured Courses</h2>
+    
+    <div class="course-container">
+      <!-- Course Card 1 -->
+      <div class="course-card">
+        <div class="badge-new">NEW</div>
+        <div class="course-header">
+          <div class="course-logo">TU</div>
+          <h3 class="course-platform">TutorUps E-learning</h3>
+        </div>
+        
+        <div class="course-thumbnail">
+          <div class="course-title-overlay">SEE Preparation Course</div>
+        </div>
+        
+        <div class="course-content">
+          <div class="course-meta">
+            <div class="course-instructor">
+              <div class="instructor-avatar">AP</div>
+              <span>Dr. Anil Pandey</span>
+            </div>
+            <div class="rating">
+              <i class="fas fa-star"></i>
+              <span>4.8 (120)</span>
+            </div>
+          </div>
+          
+          <p class="course-description">
+            Comprehensive curriculum for SEE students covering all science subjects with practical labs and exam preparation strategies.
+          </p>
+        </div>
+        
+        <div class="course-footer">
+          <div class="price-box">
+            <span class="old-price">Rs. 3000</span>
+            <span class="new-price">Rs. 1599</span>
+          </div>
+          <button class="enroll-btn"><i class="fas fa-shopping-cart"></i> ENROLL</button>
+        </div>
+      </div>
+      
+      <!-- Course Card 2 -->
+      <div class="course-card">
+        <div class="badge-new">HOT</div>
+        <div class="course-header">
+          <div class="course-logo">TU</div>
+          <h3 class="course-platform">TutorUps E-learning</h3>
+        </div>
+        
+        <div class="course-thumbnail">
+          <div class="course-title-overlay">NEB Science Program</div>
+        </div>
+        
+        <div class="course-content">
+          <div class="course-meta">
+            <div class="course-instructor">
+              <div class="instructor-avatar">RS</div>
+              <span>Rajesh Sharma</span>
+            </div>
+            <div class="rating">
+              <i class="fas fa-star"></i>
+              <span>4.9 (95)</span>
+            </div>
+          </div>
+          
+          <p class="course-description">
+            Advanced physics, chemistry, and biology courses for NEB Science students with problem-solving techniques.
+          </p>
+        </div>
+        
+        <div class="course-footer">
+          <div class="price-box">
+            <span class="old-price">Rs. 3500</span>
+            <span class="new-price">Rs. 1999</span>
+          </div>
+          <button class="enroll-btn"><i class="fas fa-shopping-cart"></i> ENROLL</button>
+        </div>
+      </div>
+      
+      <!-- Course Card 3 -->
+      <div class="course-card">
+        <div class="course-header">
+          <div class="course-logo">TU</div>
+          <h3 class="course-platform">TutorUps E-learning</h3>
+        </div>
+        
+        <div class="course-thumbnail">
+          <div class="course-title-overlay">Bridge Course</div>
+        </div>
+        
+        <div class="course-content">
+          <div class="course-meta">
+            <div class="course-instructor">
+              <div class="instructor-avatar">SP</div>
+              <span>Sarita Poudel</span>
+            </div>
+            <div class="rating">
+              <i class="fas fa-star"></i>
+              <span>4.7 (86)</span>
+            </div>
+          </div>
+          
+          <p class="course-description">
+            Smooth transition from secondary to higher secondary education with foundational concepts in core science subjects.
+          </p>
+        </div>
+        
+        <div class="course-footer">
+          <div class="price-box">
+            <span class="old-price">Rs. 2500</span>
+            <span class="new-price">Rs. 1299</span>
+          </div>
+          <button class="enroll-btn"><i class="fas fa-shopping-cart"></i> ENROLL</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-column">
+        <h3>About TutorUps</h3>
+        <p style="color: #bbb; margin-bottom: 20px;">Empowering students with quality education through innovative e-learning solutions.</p>
+        <div class="social-icons">
+          <a href="https://www.facebook.com/share/14JkfUhmQXK/" target="_blank" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      
+      <div class="footer-column">
+        <h3>Quick Links</h3>
+        <ul class="footer-links">
+          <li><a href="#"><i class="fas fa-chevron-right"></i> Home</a></li>
+          <li><a href="#"><i class="fas fa-chevron-right"></i> Courses</a></li>
+          <li><a href="#"><i class="fas fa-chevron-right"></i> Instructors</a></li>
+          <li><a href="#"><i class="fas fa-chevron-right"></i> Pricing</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-column">
+        <h3>Popular Courses</h3>
+        <ul class="footer-links">
+          <li><a href="#"><i class="fas fa-chevron-right"></i> SEE Preparation</a></li>
+          <li><a href="#"><i class="fas fa-chevron-right"></i> NEB Science</a></li>
+          <li><a href="#"><i class="fas fa-chevron-right"></i> Bridge Course</a></li>
+          <li><a href="#"><i class="fas fa-chevron-right"></i> Mathematics</a></li>
+        </ul>
+      </div>
+      
+      <div class="footer-column">
+        <h3>Contact Us</h3>
+        <ul class="footer-links">
+          <li><i class="fas fa-user"></i> Dilshad Alam</li>
+          <li><a href="tel:+9779823778220"><i class="fas fa-phone"></i> +977 9823778220</a></li>
+          <li><a href="mailto:info@tutorups.com"><i class="fas fa-envelope"></i> info@tutorups.com</a></li>
+          <li><a href="https://www.facebook.com/share/14JkfUhmQXK/" target="_blank"><i class="fab fa-facebook"></i> Facebook</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="copyright">
+      &copy; 2023 TutorUps E-Learning Platform. All rights reserved.
+    </div>
+  </footer>
+  
+  <!-- Modern Login Modal -->
+  <div class="modal-overlay" id="loginModal">
     <div class="login-container">
-      <div class="logo">TutorUps</div>
-      <h1>Student Login</h1>
+      <button class="close-btn" id="closeModal">&times;</button>
+      <div class="login-header">
+        <h2>Welcome to TutorUps</h2>
+      </div>
       
-      <form id="studentLoginForm">
-        <div class="input-group">
-          <label for="student-email">Student Email</label>
-          <div class="input-field">
-            <i class="fas fa-envelope"></i>
-            <input type="email" id="student-email" placeholder="Enter student email" required>
+      <div class="login-body">
+        <!-- Login Form -->
+        <div id="loginForm">
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" placeholder="Enter your email">
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password">
+          </div>
+          <button class="submit-btn" id="loginBtn">Sign In</button>
+          <div class="form-toggle">
+            Don't have an account? <span class="toggle-link" id="showRegister">Create Account</span>
+          </div>
+          
+          <div class="social-login">
+            <p>Or sign in with</p>
+            <div class="social-buttons">
+              <div class="social-btn google">
+                <i class="fab fa-google"></i>
+              </div>
+              <div class="social-btn facebook">
+                <i class="fab fa-facebook-f"></i>
+              </div>
+              <div class="social-btn apple">
+                <i class="fab fa-apple"></i>
+              </div>
+            </div>
           </div>
         </div>
         
-        <div class="input-group">
-          <label for="student-password">Password</label>
-          <div class="input-field">
-            <i class="fas fa-lock"></i>
-            <input type="password" id="student-password" placeholder="Enter your password" required>
+        <!-- Register Form (Hidden by default) -->
+        <div id="registerForm" style="display:none">
+          <div class="form-group">
+            <label for="fullName">Full Name</label>
+            <input type="text" id="fullName" placeholder="Enter your full name">
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Email Address</label>
+            <input type="email" id="regEmail" placeholder="Enter your email">
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Password</label>
+            <input type="password" id="regPassword" placeholder="Create a password (min 8 chars)">
+          </div>
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" placeholder="Confirm your password">
+          </div>
+          <button class="submit-btn" id="registerBtn">Create Account</button>
+          <div class="form-toggle">
+            Already have an account? <span class="toggle-link" id="showLogin">Sign In</span>
           </div>
         </div>
-        
-        <button type="submit" class="login-btn" style="background: linear-gradient(90deg, var(--success) 0%, #2e8b57 100%); width: 100%;">
-          LOGIN
-        </button>
-      </form>
-      
-      <a href="#" class="back-to-home" id="student-back-to-home"><i class="fas fa-arrow-left"></i> Back to Home</a>
-    </div>
-  </div>
-
-  <!-- Admin Dashboard Page -->
-  <div id="admin-dashboard" class="page">
-    <!-- [Previous admin dashboard content remains the same] -->
-  </div>
-
-  <!-- Student Dashboard Page -->
-  <div id="student-dashboard" class="page">
-    <header class="header">
-      <div class="brand">TutorUps Student</div>
-      <div class="login-buttons">
-        <button class="login-btn student-login" id="student-logout-btn">
-          <i class="fas fa-sign-out-alt"></i> LOGOUT
-        </button>
-      </div>
-    </header>
-
-    <div class="dashboard-container">
-      <div class="dashboard-header">
-        <h1><i class="fas fa-book-open"></i> Student Dashboard</h1>
-      </div>
-      
-      <div class="dashboard-content">
-        <p>Welcome to your student dashboard. Access your courses and learning materials here.</p>
-        <button id="student-dashboard-home-btn" class="login-btn" style="background: var(--primary); color: white;">Back to Home</button>
       </div>
     </div>
   </div>
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-    import { 
-      getAuth, 
-      signInWithEmailAndPassword,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-
-    // Your Firebase configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyCnIYjaFjwK2WkopUk6LFBTOp8ZpuTvnJU",
-      authDomain: "tutorups-8ac1c.firebaseapp.com",
-      projectId: "tutorups-8ac1c",
-      storageBucket: "tutorups-8ac1c.firebasestorage.app",
-      messagingSenderId: "974410565105",
-      appId: "1:974410565105:web:e9c87ed1cf48dfb58df050",
-      measurementId: "G-1CK9BC6F9S"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    // Page Navigation
-    function showPage(pageId) {
-      document.querySelectorAll('.page').forEach(page => {
-        page.classList.remove('active');
-      });
-      document.getElementById(pageId).classList.add('active');
-    }
-
-    // Event Listeners for Navigation
-    document.getElementById('admin-login-btn').addEventListener('click', () => {
-      showPage('admin-login');
+  <script>
+    // DOM Elements
+    const showRegister = document.getElementById('showRegister');
+    const showLogin = document.getElementById('showLogin');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const loginModal = document.getElementById('loginModal');
+    const closeModal = document.getElementById('closeModal');
+    const enrollButtons = document.querySelectorAll('.enroll-btn');
+    
+    // Toggle between login and register forms
+    showRegister.addEventListener('click', () => {
+      loginForm.style.display = 'none';
+      registerForm.style.display = 'block';
     });
-
-    document.getElementById('student-login-btn').addEventListener('click', () => {
-      showPage('student-login');
+    
+    showLogin.addEventListener('click', () => {
+      registerForm.style.display = 'none';
+      loginForm.style.display = 'block';
     });
-
-    document.getElementById('back-to-home').addEventListener('click', (e) => {
-      e.preventDefault();
-      showPage('home-page');
-    });
-
-    document.getElementById('student-back-to-home').addEventListener('click', (e) => {
-      e.preventDefault();
-      showPage('home-page');
-    });
-
-    document.getElementById('dashboard-home-btn').addEventListener('click', () => {
-      showPage('home-page');
-    });
-
-    document.getElementById('student-dashboard-home-btn').addEventListener('click', () => {
-      showPage('home-page');
-    });
-
-    // Logout Buttons
-    document.getElementById('logout-btn').addEventListener('click', () => {
-      signOut(auth).then(() => {
-        showPage('home-page');
-      }).catch((error) => {
-        console.error("Logout error:", error);
+    
+    // Open modal when enroll button is clicked
+    enrollButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Show modal
+        loginModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
       });
     });
-
-    document.getElementById('student-logout-btn').addEventListener('click', () => {
-      signOut(auth).then(() => {
-        showPage('home-page');
-      }).catch((error) => {
-        console.error("Logout error:", error);
-      });
+    
+    // Close modal
+    closeModal.addEventListener('click', () => {
+      loginModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
     });
-
-    // Admin Login
-    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const email = document.getElementById('admin-email').value;
-      const password = document.getElementById('admin-password').value;
-      
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log("Admin login successful:", userCredential.user);
-        showPage('admin-dashboard');
-      } catch (error) {
-        console.error("Login error:", error);
-        alert(`Login failed: ${error.message}`);
+    
+    // Close modal when clicking outside
+    loginModal.addEventListener('click', (e) => {
+      if (e.target === loginModal) {
+        loginModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
       }
     });
-
-    // Student Login
-    document.getElementById('studentLoginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    
+    // Form submission handlers (placeholder - would connect to backend in real implementation)
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
       
-      const email = document.getElementById('student-email').value;
-      const password = document.getElementById('student-password').value;
-      
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log("Student login successful:", userCredential.user);
-        showPage('student-dashboard');
-      } catch (error) {
-        console.error("Login error:", error);
-        alert(`Login failed: ${error.message}`);
+      if (!email || !password) {
+        alert('Please fill in all fields');
+        return;
       }
+      
+      // Here you would typically send this data to your backend
+      alert('Login successful!');
+      loginModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
     });
-
-    // Auth State Listener
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        console.log("User logged in:", user.email);
-        // You could add logic here to automatically redirect based on user type
-      } else {
-        console.log("User logged out");
+    
+    document.getElementById('registerBtn').addEventListener('click', () => {
+      const fullName = document.getElementById('fullName').value;
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      if (!fullName || !email || !password || !confirmPassword) {
+        alert('Please fill in all fields');
+        return;
       }
+      
+      if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
+      
+      if (password.length < 8) {
+        alert('Password must be at least 8 characters');
+        return;
+      }
+      
+      // Here you would typically send this data to your backend
+      alert('Account created successfully!');
+      loginModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
     });
   </script>
 </body>
