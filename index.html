@@ -48,47 +48,16 @@
       height: 70px;
     }
 
-    /* Hamburger Menu */
-    .hamburger-container {
-      background: white;
-      width: 45px;
-      height: 45px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    .hamburger {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      width: 24px;
-      height: 18px;
-    }
-
-    .hamburger div {
-      height: 3px;
-      background-color: var(--primary);
-      border-radius: 2px;
-      transition: var(--transition);
-    }
-
-    .hamburger-container:hover .hamburger div {
-      background-color: var(--secondary);
-    }
-
     /* Auth Buttons Container */
     .auth-container {
       display: flex;
-      gap: 10px;
-      margin: 0 15px;
+      gap: 15px;
+      margin-left: auto;
+      align-items: center;
     }
 
     .auth-btn {
-      padding: 10px 20px;
+      padding: 10px 25px;
       border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
@@ -98,6 +67,9 @@
       gap: 8px;
       border: none;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      height: 45px;
+      position: relative;
+      overflow: hidden;
     }
 
     .login-btn {
@@ -119,12 +91,47 @@
       font-size: 0.9rem;
     }
 
+    /* Button Click Effect */
+    .auth-btn::after,
+    .enroll-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      border-radius: 100%;
+      transform: scale(1, 1) translate(-50%);
+      transform-origin: 50% 50%;
+    }
+
+    .auth-btn:focus:not(:active)::after,
+    .enroll-btn:focus:not(:active)::after {
+      animation: ripple 0.6s ease-out;
+    }
+
+    @keyframes ripple {
+      0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+      }
+      100% {
+        transform: scale(20, 20);
+        opacity: 0;
+      }
+    }
+
     /* Brand Logo */
     .brand {
       color: white;
       font-size: 1.8rem;
       font-weight: 700;
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      height: 45px;
+      display: flex;
+      align-items: center;
     }
 
     /* Category Buttons */
@@ -395,35 +402,6 @@
       overflow: hidden;
     }
 
-    .enroll-btn::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 5px;
-      height: 5px;
-      background: rgba(255, 255, 255, 0.5);
-      opacity: 0;
-      border-radius: 100%;
-      transform: scale(1, 1) translate(-50%);
-      transform-origin: 50% 50%;
-    }
-
-    .enroll-btn:focus:not(:active)::after {
-      animation: ripple 0.6s ease-out;
-    }
-
-    @keyframes ripple {
-      0% {
-        transform: scale(0, 0);
-        opacity: 0.5;
-      }
-      100% {
-        transform: scale(20, 20);
-        opacity: 0;
-      }
-    }
-
     .enroll-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
@@ -550,18 +528,12 @@
         padding: 10px 15px;
       }
       
-      .hamburger-container {
-        width: 40px;
-        height: 40px;
-      }
-      
       .brand {
         font-size: 1.4rem;
       }
       
       .auth-container {
-        gap: 5px;
-        margin: 0 10px;
+        gap: 8px;
       }
       
       .auth-btn {
@@ -680,6 +652,8 @@
       transition: all 0.3s;
       margin-top: 10px;
       box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+      position: relative;
+      overflow: hidden;
     }
     
     .submit-btn:hover {
@@ -712,71 +686,6 @@
       transform: rotate(90deg);
     }
     
-    /* Access Message */
-    .access-message {
-      margin-top: 20px;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 10px;
-      font-size: 0.85rem;
-      color: #555;
-      text-align: center;
-      line-height: 1.5;
-    }
-    
-    .contact-icons {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-top: 15px;
-    }
-    
-    .contact-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #f0f2f5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary);
-      font-size: 1.2rem;
-      transition: var(--transition);
-      cursor: pointer;
-    }
-    
-    .contact-icon:hover {
-      background: var(--primary);
-      color: white;
-      transform: translateY(-3px);
-    }
-    
-    /* User Type Selector */
-    .user-type-selector {
-      display: flex;
-      margin-bottom: 20px;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    
-    .user-type-btn {
-      flex: 1;
-      padding: 12px;
-      text-align: center;
-      background: white;
-      border: none;
-      cursor: pointer;
-      transition: var(--transition);
-      font-weight: 500;
-      color: #666;
-    }
-    
-    .user-type-btn.active {
-      background: var(--primary);
-      color: white;
-    }
-    
     /* Responsive Adjustments */
     @media (max-width: 480px) {
       .login-container {
@@ -792,14 +701,8 @@
 <body>
   <!-- Modern Header -->
   <header class="header">
-    <!-- Hamburger Menu -->
-    <div class="hamburger-container">
-      <div class="hamburger">
-        <div></div>
-        <div></div>
-        <div></div>
-      </div>
-    </div>
+    <!-- Brand Logo -->
+    <div class="brand">TutorUps</div>
     
     <!-- Auth Buttons -->
     <div class="auth-container">
@@ -810,9 +713,6 @@
         <i class="fas fa-user-plus"></i> REGISTER
       </button>
     </div>
-    
-    <!-- Brand Logo -->
-    <div class="brand">TutorUps</div>
   </header>
 
   <!-- Category Section -->
@@ -1004,12 +904,6 @@
       <button class="close-btn" id="closeModal">&times;</button>
       
       <div class="login-body">
-        <!-- User Type Selector -->
-        <div class="user-type-selector">
-          <button class="user-type-btn active" id="studentBtn">Student</button>
-          <button class="user-type-btn" id="adminBtn">Admin</button>
-        </div>
-        
         <!-- Login Form -->
         <div id="loginForm">
           <div class="form-group">
@@ -1021,18 +915,6 @@
             <input type="password" id="password" placeholder="Enter your password">
           </div>
           <button class="submit-btn" id="loginBtn">LOGIN</button>
-          
-          <div class="access-message">
-            Access is given only to paid users. To get access, contact us with your payment receipt or screenshot. Send it directly via:
-            <div class="contact-icons">
-              <a href="https://wa.me/qr/KEH6E4IRGABRK1" target="_blank" class="contact-icon">
-                <i class="fab fa-whatsapp"></i>
-              </a>
-              <a href="mailto:dilshad17600@gmail.com" class="contact-icon">
-                <i class="fas fa-envelope"></i>
-              </a>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -1040,55 +922,38 @@
 
   <script>
     // DOM Elements
-    const showRegister = document.getElementById('showRegister');
-    const showLogin = document.getElementById('showLogin');
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
     const loginModal = document.getElementById('loginModal');
     const closeModal = document.getElementById('closeModal');
     const enrollButtons = document.querySelectorAll('.enroll-btn');
     const headerLoginBtn = document.getElementById('headerLoginBtn');
     const headerRegisterBtn = document.getElementById('headerRegisterBtn');
-    const studentBtn = document.getElementById('studentBtn');
-    const adminBtn = document.getElementById('adminBtn');
-    
-    // Toggle between student and admin login
-    studentBtn.addEventListener('click', () => {
-      studentBtn.classList.add('active');
-      adminBtn.classList.remove('active');
-    });
-    
-    adminBtn.addEventListener('click', () => {
-      adminBtn.classList.add('active');
-      studentBtn.classList.remove('active');
-    });
     
     // Open modal when enroll button is clicked
     enrollButtons.forEach(button => {
       button.addEventListener('click', (e) => {
-        // Prevent the click from affecting the parent elements
         e.stopPropagation();
-        
-        // Show modal
         loginModal.classList.add('active');
         document.body.style.overflow = 'hidden';
       });
     });
     
     // Open modal when header login button is clicked
-    headerLoginBtn.addEventListener('click', () => {
+    headerLoginBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       loginModal.classList.add('active');
       document.body.style.overflow = 'hidden';
     });
     
     // Open modal when header register button is clicked
-    headerRegisterBtn.addEventListener('click', () => {
+    headerRegisterBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       loginModal.classList.add('active');
       document.body.style.overflow = 'hidden';
     });
     
     // Close modal
-    closeModal.addEventListener('click', () => {
+    closeModal.addEventListener('click', (e) => {
+      e.stopPropagation();
       loginModal.classList.remove('active');
       document.body.style.overflow = 'auto';
     });
@@ -1102,10 +967,10 @@
     });
     
     // Form submission handler
-    document.getElementById('loginBtn').addEventListener('click', () => {
+    document.getElementById('loginBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-      const isAdmin = adminBtn.classList.contains('active');
       
       if (!email || !password) {
         alert('Please fill in all fields');
@@ -1113,15 +978,28 @@
       }
       
       // Here you would typically send this data to your backend
-      alert(`${isAdmin ? 'Admin' : 'Student'} login successful!`);
+      alert('Login successful!');
       loginModal.classList.remove('active');
       document.body.style.overflow = 'auto';
     });
     
-    // Fix button ripple effect to only affect the button
-    document.querySelectorAll('button').forEach(button => {
+    // Add ripple effect to buttons
+    document.querySelectorAll('.auth-btn, .enroll-btn, .submit-btn').forEach(button => {
       button.addEventListener('click', function(e) {
         e.stopPropagation();
+        const ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+        this.appendChild(ripple);
+        
+        const x = e.clientX - e.target.getBoundingClientRect().left;
+        const y = e.clientY - e.target.getBoundingClientRect().top;
+        
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+        
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
       });
     });
   </script>
