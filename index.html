@@ -48,6 +48,38 @@
       height: 70px;
     }
 
+    /* Search Box */
+    .search-container {
+      flex: 1;
+      margin: 0 20px;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 10px 15px 10px 40px;
+      border-radius: 30px;
+      border: none;
+      font-size: 0.9rem;
+      transition: var(--transition);
+      background: rgba(255,255,255,0.9);
+    }
+
+    .search-box:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+      background: white;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #666;
+    }
+
     /* Auth Buttons Container */
     .auth-container {
       display: flex;
@@ -61,7 +93,6 @@
       border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
-      transition: var(--transition);
       display: flex;
       align-items: center;
       gap: 8px;
@@ -77,11 +108,6 @@
       color: var(--primary);
     }
 
-    .register-btn {
-      background: var(--accent);
-      color: white;
-    }
-
     .auth-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
@@ -89,38 +115,6 @@
 
     .auth-btn i {
       font-size: 0.9rem;
-    }
-
-    /* Button Click Effect */
-    .auth-btn::after,
-    .enroll-btn::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 5px;
-      height: 5px;
-      background: rgba(255, 255, 255, 0.5);
-      opacity: 0;
-      border-radius: 100%;
-      transform: scale(1, 1) translate(-50%);
-      transform-origin: 50% 50%;
-    }
-
-    .auth-btn:focus:not(:active)::after,
-    .enroll-btn:focus:not(:active)::after {
-      animation: ripple 0.6s ease-out;
-    }
-
-    @keyframes ripple {
-      0% {
-        transform: scale(0, 0);
-        opacity: 0.5;
-      }
-      100% {
-        transform: scale(20, 20);
-        opacity: 0;
-      }
     }
 
     /* Brand Logo */
@@ -235,7 +229,6 @@
       border-radius: 16px;
       overflow: hidden;
       box-shadow: var(--card-shadow);
-      transition: var(--transition);
       position: relative;
     }
 
@@ -513,6 +506,10 @@
         font-size: 1.5rem;
       }
       
+      .search-container {
+        display: none;
+      }
+      
       .course-container {
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       }
@@ -578,8 +575,7 @@
       z-index: 1000;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(5px);
+      transition: opacity 0.3s ease;
     }
     
     .modal-overlay.active {
@@ -590,13 +586,12 @@
     .login-container {
       width: 100%;
       max-width: 380px;
-      background: rgba(255, 255, 255, 0.95);
+      background: white;
       border-radius: 20px;
       overflow: hidden;
       box-shadow: 0 15px 50px rgba(0,0,0,0.2);
-      transform: scale(0.8);
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     
     .modal-overlay.active .login-container {
@@ -672,7 +667,7 @@
       height: 30px;
       border-radius: 50%;
       font-size: 1rem;
-      color: white;
+      color: var(--dark);
       cursor: pointer;
       z-index: 10;
       transition: var(--transition);
@@ -682,19 +677,122 @@
     }
     
     .close-btn:hover {
-      background: rgba(255,255,255,0.3);
+      background: rgba(0,0,0,0.1);
       transform: rotate(90deg);
     }
+
+    /* Ripple Effect */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.7);
+      transform: scale(0);
+      animation: ripple-animation 0.6s linear;
+      pointer-events: none;
+    }
+
+    @keyframes ripple-animation {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
     
-    /* Responsive Adjustments */
-    @media (max-width: 480px) {
-      .login-container {
-        max-width: 90%;
-      }
-      
-      .login-body {
-        padding: 25px 20px;
-      }
+    /* Tab buttons in modal */
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 20px;
+    }
+    
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 15px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      transition: var(--transition);
+    }
+    
+    .auth-tab.active {
+      color: var(--primary);
+      border-bottom: 3px solid var(--primary);
+    }
+    
+    /* Hidden class */
+    .hidden {
+      display: none;
+    }
+    
+    /* Forgot password link */
+    .forgot-password {
+      text-align: center;
+      margin-top: 15px;
+    }
+    
+    .forgot-password a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+    
+    .forgot-password a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Admin panel link */
+    .admin-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 15px;
+    }
+    
+    .admin-link a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .admin-link a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Admin login modal */
+    .admin-login-container {
+      width: 100%;
+      max-width: 380px;
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .admin-login-body {
+      padding: 30px;
+    }
+    
+    .admin-login-title {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+    
+    /* Admin credentials note */
+    .admin-note {
+      font-size: 0.8rem;
+      color: #666;
+      text-align: center;
+      margin-top: 15px;
     }
   </style>
 </head>
@@ -704,13 +802,16 @@
     <!-- Brand Logo -->
     <div class="brand">TutorUps</div>
     
+    <!-- Search Box -->
+    <div class="search-container">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" class="search-box" placeholder="Search courses, subjects, or instructors...">
+    </div>
+    
     <!-- Auth Buttons -->
     <div class="auth-container">
       <button class="auth-btn login-btn" id="headerLoginBtn">
-        <i class="fas fa-sign-in-alt"></i> LOGIN
-      </button>
-      <button class="auth-btn register-btn" id="headerRegisterBtn">
-        <i class="fas fa-user-plus"></i> REGISTER
+        <i class="fas fa-sign-in-alt"></i> LOGIN || REGISTER
       </button>
     </div>
   </header>
@@ -767,7 +868,7 @@
             <span class="old-price">Rs. 3000</span>
             <span class="new-price">Rs. 1599</span>
           </div>
-          <button class="enroll-btn"><i class="fas fa-shopping-cart"></i> ENROLL</button>
+          <button class="enroll-btn" data-modal-type="enroll"><i class="fas fa-shopping-cart"></i> ENROLL</button>
         </div>
       </div>
       
@@ -805,7 +906,7 @@
             <span class="old-price">Rs. 3500</span>
             <span class="new-price">Rs. 1999</span>
           </div>
-          <button class="enroll-btn"><i class="fas fa-shopping-cart"></i> ENROLL</button>
+          <button class="enroll-btn" data-modal-type="enroll"><i class="fas fa-shopping-cart"></i> ENROLL</button>
         </div>
       </div>
       
@@ -842,7 +943,7 @@
             <span class="old-price">Rs. 2500</span>
             <span class="new-price">Rs. 1299</span>
           </div>
-          <button class="enroll-btn"><i class="fas fa-shopping-cart"></i> ENROLL</button>
+          <button class="enroll-btn" data-modal-type="enroll"><i class="fas fa-shopping-cart"></i> ENROLL</button>
         </div>
       </div>
     </div>
@@ -889,6 +990,11 @@
           <li><a href="tel:+9779823778220"><i class="fas fa-phone"></i> +977 9823778220</a></li>
           <li><a href="mailto:info@tutorups.com"><i class="fas fa-envelope"></i> info@tutorups.com</a></li>
           <li><a href="https://www.facebook.com/share/14JkfUhmQXK/" target="_blank"><i class="fab fa-facebook"></i> Facebook</a></li>
+          <li class="admin-link">
+            <a href="#" id="adminLoginLink">
+              <i class="fas fa-lock"></i> Admin Panel Login
+            </a>
+          </li>
         </ul>
       </div>
     </div>
@@ -904,6 +1010,12 @@
       <button class="close-btn" id="closeModal">&times;</button>
       
       <div class="login-body">
+        <!-- Auth Tabs (only shown when opened from header) -->
+        <div class="auth-tabs" id="authTabs">
+          <div class="auth-tab active" id="loginTab">LOGIN</div>
+          <div class="auth-tab" id="registerTab">REGISTER</div>
+        </div>
+        
         <!-- Login Form -->
         <div id="loginForm">
           <div class="form-group">
@@ -915,6 +1027,103 @@
             <input type="password" id="password" placeholder="Enter your password">
           </div>
           <button class="submit-btn" id="loginBtn">LOGIN</button>
+          
+          <!-- Forgot password link (only shown when opened from header) -->
+          <div class="forgot-password hidden" id="forgotPasswordLink">
+            <a href="#" id="forgotPassword">Forgot your password?</a>
+          </div>
+        </div>
+        
+        <!-- Register Form (hidden by default) -->
+        <div id="registerForm" class="hidden">
+          <div class="form-group">
+            <label for="regName">Full Name</label>
+            <input type="text" id="regName" placeholder="Enter your full name">
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Email Address</label>
+            <input type="email" id="regEmail" placeholder="Enter your email">
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Password</label>
+            <input type="password" id="regPassword" placeholder="Create a password">
+          </div>
+          <div class="form-group">
+            <label for="regConfirmPassword">Confirm Password</label>
+            <input type="password" id="regConfirmPassword" placeholder="Confirm your password">
+          </div>
+          <button class="submit-btn" id="registerBtn">REGISTER</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Admin Login Modal -->
+  <div class="modal-overlay" id="adminLoginModal">
+    <div class="admin-login-container">
+      <button class="close-btn" id="closeAdminModal">&times;</button>
+      
+      <div class="admin-login-body">
+        <h3 class="admin-login-title"><i class="fas fa-lock"></i> Admin Login</h3>
+        
+        <div class="form-group">
+          <label for="adminEmail">Admin Email</label>
+          <input type="email" id="adminEmail" placeholder="Enter admin email">
+        </div>
+        <div class="form-group">
+          <label for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" placeholder="Enter password">
+        </div>
+        <button class="submit-btn" id="adminLoginBtn">LOGIN</button>
+        
+        <div class="forgot-password">
+          <a href="#" id="adminForgotPassword">Forgot password?</a>
+        </div>
+        
+        <div class="admin-note">
+          Demo credentials: admintutorups@gmail.com / admin@tutorups@778220
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Forgot Password Modal -->
+  <div class="modal-overlay" id="forgotPasswordModal">
+    <div class="login-container">
+      <button class="close-btn" id="closeForgotModal">&times;</button>
+      
+      <div class="login-body">
+        <h3 class="admin-login-title"><i class="fas fa-key"></i> Reset Password</h3>
+        
+        <div class="form-group">
+          <label for="forgotEmail">Email Address</label>
+          <input type="email" id="forgotEmail" placeholder="Enter your registered email">
+        </div>
+        <button class="submit-btn" id="resetPasswordBtn">SEND RESET LINK</button>
+        
+        <div class="forgot-password" style="margin-top: 20px;">
+          <a href="#" id="backToLogin">Back to login</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Admin Forgot Password Modal -->
+  <div class="modal-overlay" id="adminForgotPasswordModal">
+    <div class="login-container">
+      <button class="close-btn" id="closeAdminForgotModal">&times;</button>
+      
+      <div class="login-body">
+        <h3 class="admin-login-title"><i class="fas fa-key"></i> Admin Password Reset</h3>
+        
+        <div class="form-group">
+          <label for="adminForgotEmail">Admin Email</label>
+          <input type="email" id="adminForgotEmail" placeholder="Enter admin email">
+        </div>
+        <button class="submit-btn" id="adminResetPasswordBtn">SEND RESET LINK</button>
+        
+        <div class="forgot-password" style="margin-top: 20px;">
+          <a href="#" id="backToAdminLogin">Back to admin login</a>
         </div>
       </div>
     </div>
@@ -923,42 +1132,149 @@
   <script>
     // DOM Elements
     const loginModal = document.getElementById('loginModal');
+    const adminLoginModal = document.getElementById('adminLoginModal');
+    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+    const adminForgotPasswordModal = document.getElementById('adminForgotPasswordModal');
     const closeModal = document.getElementById('closeModal');
+    const closeAdminModal = document.getElementById('closeAdminModal');
+    const closeForgotModal = document.getElementById('closeForgotModal');
+    const closeAdminForgotModal = document.getElementById('closeAdminForgotModal');
     const enrollButtons = document.querySelectorAll('.enroll-btn');
     const headerLoginBtn = document.getElementById('headerLoginBtn');
-    const headerRegisterBtn = document.getElementById('headerRegisterBtn');
+    const adminLoginLink = document.getElementById('adminLoginLink');
+    const authTabs = document.getElementById('authTabs');
+    const loginTab = document.getElementById('loginTab');
+    const registerTab = document.getElementById('registerTab');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const forgotPassword = document.getElementById('forgotPassword');
+    const backToLogin = document.getElementById('backToLogin');
+    const adminForgotPassword = document.getElementById('adminForgotPassword');
+    const backToAdminLogin = document.getElementById('backToAdminLogin');
     
-    // Open modal when enroll button is clicked
+    // Admin credentials
+    const ADMIN_EMAIL = "admintutorups@gmail.com";
+    const ADMIN_PASSWORD = "admin@tutorups@778220";
+    
+    // Track how the modal was opened
+    let modalSource = null;
+    
+    // Function to create ripple effect
+    function createRipple(event) {
+      const button = event.currentTarget;
+      const circle = document.createElement("span");
+      const diameter = Math.max(button.clientWidth, button.clientHeight);
+      const radius = diameter / 2;
+      
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+      circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+      circle.classList.add("ripple");
+      
+      const ripple = button.getElementsByClassName("ripple")[0];
+      if (ripple) {
+        ripple.remove();
+      }
+      
+      button.appendChild(circle);
+    }
+    
+    // Add ripple effect to buttons
+    const buttons = document.querySelectorAll('.auth-btn, .enroll-btn, .submit-btn');
+    buttons.forEach(button => {
+      button.addEventListener('click', createRipple);
+    });
+    
+    // Open modal when enroll button is clicked (shows only login)
     enrollButtons.forEach(button => {
       button.addEventListener('click', (e) => {
         e.stopPropagation();
+        modalSource = 'enroll';
+        authTabs.classList.add('hidden');
+        forgotPasswordLink.classList.add('hidden');
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
         loginModal.classList.add('active');
         document.body.style.overflow = 'hidden';
       });
     });
     
-    // Open modal when header login button is clicked
+    // Open modal when header login button is clicked (shows both login and register)
     headerLoginBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      modalSource = 'header';
+      authTabs.classList.remove('hidden');
+      forgotPasswordLink.classList.remove('hidden');
+      loginTab.classList.add('active');
+      registerTab.classList.remove('active');
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
       loginModal.classList.add('active');
       document.body.style.overflow = 'hidden';
     });
     
-    // Open modal when header register button is clicked
-    headerRegisterBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      loginModal.classList.add('active');
+    // Open admin login modal
+    adminLoginLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      adminLoginModal.classList.add('active');
       document.body.style.overflow = 'hidden';
     });
     
-    // Close modal
+    // Open forgot password modal
+    forgotPassword.addEventListener('click', (e) => {
+      e.preventDefault();
+      loginModal.classList.remove('active');
+      forgotPasswordModal.classList.add('active');
+    });
+    
+    // Open admin forgot password modal
+    adminForgotPassword.addEventListener('click', (e) => {
+      e.preventDefault();
+      adminLoginModal.classList.remove('active');
+      adminForgotPasswordModal.classList.add('active');
+    });
+    
+    // Back to login from forgot password
+    backToLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      forgotPasswordModal.classList.remove('active');
+      loginModal.classList.add('active');
+    });
+    
+    // Back to admin login from admin forgot password
+    backToAdminLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      adminForgotPasswordModal.classList.remove('active');
+      adminLoginModal.classList.add('active');
+    });
+    
+    // Close modals
     closeModal.addEventListener('click', (e) => {
       e.stopPropagation();
       loginModal.classList.remove('active');
       document.body.style.overflow = 'auto';
     });
     
-    // Close modal when clicking outside
+    closeAdminModal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      adminLoginModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+    
+    closeForgotModal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      forgotPasswordModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+    
+    closeAdminForgotModal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      adminForgotPasswordModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+    
+    // Close modals when clicking outside
     loginModal.addEventListener('click', (e) => {
       if (e.target === loginModal) {
         loginModal.classList.remove('active');
@@ -966,7 +1282,47 @@
       }
     });
     
-    // Form submission handler
+    adminLoginModal.addEventListener('click', (e) => {
+      if (e.target === adminLoginModal) {
+        adminLoginModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+    });
+    
+    forgotPasswordModal.addEventListener('click', (e) => {
+      if (e.target === forgotPasswordModal) {
+        forgotPasswordModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+    });
+    
+    adminForgotPasswordModal.addEventListener('click', (e) => {
+      if (e.target === adminForgotPasswordModal) {
+        adminForgotPasswordModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+    });
+    
+    // Switch between login and register tabs (only when opened from header)
+    loginTab.addEventListener('click', () => {
+      if (modalSource === 'header') {
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+      }
+    });
+    
+    registerTab.addEventListener('click', () => {
+      if (modalSource === 'header') {
+        registerTab.classList.add('active');
+        loginTab.classList.remove('active');
+        registerForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+      }
+    });
+    
+    // Form submission handler for login
     document.getElementById('loginBtn').addEventListener('click', (e) => {
       e.stopPropagation();
       const email = document.getElementById('email').value;
@@ -983,24 +1339,87 @@
       document.body.style.overflow = 'auto';
     });
     
-    // Add ripple effect to buttons
-    document.querySelectorAll('.auth-btn, .enroll-btn, .submit-btn').forEach(button => {
-      button.addEventListener('click', function(e) {
-        e.stopPropagation();
-        const ripple = document.createElement('span');
-        ripple.classList.add('ripple');
-        this.appendChild(ripple);
-        
-        const x = e.clientX - e.target.getBoundingClientRect().left;
-        const y = e.clientY - e.target.getBoundingClientRect().top;
-        
-        ripple.style.left = `${x}px`;
-        ripple.style.top = `${y}px`;
-        
-        setTimeout(() => {
-          ripple.remove();
-        }, 600);
-      });
+    // Form submission handler for register
+    document.getElementById('registerBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const name = document.getElementById('regName').value;
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPassword').value;
+      const confirmPassword = document.getElementById('regConfirmPassword').value;
+      
+      if (!name || !email || !password || !confirmPassword) {
+        alert('Please fill in all fields');
+        return;
+      }
+      
+      if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
+      
+      // Here you would typically send this data to your backend
+      alert('Registration successful! Please login with your credentials.');
+      registerTab.classList.remove('active');
+      loginTab.classList.add('active');
+      registerForm.classList.add('hidden');
+      loginForm.classList.remove('hidden');
+    });
+    
+    // Form submission handler for admin login
+    document.getElementById('adminLoginBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const email = document.getElementById('adminEmail').value;
+      const password = document.getElementById('adminPassword').value;
+      
+      if (!email || !password) {
+        alert('Please fill in all fields');
+        return;
+      }
+      
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        alert('Admin login successful! Redirecting to admin panel...');
+        adminLoginModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        // In a real application, you would redirect to the admin panel here
+        // window.location.href = '/admin';
+      } else {
+        alert('Invalid admin credentials');
+      }
+    });
+    
+    // Form submission handler for forgot password
+    document.getElementById('resetPasswordBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const email = document.getElementById('forgotEmail').value;
+      
+      if (!email) {
+        alert('Please enter your email address');
+        return;
+      }
+      
+      // Here you would typically send this data to your backend
+      alert(`Password reset link sent to ${email}`);
+      forgotPasswordModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+    
+    // Form submission handler for admin forgot password
+    document.getElementById('adminResetPasswordBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const email = document.getElementById('adminForgotEmail').value;
+      
+      if (!email) {
+        alert('Please enter admin email address');
+        return;
+      }
+      
+      if (email === ADMIN_EMAIL) {
+        alert(`Admin password reset link sent to ${email}`);
+      } else {
+        alert('This email is not registered as admin');
+      }
+      adminForgotPasswordModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
     });
   </script>
 </body>
