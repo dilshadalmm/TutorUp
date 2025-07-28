@@ -284,6 +284,7 @@
       overflow: hidden;
       background-size: cover;
       background-position: center;
+      background-color: #f0f0f0; /* Fallback color */
     }
 
     .course-thumbnail::before {
@@ -887,7 +888,7 @@
 <div class="course-logo">TU</div>
 <h3 class="course-platform">TutorUps E-learning</h3>
 </div>
-<div class="course-thumbnail" style="background-image: url('see_preparation_thumbnail.jpg');">
+<div class="course-thumbnail" style="background-image: url('https://via.placeholder.com/600x400?text=SEE+Preparation');">
 <div class="course-title-overlay">SEE Preparation Course</div>
 </div>
 <div class="course-content">
@@ -919,7 +920,7 @@
 <div class="course-logo">TU</div>
 <h3 class="course-platform">TutorUps E-learning</h3>
 </div>
-<div class="course-thumbnail" style="background-image: url('neb_science_thumbnail.jpg');">
+<div class="course-thumbnail" style="background-image: url('https://via.placeholder.com/600x400?text=NEB+Science');">
 <div class="course-title-overlay">NEB Science Program</div>
 </div>
 <div class="course-content">
@@ -950,7 +951,7 @@
 <div class="course-logo">TU</div>
 <h3 class="course-platform">TutorUps E-learning</h3>
 </div>
-<div class="course-thumbnail" style="background-image: url('bridge_course_thumbnail.jpg');">
+<div class="course-thumbnail" style="background-image: url('https://via.placeholder.com/600x400?text=Bridge+Course');">
 <div class="course-title-overlay">Bridge Course</div>
 </div>
 <div class="course-content">
@@ -1137,22 +1138,47 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://openfpcdn.io/fingerprintjs/v4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCvxuIDHuT9BPGVD9ZfrF2MrN7FECIxN70",
-    authDomain: "dilshad-almm.firebaseapp.com",
-    projectId: "dilshad-almm",
-    storageBucket: "dilshad-almm.firebasestorage.app",
-    messagingSenderId: "559661476201",
-    appId: "1:559661476201:web:bbc65b8a7b74121d91f5f8"
-  };
+  // Initialize with error handling
+  try {
+    const firebaseConfig = {
+      apiKey: "AIzaSyCvxuIDHuT9BPGVD9ZfrF2MrN7FECIxN70",
+      authDomain: "dilshad-almm.firebaseapp.com",
+      projectId: "dilshad-almm",
+      storageBucket: "dilshad-almm.firebasestorage.app",
+      messagingSenderId: "559661476201",
+      appId: "1:559661476201:web:bbc65b8a7b74121d91f5f8"
+    };
+    
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    
+    if (!auth || !db) {
+      console.error("Firebase services failed to initialize");
+    }
+  } catch (error) {
+    console.error("Firebase initialization error:", error);
+  }
+
+  // Device fingerprint with fallback
+  let currentDeviceId = 'unknown_device_' + Math.random().toString(36).substring(2, 15);
   
-  // Initialize Firebase
-  const app = firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+  (async () => {
+    try {
+      const fpPromise = FingerprintJS.load();
+      const fp = await fpPromise;
+      const result = await fp.get();
+      currentDeviceId = result.visitorId;
+      console.log("Current Device ID:", currentDeviceId);
+    } catch (error) {
+      console.error("Error with FingerprintJS:", error);
+      // Fallback to random ID already set
+    }
+  })();
 
   // DOM Elements
   const loginModal = document.getElementById('loginModal');
@@ -1181,21 +1207,6 @@
   // Admin credentials (WARNING: FOR DEMO ONLY. In production, handle securely on server-side.)
   const ADMIN_EMAIL = "admintutorups@gmail.com";
   const ADMIN_PASSWORD = "admin@tutorups@778220";
-
-  // Initialize currentDeviceId using FingerprintJS
-  let currentDeviceId = null;
-  (async () => {
-      try {
-          const fp = await FingerprintJS.load();
-          const result = await fp.get();
-          currentDeviceId = result.visitorId;
-          console.log("Current Device ID:", currentDeviceId);
-      } catch (error) {
-          console.error("Error loading FingerprintJS or getting device ID:", error);
-          // Fallback or handle cases where FingerprintJS might be blocked/fail
-          currentDeviceId = 'unknown_device_' + Date.now(); // Simple fallback
-      }
-  })();
 
   // Function to create ripple effect
   function createRipple(event) {
@@ -1229,8 +1240,8 @@
       e.stopPropagation();
       // When opened via enroll, show both tabs
       authTabs.classList.remove('hidden');
-      forgotPasswordLink.classList.remove('hidden'); // Forgot password link should be visible for login
-      loginTab.classList.add('active'); // Default to login tab
+      forgotPasswordLink.classList.remove('hidden');
+      loginTab.classList.add('active');
       registerTab.classList.remove('active');
       loginForm.classList.remove('hidden');
       registerForm.classList.add('hidden');
@@ -1347,7 +1358,7 @@
       registerTab.classList.remove('active');
       loginForm.classList.remove('hidden');
       registerForm.classList.add('hidden');
-      forgotPasswordLink.classList.remove('hidden'); // Always show forgot password for login
+      forgotPasswordLink.classList.remove('hidden');
   });
 
   registerTab.addEventListener('click', () => {
@@ -1355,7 +1366,7 @@
       loginTab.classList.remove('active');
       registerForm.classList.remove('hidden');
       loginForm.classList.add('hidden');
-      forgotPasswordLink.classList.add('hidden'); // Hide forgot password for register
+      forgotPasswordLink.classList.add('hidden');
   });
 
   // Form submission handler for login
@@ -1379,19 +1390,11 @@
 
       if (!docSnap.exists || !docSnap.data().access) {
         alert("Access Denied: Your account is not approved by the administrator.");
-        await auth.signOut(); // Sign out the user if not approved
+        await auth.signOut();
         return;
       }
 
       const savedDeviceId = docSnap.data().activeDeviceId;
-
-      // Ensure currentDeviceId is available before comparison
-      if (!currentDeviceId) {
-          console.warn("currentDeviceId not yet determined. Attempting to re-evaluate.");
-          const fp = await FingerprintJS.load();
-          const result = await fp.get();
-          currentDeviceId = result.visitorId;
-      }
 
       if (savedDeviceId && savedDeviceId !== currentDeviceId) {
         alert("You have been logged out. Another login detected from a different device.");
@@ -1405,9 +1408,6 @@
       alert("Login successful! You can now access the course features.");
       loginModal.classList.remove('active');
       document.body.style.overflow = 'auto';
-
-      // In a real application, you would now redirect the user to the course page
-      // or load course content dynamically.
 
     } catch (error) {
       alert("Login failed: " + error.message);
@@ -1446,8 +1446,8 @@
         fullName: name,
         email: email,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        access: false, // User needs admin approval
-        activeDeviceId: null // No active device until first approved login
+        access: false,
+        activeDeviceId: null
       });
 
       alert("Registration successful! Your account is awaiting administrator approval. You will be able to log in once approved.");
@@ -1456,7 +1456,7 @@
       loginTab.classList.add('active');
       registerForm.classList.add('hidden');
       loginForm.classList.remove('hidden');
-      forgotPasswordLink.classList.remove('hidden'); // Ensure it's visible for the login tab
+      forgotPasswordLink.classList.remove('hidden');
 
     } catch (error) {
       alert("Registration failed: " + error.message);
@@ -1515,12 +1515,9 @@
       return;
     }
 
-    // Note: Firebase `sendPasswordResetEmail` does not distinguish between user and admin roles.
-    // It sends to any valid email in Firebase Auth. The "admin" distinction here is purely for client-side
-    // messaging. In a real app, you'd likely have a separate admin auth system.
     if (email === ADMIN_EMAIL) {
        try {
-          await auth.sendPasswordResetEmail(email); // This will send to the Firebase Auth user if exists
+          await auth.sendPasswordResetEmail(email);
           alert(`Admin password reset link sent to ${email}. Please check your inbox.`);
           adminForgotPasswordModal.classList.remove('active');
           document.body.style.overflow = 'auto';
@@ -1573,7 +1570,7 @@
       courseData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
       db.collection('courses').add(courseData).then(() => {
         alert('New course added successfully!');
-        loadCoursesFromFirestore(); // Refresh the list
+        loadCoursesFromFirestore();
       }).catch(error => {
         alert('Error adding course: ' + error.message);
       });
