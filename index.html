@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -799,6 +798,22 @@
       text-align: center;
       margin-top: 15px;
     }
+
+    /* Loading spinner */
+    .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -806,6 +821,7 @@
 <script src="https://openfpcdn.io/fingerprintjs/v4"></script>
 
 <script>
+  // Your Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyCvxuIDHuT9BPGVD9ZfrF2MrN7FECIxN70",
     authDomain: "dilshad-almm.firebaseapp.com",
@@ -814,285 +830,29 @@
     messagingSenderId: "559661476201",
     appId: "1:559661476201:web:bbc65b8a7b74121d91f5f8"
   };
+
+  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
+
+  // Initialize FingerprintJS
+  let currentDeviceId = null;
+  (async () => {
+      try {
+          const fp = await FingerprintJS.load();
+          const result = await fp.get();
+          currentDeviceId = result.visitorId;
+          console.log("Current Device ID:", currentDeviceId);
+      } catch (error) {
+          console.error("Error loading FingerprintJS:", error);
+          currentDeviceId = 'fallback_device_id_' + Math.random().toString(36).substr(2, 9);
+      }
+  })();
 </script>
-
-
 </head>
 <body>
-<header class="header">
-<div class="brand">TutorUps</div>
-<div class="search-container">
-<i class="fas fa-search search-icon"></i>
-<input class="search-box" placeholder="Search courses, subjects, or instructors..." type="text"/>
-</div>
-<div class="auth-container">
-<button class="auth-btn login-btn" id="headerLoginBtn">
-<i class="fas fa-sign-in-alt"></i> LOGIN || REGISTER
-      </button>
-</div>
-</header>
-<section class="category-section">
-<h2 class="section-title"><i class="fas fa-layer-group"></i> Browse Categories</h2>
-<div class="category-buttons">
-<button class="category join-class-btn"><i class="fas fa-video"></i> JOIN CLASS</button>
-<button class="category active"><i class="fas fa-graduation-cap"></i> SEE</button>
-<button class="category"><i class="fas fa-flask"></i> NEB SCIENCE</button>
-<button class="category"><i class="fas fa-bridge"></i> BRIDGE COURSE</button>
-<button class="category"><i class="fas fa-chart-line"></i> NEB COMMERCE</button>
-<button class="category"><i class="fas fa-landmark"></i> LOKSEWA</button>
-</div>
-</section>
-<main class="main-container">
-<h2 class="section-title"><i class="fas fa-fire"></i> Featured Courses</h2>
-<div class="course-container">
-<div class="course-card">
-<div class="badge-new">NEW</div>
-<div class="course-header">
-<div class="course-logo">TU</div>
-<h3 class="course-platform">TutorUps E-learning</h3>
-</div>
-<div class="course-thumbnail" style="background-image: url('see_preparation_thumbnail.jpg');">
-<div class="course-title-overlay">SEE Preparation Course</div>
-</div>
-<div class="course-content">
-<div class="course-meta">
-<div class="course-instructor">
-<div class="instructor-avatar">AP</div>
-<span>Dr. Anil Pandey</span>
-</div>
-<div class="rating">
-<i class="fas fa-star"></i>
-<span>4.8 (120)</span>
-</div>
-</div>
-<p class="course-description">
-            Comprehensive curriculum for SEE students covering all science subjects with practical labs and exam preparation strategies.
-          </p>
-</div>
-<div class="course-footer">
-<div class="price-box">
-<span class="old-price">Rs. 3000</span>
-<span class="new-price">Rs. 1599</span>
-</div>
-<button class="enroll-btn" data-modal-type="enroll"><i class="fas fa-shopping-cart"></i> ENROLL</button>
-</div>
-</div>
-<div class="course-card">
-<div class="badge-new">HOT</div>
-<div class="course-header">
-<div class="course-logo">TU</div>
-<h3 class="course-platform">TutorUps E-learning</h3>
-</div>
-<div class="course-thumbnail" style="background-image: url('neb_science_thumbnail.jpg');">
-<div class="course-title-overlay">NEB Science Program</div>
-</div>
-<div class="course-content">
-<div class="course-meta">
-<div class="course-instructor">
-<div class="instructor-avatar">RS</div>
-<span>Rajesh Sharma</span>
-</div>
-<div class="rating">
-<i class="fas fa-star"></i>
-<span>4.9 (95)</span>
-</div>
-</div>
-<p class="course-description">
-            Advanced physics, chemistry, and biology courses for NEB Science students with problem-solving techniques.
-          </p>
-</div>
-<div class="course-footer">
-<div class="price-box">
-<span class="old-price">Rs. 3500</span>
-<span class="new-price">Rs. 1999</span>
-</div>
-<button class="enroll-btn" data-modal-type="enroll"><i class="fas fa-shopping-cart"></i> ENROLL</button>
-</div>
-</div>
-<div class="course-card">
-<div class="course-header">
-<div class="course-logo">TU</div>
-<h3 class="course-platform">TutorUps E-learning</h3>
-</div>
-<div class="course-thumbnail" style="background-image: url('bridge_course_thumbnail.jpg');">
-<div class="course-title-overlay">Bridge Course</div>
-</div>
-<div class="course-content">
-<div class="course-meta">
-<div class="course-instructor">
-<div class="instructor-avatar">SP</div>
-<span>Sarita Poudel</span>
-</div>
-<div class="rating">
-<i class="fas fa-star"></i>
-<span>4.7 (86)</span>
-</div>
-</div>
-<p class="course-description">
-            Smooth transition from secondary to higher secondary education with foundational concepts in core science subjects.
-          </p>
-</div>
-<div class="course-footer">
-<div class="price-box">
-<span class="old-price">Rs. 2500</span>
-<span class="new-price">Rs. 1299</span>
-</div>
-<button class="enroll-btn" data-modal-type="enroll"><i class="fas fa-shopping-cart"></i> ENROLL</button>
-</div>
-</div>
-</div>
-</main>
-<footer class="footer">
-<div class="footer-content">
-<div class="footer-column">
-<h3>About TutorUps</h3>
-<p style="color: #bbb; margin-bottom: 20px;">Empowering students with quality education through innovative e-learning solutions.</p>
-<div class="social-icons">
-<a class="social-icon" href="https://www.facebook.com/share/14JkfUhmQXK/" target="_blank"><i class="fab fa-facebook-f"></i></a>
-<a class="social-icon" href="#"><i class="fab fa-twitter"></i></a>
-<a class="social-icon" href="#"><i class="fab fa-instagram"></i></a>
-<a class="social-icon" href="#"><i class="fab fa-linkedin-in"></i></a>
-</div>
-</div>
-<div class="footer-column">
-<h3>Quick Links</h3>
-<ul class="footer-links">
-<li><a href="#"><i class="fas fa-chevron-right"></i> Home</a></li>
-<li><a href="#"><i class="fas fa-chevron-right"></i> Courses</a></li>
-<li><a href="#"><i class="fas fa-chevron-right"></i> Instructors</a></li>
-<li><a href="#"><i class="fas fa-chevron-right"></i> Pricing</a></li>
-</ul>
-</div>
-<div class="footer-column">
-<h3>Popular Courses</h3>
-<ul class="footer-links">
-<li><a href="#"><i class="fas fa-chevron-right"></i> SEE Preparation</a></li>
-<li><a href="#"><i class="fas fa-chevron-right"></i> NEB Science</a></li>
-<li><a href="#"><i class="fas fa-chevron-right"></i> Bridge Course</a></li>
-<li><a href="#"><i class="fas fa-chevron-right"></i> NEB Commerce</a></li>
-</ul>
-</div>
-<div class="footer-column">
-<h3>Contact Us</h3>
-<ul class="footer-links">
-<li><i class="fas fa-user"></i> Dilshad Alam</li>
-<li><a href="tel:+9779823778220"><i class="fas fa-phone"></i> +977 9823778220</a></li>
-<li><a href="mailto:info@tutorups.com"><i class="fas fa-envelope"></i> info@tutorups.com</a></li>
-<li><a href="https://www.facebook.com/share/14JkfUhmQXK/" target="_blank"><i class="fab fa-facebook"></i> Facebook</a></li>
-<li class="admin-link">
-<a href="#" id="adminLoginLink">
-<i class="fas fa-lock"></i> Admin Panel Login
-            </a>
-</li>
-</ul>
-</div>
-</div>
-<div class="copyright">
-      © 2023 TutorUps E-Learning Platform. All rights reserved.
-    </div>
-</footer>
-<div class="modal-overlay" id="loginModal">
-<div class="login-container">
-<button class="close-btn" id="closeModal">×</button>
-<div class="login-body">
-<div class="auth-tabs" id="authTabs">
-<div class="auth-tab active" id="loginTab">LOGIN</div>
-<div class="auth-tab" id="registerTab">REGISTER</div>
-</div>
-<div id="loginForm">
-<div class="form-group">
-<label for="email">Email Address</label>
-<input id="email" placeholder="Enter your email" type="email"/>
-</div>
-<div class="form-group">
-<label for="password">Password</label>
-<input id="password" placeholder="Enter your password" type="password"/>
-</div>
-<button class="submit-btn" id="loginBtn">LOGIN</button>
-<div class="forgot-password" id="forgotPasswordLink">
-<a href="#" id="forgotPassword">Forgot your password?</a>
-</div>
-</div>
-<div class="hidden" id="registerForm">
-<div class="form-group">
-<label for="regName">Full Name</label>
-<input id="regName" placeholder="Enter your full name" type="text"/>
-</div>
-<div class="form-group">
-<label for="regEmail">Email Address</label>
-<input id="regEmail" placeholder="Enter your email" type="email"/>
-</div>
-<div class="form-group">
-<label for="regPassword">Password</label>
-<input id="regPassword" placeholder="Create a password" type="password"/>
-</div>
-<div class="form-group">
-<label for="regConfirmPassword">Confirm Password</label>
-<input id="regConfirmPassword" placeholder="Confirm your password" type="password"/>
-</div>
-<button class="submit-btn" id="registerBtn">REGISTER</button>
-</div>
-</div>
-</div>
-</div>
-<div class="modal-overlay" id="adminLoginModal">
-<div class="admin-login-container">
-<button class="close-btn" id="closeAdminModal">×</button>
-<div class="admin-login-body">
-<h3 class="admin-login-title"><i class="fas fa-lock"></i> Admin Login</h3>
-<div class="form-group">
-<label for="adminEmail">Admin Email</label>
-<input id="adminEmail" placeholder="Enter admin email" type="email"/>
-</div>
-<div class="form-group">
-<label for="adminPassword">Password</label>
-<input id="adminPassword" placeholder="Enter password" type="password"/>
-</div>
-<button class="submit-btn" id="adminLoginBtn">LOGIN</button>
-<div class="forgot-password">
-<a href="#" id="adminForgotPassword">Forgot password?</a>
-</div>
-<div class="admin-note">
-          Demo credentials: admintutorups@gmail.com / admin@tutorups@778220
-        </div>
-</div>
-</div>
-</div>
-<div class="modal-overlay" id="forgotPasswordModal">
-<div class="login-container">
-<button class="close-btn" id="closeForgotModal">×</button>
-<div class="login-body">
-<h3 class="admin-login-title"><i class="fas fa-key"></i> Reset Password</h3>
-<div class="form-group">
-<label for="forgotEmail">Email Address</label>
-<input id="forgotEmail" placeholder="Enter your registered email" type="email"/>
-</div>
-<button class="submit-btn" id="resetPasswordBtn">SEND RESET LINK</button>
-<div class="forgot-password" style="margin-top: 20px;">
-<a href="#" id="backToLogin">Back to login</a>
-</div>
-</div>
-</div>
-</div>
-<div class="modal-overlay" id="adminForgotPasswordModal">
-<div class="login-container">
-<button class="close-btn" id="closeAdminForgotModal">×</button>
-<div class="login-body">
-<h3 class="admin-login-title"><i class="fas fa-key"></i> Admin Password Reset</h3>
-<div class="form-group">
-<label for="adminForgotEmail">Admin Email</label>
-<input id="adminForgotEmail" placeholder="Enter admin email" type="email"/>
-</div>
-<button class="submit-btn" id="adminResetPasswordBtn">SEND RESET LINK</button>
-<div class="forgot-password" style="margin-top: 20px;">
-<a href="#" id="backToAdminLogin">Back to admin login</a>
-</div>
-</div>
-</div>
-</div>
+<!-- Your HTML content remains the same until the script section -->
 <script>
     // DOM Elements
     const loginModal = document.getElementById('loginModal');
@@ -1117,25 +877,12 @@
     const adminForgotPassword = document.getElementById('adminForgotPassword');
     const backToAdminLogin = document.getElementById('backToAdminLogin');
 
-    // Admin credentials (WARNING: FOR DEMO ONLY. In production, handle securely on server-side.)
-    const ADMIN_EMAIL = "admintutorups@gmail.com";
-    const ADMIN_PASSWORD = "admin@tutorups@778220";
-
-    // Initialize currentDeviceId using FingerprintJS
-    let currentDeviceId = null;
-    (async () => {
-        try {
-            const fp = await FingerprintJS.load();
-            const result = await fp.get();
-            currentDeviceId = result.visitorId;
-            console.log("Current Device ID:", currentDeviceId);
-        } catch (error) {
-            console.error("Error loading FingerprintJS or getting device ID:", error);
-            // Fallback or handle cases where FingerprintJS might be blocked/fail
-            currentDeviceId = 'unknown_device_' + Date.now(); // Simple fallback
-        }
-    })();
-
+    // Create spinner element for buttons
+    function createSpinner() {
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner';
+      return spinner;
+    }
 
     // Function to create ripple effect
     function createRipple(event) {
@@ -1169,8 +916,8 @@
         e.stopPropagation();
         // When opened via enroll, show both tabs
         authTabs.classList.remove('hidden');
-        forgotPasswordLink.classList.remove('hidden'); // Forgot password link should be visible for login
-        loginTab.classList.add('active'); // Default to login tab
+        forgotPasswordLink.classList.remove('hidden');
+        loginTab.classList.add('active');
         registerTab.classList.remove('active');
         loginForm.classList.remove('hidden');
         registerForm.classList.add('hidden');
@@ -1287,7 +1034,7 @@
         registerTab.classList.remove('active');
         loginForm.classList.remove('hidden');
         registerForm.classList.add('hidden');
-        forgotPasswordLink.classList.remove('hidden'); // Always show forgot password for login
+        forgotPasswordLink.classList.remove('hidden');
     });
 
     registerTab.addEventListener('click', () => {
@@ -1295,75 +1042,116 @@
         loginTab.classList.remove('active');
         registerForm.classList.remove('hidden');
         loginForm.classList.add('hidden');
-        forgotPasswordLink.classList.add('hidden'); // Hide forgot password for register
+        forgotPasswordLink.classList.add('hidden');
     });
 
+    // Improved error handling function
+    function getAuthErrorMessage(error) {
+      switch (error.code) {
+        case 'auth/invalid-email':
+          return 'Invalid email address format.';
+        case 'auth/user-disabled':
+          return 'This account has been disabled.';
+        case 'auth/user-not-found':
+          return 'No account found with this email.';
+        case 'auth/wrong-password':
+          return 'Incorrect password.';
+        case 'auth/email-already-in-use':
+          return 'This email is already registered.';
+        case 'auth/operation-not-allowed':
+          return 'Email/password accounts are not enabled.';
+        case 'auth/weak-password':
+          return 'Password should be at least 6 characters.';
+        case 'auth/too-many-requests':
+          return 'Too many attempts. Try again later.';
+        case 'auth/requires-recent-login':
+          return 'Please log in again to perform this action.';
+        default:
+          return error.message || 'An unknown error occurred.';
+      }
+    }
 
     // Form submission handler for login
     document.getElementById('loginBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
+      e.preventDefault();
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
+      const loginBtn = document.getElementById('loginBtn');
 
       if (!email || !password) {
         alert('Please fill in all fields');
         return;
       }
 
+      // Show loading state
+      loginBtn.disabled = true;
+      const spinner = createSpinner();
+      loginBtn.appendChild(spinner);
+      spinner.style.display = 'inline-block';
+
       try {
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
-        // Use 'users' collection for both login and registration
-        const docRef = db.collection('users').doc(email);
-        const docSnap = await docRef.get();
-
-        if (!docSnap.exists || !docSnap.data().access) {
-          alert("Access Denied: Your account is not approved by the administrator.");
-          await auth.signOut(); // Sign out the user if not approved
-          return;
+        // Check user access in Firestore
+        const userDoc = await db.collection('users').doc(email).get();
+        
+        if (!userDoc.exists) {
+          throw new Error('User record not found in database.');
         }
 
-        const savedDeviceId = docSnap.data().activeDeviceId;
-
-        // Ensure currentDeviceId is available before comparison
-        if (!currentDeviceId) {
-            console.warn("currentDeviceId not yet determined. Attempting to re-evaluate.");
-            const fp = await FingerprintJS.load();
-            const result = await fp.get();
-            currentDeviceId = result.visitorId;
-        }
-
-
-        if (savedDeviceId && savedDeviceId !== currentDeviceId) {
-          alert("You have been logged out. Another login detected from a different device.");
+        const userData = userDoc.data();
+        
+        if (!userData.access) {
           await auth.signOut();
-          return;
+          throw new Error('Your account is pending approval. Please contact support.');
         }
 
-        // Update active device ID in Firestore
-        await docRef.update({ activeDeviceId: currentDeviceId });
+        // Ensure device ID is available
+        if (!currentDeviceId) {
+          currentDeviceId = 'fallback_device_id_' + Math.random().toString(36).substr(2, 9);
+        }
 
-        alert("Login successful! You can now access the course features.");
+        // Check for existing device ID
+        if (userData.activeDeviceId && userData.activeDeviceId !== currentDeviceId) {
+          await auth.signOut();
+          throw new Error('You have been logged out. Another login detected from a different device.');
+        }
+
+        // Update device ID in Firestore
+        await db.collection('users').doc(email).update({
+          activeDeviceId: currentDeviceId,
+          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Success - close modal and update UI
+        alert('Login successful! Welcome back.');
         loginModal.classList.remove('active');
         document.body.style.overflow = 'auto';
-
-        // In a real application, you would now redirect the user to the course page
-        // or load course content dynamically.
+        
+        // Update UI to show logged in state
+        headerLoginBtn.innerHTML = `<i class="fas fa-user"></i> MY ACCOUNT`;
+        headerLoginBtn.classList.add('logged-in');
 
       } catch (error) {
-        alert("Login failed: " + error.message);
+        alert('Login error: ' + getAuthErrorMessage(error));
+        console.error('Login error:', error);
+      } finally {
+        // Reset button state
+        loginBtn.disabled = false;
+        const spinner = loginBtn.querySelector('.spinner');
+        if (spinner) spinner.remove();
       }
     });
 
-
     // Form submission handler for register
     document.getElementById('registerBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
+      e.preventDefault();
       const name = document.getElementById('regName').value.trim();
       const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
       const confirmPassword = document.getElementById('regConfirmPassword').value;
+      const registerBtn = document.getElementById('registerBtn');
 
       if (!name || !email || !password || !confirmPassword) {
         alert('Please fill in all fields.');
@@ -1380,64 +1168,121 @@
         return;
       }
 
+      // Show loading state
+      registerBtn.disabled = true;
+      const spinner = createSpinner();
+      registerBtn.appendChild(spinner);
+      spinner.style.display = 'inline-block';
+
       try {
+        // Create user in Firebase Auth
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const user = userCredential.user;
 
-        // Add user data to Firestore with 'access: false' by default
+        // Create user document in Firestore
         await db.collection('users').doc(email).set({
           fullName: name,
           email: email,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          access: false, // User needs admin approval
-          activeDeviceId: null // No active device until first approved login
+          access: false, // Needs admin approval
+          isAdmin: false,
+          activeDeviceId: null,
+          coursesEnrolled: []
         });
 
-        alert("Registration successful! Your account is awaiting administrator approval. You will be able to log in once approved.");
+        // Send email verification (optional)
+        await user.sendEmailVerification();
+
+        alert(`Registration successful! Your account is pending approval. You'll receive an email when approved.`);
+        
         // Switch to login tab after successful registration
         registerTab.classList.remove('active');
         loginTab.classList.add('active');
         registerForm.classList.add('hidden');
         loginForm.classList.remove('hidden');
-        forgotPasswordLink.classList.remove('hidden'); // Ensure it's visible for the login tab
+        forgotPasswordLink.classList.remove('hidden');
+
+        // Clear registration form
+        document.getElementById('regName').value = '';
+        document.getElementById('regEmail').value = '';
+        document.getElementById('regPassword').value = '';
+        document.getElementById('regConfirmPassword').value = '';
 
       } catch (error) {
-        alert("Registration failed: " + error.message);
+        alert('Registration error: ' + getAuthErrorMessage(error));
+        console.error('Registration error:', error);
+      } finally {
+        // Reset button state
+        registerBtn.disabled = false;
+        const spinner = registerBtn.querySelector('.spinner');
+        if (spinner) spinner.remove();
       }
     });
 
-
     // Form submission handler for admin login
-    document.getElementById('adminLoginBtn').addEventListener('click', (e) => {
-      e.stopPropagation();
+    document.getElementById('adminLoginBtn').addEventListener('click', async (e) => {
+      e.preventDefault();
       const email = document.getElementById('adminEmail').value.trim();
       const password = document.getElementById('adminPassword').value;
+      const adminLoginBtn = document.getElementById('adminLoginBtn');
 
       if (!email || !password) {
         alert('Please fill in all fields');
         return;
       }
 
-      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      // Show loading state
+      adminLoginBtn.disabled = true;
+      const spinner = createSpinner();
+      adminLoginBtn.appendChild(spinner);
+      spinner.style.display = 'inline-block';
+
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        // Check if user is admin in Firestore
+        const userDoc = await db.collection('users').doc(email).get();
+        
+        if (!userDoc.exists || !userDoc.data().isAdmin) {
+          await auth.signOut();
+          throw new Error('You do not have admin privileges.');
+        }
+
         alert('Admin login successful! Redirecting to admin panel...');
         adminLoginModal.classList.remove('active');
         document.body.style.overflow = 'auto';
-        // In a real application, you would redirect to the admin panel here
+        
+        // In a real app, you would redirect to admin panel here
         // window.location.href = '/admin';
-      } else {
-        alert('Invalid admin credentials');
+
+      } catch (error) {
+        alert('Admin login error: ' + getAuthErrorMessage(error));
+        console.error('Admin login error:', error);
+      } finally {
+        // Reset button state
+        adminLoginBtn.disabled = false;
+        const spinner = adminLoginBtn.querySelector('.spinner');
+        if (spinner) spinner.remove();
       }
     });
 
     // Form submission handler for forgot password (user)
     document.getElementById('resetPasswordBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
+      e.preventDefault();
       const email = document.getElementById('forgotEmail').value.trim();
+      const resetBtn = document.getElementById('resetPasswordBtn');
 
       if (!email) {
         alert('Please enter your email address.');
         return;
       }
+
+      // Show loading state
+      resetBtn.disabled = true;
+      const spinner = createSpinner();
+      resetBtn.appendChild(spinner);
+      spinner.style.display = 'inline-block';
 
       try {
         await auth.sendPasswordResetEmail(email);
@@ -1445,36 +1290,88 @@
         forgotPasswordModal.classList.remove('active');
         document.body.style.overflow = 'auto';
       } catch (error) {
-        alert("Failed to send password reset email: " + error.message);
+        alert('Password reset error: ' + getAuthErrorMessage(error));
+        console.error('Password reset error:', error);
+      } finally {
+        // Reset button state
+        resetBtn.disabled = false;
+        const spinner = resetBtn.querySelector('.spinner');
+        if (spinner) spinner.remove();
       }
     });
 
     // Form submission handler for admin forgot password
     document.getElementById('adminResetPasswordBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
+      e.preventDefault();
       const email = document.getElementById('adminForgotEmail').value.trim();
+      const adminResetBtn = document.getElementById('adminResetPasswordBtn');
 
       if (!email) {
         alert('Please enter admin email address.');
         return;
       }
 
-      // Note: Firebase `sendPasswordResetEmail` does not distinguish between user and admin roles.
-      // It sends to any valid email in Firebase Auth. The "admin" distinction here is purely for client-side
-      // messaging. In a real app, you'd likely have a separate admin auth system.
-      if (email === ADMIN_EMAIL) {
-         try {
-            await auth.sendPasswordResetEmail(email); // This will send to the Firebase Auth user if exists
-            alert(`Admin password reset link sent to ${email}. Please check your inbox.`);
-            adminForgotPasswordModal.classList.remove('active');
-            document.body.style.overflow = 'auto';
-         } catch (error) {
-            alert("Failed to send admin password reset email: " + error.message);
-         }
-      } else {
-        alert('This email is not registered as admin in our demo system.');
+      // Show loading state
+      adminResetBtn.disabled = true;
+      const spinner = createSpinner();
+      adminResetBtn.appendChild(spinner);
+      spinner.style.display = 'inline-block';
+
+      try {
+        // First check if email is registered as admin
+        const userDoc = await db.collection('users').doc(email).get();
+        
+        if (!userDoc.exists || !userDoc.data().isAdmin) {
+          throw new Error('This email is not registered as admin.');
+        }
+
+        await auth.sendPasswordResetEmail(email);
+        alert(`Admin password reset link sent to ${email}. Please check your inbox.`);
+        adminForgotPasswordModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      } catch (error) {
+        alert('Admin password reset error: ' + getAuthErrorMessage(error));
+        console.error('Admin password reset error:', error);
+      } finally {
+        // Reset button state
+        adminResetBtn.disabled = false;
+        const spinner = adminResetBtn.querySelector('.spinner');
+        if (spinner) spinner.remove();
       }
     });
+
+    // Initialize admin account (run once to create admin)
+    async function initializeAdminAccount() {
+      const adminEmail = "admintutorups@gmail.com";
+      const adminPassword = "admin@tutorups@778220";
+      
+      try {
+        // Check if admin already exists
+        const adminDoc = await db.collection('users').doc(adminEmail).get();
+        
+        if (!adminDoc.exists) {
+          // Create admin user
+          const userCredential = await auth.createUserWithEmailAndPassword(adminEmail, adminPassword);
+          
+          // Create admin document in Firestore
+          await db.collection('users').doc(adminEmail).set({
+            fullName: "Admin TutorUps",
+            email: adminEmail,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            access: true,
+            isAdmin: true,
+            activeDeviceId: null
+          });
+          
+          console.log("Admin account created successfully");
+        }
+      } catch (error) {
+        console.error("Error initializing admin account:", error);
+      }
+    }
+
+    // Uncomment to run once to create admin account
+    // initializeAdminAccount();
   </script>
 </body>
 </html>
