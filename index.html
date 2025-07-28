@@ -1357,55 +1357,65 @@
     });
 
 
-    // Form submission handler for register
-    document.getElementById('registerBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const name = document.getElementById('regName').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value;
-      const confirmPassword = document.getElementById('regConfirmPassword').value;
+    });
+// Form submission handler for register
+document.getElementById('registerBtn').addEventListener('click', async (e) => {
+  e.stopPropagation();
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const confirmPassword = document.getElementById('regConfirmPassword').value;
 
-      if (!name || !email || !password || !confirmPassword) {
-        alert('Please fill in all fields.');
-        return;
-      }
+  if (!name || !email || !password || !confirmPassword) {
+    alert('Please fill in all fields.');
+    return;
+  }
 
-      if (password !== confirmPassword) {
-        alert('Passwords do not match.');
-        return;
-      }
+  if (password !== confirmPassword) {
+    alert('Passwords do not match.');
+    return;
+  }
 
-      if (password.length < 6) {
-        alert('Password should be at least 6 characters.');
-        return;
-      }
+  if (password.length < 6) {
+    alert('Password should be at least 6 characters.');
+    return;
+  }
 
-      try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
+  try {
+    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    const user = userCredential.user;
 
-        // Add user data to Firestore with 'access: false' by default
-        await db.collection('users').doc(email).set({
-          fullName: name,
-          email: email,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          access: false, // User needs admin approval
-          activeDeviceId: null // No active device until first approved login
-        });
-
-        alert("Registration successful! Your account is awaiting administrator approval. You will be able to log in once approved.");
-        // Switch to login tab after successful registration
-        registerTab.classList.remove('active');
-        loginTab.classList.add('active');
-        registerForm.classList.add('hidden');
-        loginForm.classList.remove('hidden');
-        forgotPasswordLink.classList.remove('hidden'); // Ensure it's visible for the login tab
-
-      } catch (error) {
-        alert("Registration failed: " + error.message);
-      }
+    // Add user data to Firestore using user.uid as the document ID
+    await db.collection('users').doc(user.uid).set({ // Changed from email to user.uid
+      fullName: name,
+      email: email,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      access: false, // User needs admin approval
+      activeDeviceId: null // No active device until first approved login
     });
 
+    alert("Registration successful! Your account is awaiting administrator approval. You will be able to log in once approved.");
+    // Switch to login tab after successful registration
+    registerTab.classList.remove('active');
+    loginTab.classList.add('active');
+    registerForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+    forgotPasswordLink.classList.remove('hidden'); // Ensure it's visible for the login tab
+
+  } catch (error) {
+    console.error("Registration error:", error); // Log the full error for debugging
+    // More specific error handling for user feedback
+    if (error.code === 'auth/email-already-in-use') {
+      alert('Registration failed: This email is already in use by another account. Please try logging in or use a different email.');
+    } else if (error.code === 'auth/invalid-email') {
+      alert('Registration failed: The email address is not valid.');
+    } else if (error.code === 'auth/weak-password') {
+      alert('Registration failed: The password is too weak. Please choose a stronger password.');
+    } else {
+      alert('Registration failed: ' + error.message);
+    }
+  }
+});
 
     // Form submission handler for admin login
     document.getElementById('adminLoginBtn').addEventListener('click', (e) => {
