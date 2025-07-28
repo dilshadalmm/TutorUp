@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
@@ -231,6 +230,7 @@
       overflow: hidden;
       box-shadow: var(--card-shadow);
       position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
     .course-card:hover {
@@ -800,26 +800,6 @@
       margin-top: 15px;
     }
   </style>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://openfpcdn.io/fingerprintjs/v4"></script>
-
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCvxuIDHuT9BPGVD9ZfrF2MrN7FECIxN70",
-    authDomain: "dilshad-almm.firebaseapp.com",
-    projectId: "dilshad-almm",
-    storageBucket: "dilshad-almm.firebasestorage.app",
-    messagingSenderId: "559661476201",
-    appId: "1:559661476201:web:bbc65b8a7b74121d91f5f8"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-</script>
-
-
 </head>
 <body>
 <header class="header">
@@ -1093,388 +1073,402 @@
 </div>
 </div>
 </div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://openfpcdn.io/fingerprintjs/v4"></script>
+
 <script>
-    // DOM Elements
-    const loginModal = document.getElementById('loginModal');
-    const adminLoginModal = document.getElementById('adminLoginModal');
-    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
-    const adminForgotPasswordModal = document.getElementById('adminForgotPasswordModal');
-    const closeModal = document.getElementById('closeModal');
-    const closeAdminModal = document.getElementById('closeAdminModal');
-    const closeForgotModal = document.getElementById('closeForgotModal');
-    const closeAdminForgotModal = document.getElementById('closeAdminForgotModal');
-    const enrollButtons = document.querySelectorAll('.enroll-btn');
-    const headerLoginBtn = document.getElementById('headerLoginBtn');
-    const adminLoginLink = document.getElementById('adminLoginLink');
-    const authTabs = document.getElementById('authTabs');
-    const loginTab = document.getElementById('loginTab');
-    const registerTab = document.getElementById('registerTab');
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-    const forgotPassword = document.getElementById('forgotPassword');
-    const backToLogin = document.getElementById('backToLogin');
-    const adminForgotPassword = document.getElementById('adminForgotPassword');
-    const backToAdminLogin = document.getElementById('backToAdminLogin');
+  const firebaseConfig = {
+    apiKey: "AIzaSyCvxuIDHuT9BPGVD9ZfrF2MrN7FECIxN70",
+    authDomain: "dilshad-almm.firebaseapp.com",
+    projectId: "dilshad-almm",
+    storageBucket: "dilshad-almm.firebasestorage.app",
+    messagingSenderId: "559661476201",
+    appId: "1:559661476201:web:bbc65b8a7b74121d91f5f8"
+  };
+  
+  // Initialize Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-    // Admin credentials (WARNING: FOR DEMO ONLY. In production, handle securely on server-side.)
-    const ADMIN_EMAIL = "admintutorups@gmail.com";
-    const ADMIN_PASSWORD = "admin@tutorups@778220";
+  // DOM Elements
+  const loginModal = document.getElementById('loginModal');
+  const adminLoginModal = document.getElementById('adminLoginModal');
+  const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+  const adminForgotPasswordModal = document.getElementById('adminForgotPasswordModal');
+  const closeModal = document.getElementById('closeModal');
+  const closeAdminModal = document.getElementById('closeAdminModal');
+  const closeForgotModal = document.getElementById('closeForgotModal');
+  const closeAdminForgotModal = document.getElementById('closeAdminForgotModal');
+  const enrollButtons = document.querySelectorAll('.enroll-btn');
+  const headerLoginBtn = document.getElementById('headerLoginBtn');
+  const adminLoginLink = document.getElementById('adminLoginLink');
+  const authTabs = document.getElementById('authTabs');
+  const loginTab = document.getElementById('loginTab');
+  const registerTab = document.getElementById('registerTab');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+  const forgotPassword = document.getElementById('forgotPassword');
+  const backToLogin = document.getElementById('backToLogin');
+  const adminForgotPassword = document.getElementById('adminForgotPassword');
+  const backToAdminLogin = document.getElementById('backToAdminLogin');
 
-    // Initialize currentDeviceId using FingerprintJS
-    let currentDeviceId = null;
-    (async () => {
-        try {
-            const fp = await FingerprintJS.load();
-            const result = await fp.get();
-            currentDeviceId = result.visitorId;
-            console.log("Current Device ID:", currentDeviceId);
-        } catch (error) {
-            console.error("Error loading FingerprintJS or getting device ID:", error);
-            // Fallback or handle cases where FingerprintJS might be blocked/fail
-            currentDeviceId = 'unknown_device_' + Date.now(); // Simple fallback
-        }
-    })();
+  // Admin credentials (WARNING: FOR DEMO ONLY. In production, handle securely on server-side.)
+  const ADMIN_EMAIL = "admintutorups@gmail.com";
+  const ADMIN_PASSWORD = "admin@tutorups@778220";
 
-
-    // Function to create ripple effect
-    function createRipple(event) {
-      const button = event.currentTarget;
-      const circle = document.createElement("span");
-      const diameter = Math.max(button.clientWidth, button.clientHeight);
-      const radius = diameter / 2;
-
-      circle.style.width = circle.style.height = `${diameter}px`;
-      circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
-      circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
-      circle.classList.add("ripple");
-
-      const ripple = button.getElementsByClassName("ripple")[0];
-      if (ripple) {
-        ripple.remove();
+  // Initialize currentDeviceId using FingerprintJS
+  let currentDeviceId = null;
+  (async () => {
+      try {
+          const fp = await FingerprintJS.load();
+          const result = await fp.get();
+          currentDeviceId = result.visitorId;
+          console.log("Current Device ID:", currentDeviceId);
+      } catch (error) {
+          console.error("Error loading FingerprintJS or getting device ID:", error);
+          // Fallback or handle cases where FingerprintJS might be blocked/fail
+          currentDeviceId = 'unknown_device_' + Date.now(); // Simple fallback
       }
+  })();
 
-      button.appendChild(circle);
+  // Function to create ripple effect
+  function createRipple(event) {
+    const button = event.currentTarget;
+    const circle = document.createElement("span");
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+    circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+    circle.classList.add("ripple");
+
+    const ripple = button.getElementsByClassName("ripple")[0];
+    if (ripple) {
+      ripple.remove();
     }
 
-    // Add ripple effect to buttons
-    const buttons = document.querySelectorAll('.auth-btn, .enroll-btn, .submit-btn');
-    buttons.forEach(button => {
-      button.addEventListener('click', createRipple);
-    });
+    button.appendChild(circle);
+  }
 
-    // Open modal when enroll button is clicked (shows both login and register)
-    enrollButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // When opened via enroll, show both tabs
-        authTabs.classList.remove('hidden');
-        forgotPasswordLink.classList.remove('hidden'); // Forgot password link should be visible for login
-        loginTab.classList.add('active'); // Default to login tab
-        registerTab.classList.remove('active');
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
-        loginModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-      });
-    });
+  // Add ripple effect to buttons
+  const buttons = document.querySelectorAll('.auth-btn, .enroll-btn, .submit-btn');
+  buttons.forEach(button => {
+    button.addEventListener('click', createRipple);
+  });
 
-    // Open modal when header login button is clicked (shows both login and register)
-    headerLoginBtn.addEventListener('click', (e) => {
+  // Open modal when enroll button is clicked (shows both login and register)
+  enrollButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
       e.stopPropagation();
+      // When opened via enroll, show both tabs
       authTabs.classList.remove('hidden');
-      forgotPasswordLink.classList.remove('hidden');
-      loginTab.classList.add('active');
+      forgotPasswordLink.classList.remove('hidden'); // Forgot password link should be visible for login
+      loginTab.classList.add('active'); // Default to login tab
       registerTab.classList.remove('active');
       loginForm.classList.remove('hidden');
       registerForm.classList.add('hidden');
       loginModal.classList.add('active');
       document.body.style.overflow = 'hidden';
     });
+  });
 
-    // Open admin login modal
-    adminLoginLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      adminLoginModal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    });
+  // Open modal when header login button is clicked (shows both login and register)
+  headerLoginBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    authTabs.classList.remove('hidden');
+    forgotPasswordLink.classList.remove('hidden');
+    loginTab.classList.add('active');
+    registerTab.classList.remove('active');
+    loginForm.classList.remove('hidden');
+    registerForm.classList.add('hidden');
+    loginModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
 
-    // Open forgot password modal
-    forgotPassword.addEventListener('click', (e) => {
-      e.preventDefault();
+  // Open admin login modal
+  adminLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    adminLoginModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
+
+  // Open forgot password modal
+  forgotPassword.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginModal.classList.remove('active');
+    forgotPasswordModal.classList.add('active');
+  });
+
+  // Open admin forgot password modal
+  adminForgotPassword.addEventListener('click', (e) => {
+    e.preventDefault();
+    adminLoginModal.classList.remove('active');
+    adminForgotPasswordModal.classList.add('active');
+  });
+
+  // Back to login from forgot password
+  backToLogin.addEventListener('click', (e) => {
+    e.preventDefault();
+    forgotPasswordModal.classList.remove('active');
+    loginModal.classList.add('active');
+  });
+
+  // Back to admin login from admin forgot password
+  backToAdminLogin.addEventListener('click', (e) => {
+    e.preventDefault();
+    adminForgotPasswordModal.classList.remove('active');
+    adminLoginModal.classList.add('active');
+  });
+
+  // Close modals
+  closeModal.addEventListener('click', (e) => {
+    e.stopPropagation();
+    loginModal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  });
+
+  closeAdminModal.addEventListener('click', (e) => {
+    e.stopPropagation();
+    adminLoginModal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  });
+
+  closeForgotModal.addEventListener('click', (e) => {
+    e.stopPropagation();
+    forgotPasswordModal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  });
+
+  closeAdminForgotModal.addEventListener('click', (e) => {
+    e.stopPropagation();
+    adminForgotPasswordModal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  });
+
+  // Close modals when clicking outside
+  loginModal.addEventListener('click', (e) => {
+    if (e.target === loginModal) {
       loginModal.classList.remove('active');
-      forgotPasswordModal.classList.add('active');
-    });
+      document.body.style.overflow = 'auto';
+    }
+  });
 
-    // Open admin forgot password modal
-    adminForgotPassword.addEventListener('click', (e) => {
-      e.preventDefault();
+  adminLoginModal.addEventListener('click', (e) => {
+    if (e.target === adminLoginModal) {
       adminLoginModal.classList.remove('active');
-      adminForgotPasswordModal.classList.add('active');
-    });
+      document.body.style.overflow = 'auto';
+    }
+  });
 
-    // Back to login from forgot password
-    backToLogin.addEventListener('click', (e) => {
-      e.preventDefault();
+  forgotPasswordModal.addEventListener('click', (e) => {
+    if (e.target === forgotPasswordModal) {
       forgotPasswordModal.classList.remove('active');
-      loginModal.classList.add('active');
-    });
+      document.body.style.overflow = 'auto';
+    }
+  });
 
-    // Back to admin login from admin forgot password
-    backToAdminLogin.addEventListener('click', (e) => {
-      e.preventDefault();
+  adminForgotPasswordModal.addEventListener('click', (e) => {
+    if (e.target === adminForgotPasswordModal) {
       adminForgotPasswordModal.classList.remove('active');
-      adminLoginModal.classList.add('active');
-    });
+      document.body.style.overflow = 'auto';
+    }
+  });
 
-    // Close modals
-    closeModal.addEventListener('click', (e) => {
-      e.stopPropagation();
+  // Switch between login and register tabs
+  loginTab.addEventListener('click', () => {
+      loginTab.classList.add('active');
+      registerTab.classList.remove('active');
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
+      forgotPasswordLink.classList.remove('hidden'); // Always show forgot password for login
+  });
+
+  registerTab.addEventListener('click', () => {
+      registerTab.classList.add('active');
+      loginTab.classList.remove('active');
+      registerForm.classList.remove('hidden');
+      loginForm.classList.add('hidden');
+      forgotPasswordLink.classList.add('hidden'); // Hide forgot password for register
+  });
+
+  // Form submission handler for login
+  document.getElementById('loginBtn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    try {
+      const userCredential = await auth.signInWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+
+      // Use 'users' collection for both login and registration
+      const docRef = db.collection('users').doc(email);
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists || !docSnap.data().access) {
+        alert("Access Denied: Your account is not approved by the administrator.");
+        await auth.signOut(); // Sign out the user if not approved
+        return;
+      }
+
+      const savedDeviceId = docSnap.data().activeDeviceId;
+
+      // Ensure currentDeviceId is available before comparison
+      if (!currentDeviceId) {
+          console.warn("currentDeviceId not yet determined. Attempting to re-evaluate.");
+          const fp = await FingerprintJS.load();
+          const result = await fp.get();
+          currentDeviceId = result.visitorId;
+      }
+
+      if (savedDeviceId && savedDeviceId !== currentDeviceId) {
+        alert("You have been logged out. Another login detected from a different device.");
+        await auth.signOut();
+        return;
+      }
+
+      // Update active device ID in Firestore
+      await docRef.update({ activeDeviceId: currentDeviceId });
+
+      alert("Login successful! You can now access the course features.");
       loginModal.classList.remove('active');
       document.body.style.overflow = 'auto';
-    });
 
-    closeAdminModal.addEventListener('click', (e) => {
-      e.stopPropagation();
+      // In a real application, you would now redirect the user to the course page
+      // or load course content dynamically.
+
+    } catch (error) {
+      alert("Login failed: " + error.message);
+    }
+  });
+
+  // Form submission handler for register
+  document.getElementById('registerBtn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+    if (!name || !email || !password || !confirmPassword) {
+      alert('Please fill in all fields.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      alert('Passwords do not match.');
+      return;
+    }
+
+    if (password.length < 6) {
+      alert('Password should be at least 6 characters.');
+      return;
+    }
+
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const user = userCredential.user;
+
+      // Add user data to Firestore with 'access: false' by default
+      await db.collection('users').doc(email).set({
+        fullName: name,
+        email: email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        access: false, // User needs admin approval
+        activeDeviceId: null // No active device until first approved login
+      });
+
+      alert("Registration successful! Your account is awaiting administrator approval. You will be able to log in once approved.");
+      // Switch to login tab after successful registration
+      registerTab.classList.remove('active');
+      loginTab.classList.add('active');
+      registerForm.classList.add('hidden');
+      loginForm.classList.remove('hidden');
+      forgotPasswordLink.classList.remove('hidden'); // Ensure it's visible for the login tab
+
+    } catch (error) {
+      alert("Registration failed: " + error.message);
+    }
+  });
+
+  // Form submission handler for admin login
+  document.getElementById('adminLoginBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const email = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminPassword').value;
+
+    if (!email || !password) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      alert('Admin login successful! Redirecting to admin panel...');
       adminLoginModal.classList.remove('active');
       document.body.style.overflow = 'auto';
-    });
+      // In a real application, you would redirect to the admin panel here
+      // window.location.href = '/admin';
+    } else {
+      alert('Invalid admin credentials');
+    }
+  });
 
-    closeForgotModal.addEventListener('click', (e) => {
-      e.stopPropagation();
+  // Form submission handler for forgot password (user)
+  document.getElementById('resetPasswordBtn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const email = document.getElementById('forgotEmail').value.trim();
+
+    if (!email) {
+      alert('Please enter your email address.');
+      return;
+    }
+
+    try {
+      await auth.sendPasswordResetEmail(email);
+      alert(`Password reset link sent to ${email}. Please check your inbox.`);
       forgotPasswordModal.classList.remove('active');
       document.body.style.overflow = 'auto';
-    });
+    } catch (error) {
+      alert("Failed to send password reset email: " + error.message);
+    }
+  });
 
-    closeAdminForgotModal.addEventListener('click', (e) => {
-      e.stopPropagation();
-      adminForgotPasswordModal.classList.remove('active');
-      document.body.style.overflow = 'auto';
-    });
+  // Form submission handler for admin forgot password
+  document.getElementById('adminResetPasswordBtn').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const email = document.getElementById('adminForgotEmail').value.trim();
 
-    // Close modals when clicking outside
-    loginModal.addEventListener('click', (e) => {
-      if (e.target === loginModal) {
-        loginModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      }
-    });
+    if (!email) {
+      alert('Please enter admin email address.');
+      return;
+    }
 
-    adminLoginModal.addEventListener('click', (e) => {
-      if (e.target === adminLoginModal) {
-        adminLoginModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      }
-    });
-
-    forgotPasswordModal.addEventListener('click', (e) => {
-      if (e.target === forgotPasswordModal) {
-        forgotPasswordModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      }
-    });
-
-    adminForgotPasswordModal.addEventListener('click', (e) => {
-      if (e.target === adminForgotPasswordModal) {
-        adminForgotPasswordModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      }
-    });
-
-    // Switch between login and register tabs
-    loginTab.addEventListener('click', () => {
-        loginTab.classList.add('active');
-        registerTab.classList.remove('active');
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
-        forgotPasswordLink.classList.remove('hidden'); // Always show forgot password for login
-    });
-
-    registerTab.addEventListener('click', () => {
-        registerTab.classList.add('active');
-        loginTab.classList.remove('active');
-        registerForm.classList.remove('hidden');
-        loginForm.classList.add('hidden');
-        forgotPasswordLink.classList.add('hidden'); // Hide forgot password for register
-    });
-
-
-    // Form submission handler for login
-    document.getElementById('loginBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-
-      if (!email || !password) {
-        alert('Please fill in all fields');
-        return;
-      }
-
-      try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-
-        // Use 'users' collection for both login and registration
-        const docRef = db.collection('users').doc(email);
-        const docSnap = await docRef.get();
-
-        if (!docSnap.exists || !docSnap.data().access) {
-          alert("Access Denied: Your account is not approved by the administrator.");
-          await auth.signOut(); // Sign out the user if not approved
-          return;
-        }
-
-        const savedDeviceId = docSnap.data().activeDeviceId;
-
-        // Ensure currentDeviceId is available before comparison
-        if (!currentDeviceId) {
-            console.warn("currentDeviceId not yet determined. Attempting to re-evaluate.");
-            const fp = await FingerprintJS.load();
-            const result = await fp.get();
-            currentDeviceId = result.visitorId;
-        }
-
-
-        if (savedDeviceId && savedDeviceId !== currentDeviceId) {
-          alert("You have been logged out. Another login detected from a different device.");
-          await auth.signOut();
-          return;
-        }
-
-        // Update active device ID in Firestore
-        await docRef.update({ activeDeviceId: currentDeviceId });
-
-        alert("Login successful! You can now access the course features.");
-        loginModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-
-        // In a real application, you would now redirect the user to the course page
-        // or load course content dynamically.
-
-      } catch (error) {
-        alert("Login failed: " + error.message);
-      }
-    });
-
-
-    // Form submission handler for register
-    document.getElementById('registerBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const name = document.getElementById('regName').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value;
-      const confirmPassword = document.getElementById('regConfirmPassword').value;
-
-      if (!name || !email || !password || !confirmPassword) {
-        alert('Please fill in all fields.');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        alert('Passwords do not match.');
-        return;
-      }
-
-      if (password.length < 6) {
-        alert('Password should be at least 6 characters.');
-        return;
-      }
-
-      try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-
-        // Add user data to Firestore with 'access: false' by default
-        await db.collection('users').doc(email).set({
-          fullName: name,
-          email: email,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          access: false, // User needs admin approval
-          activeDeviceId: null // No active device until first approved login
-        });
-
-        alert("Registration successful! Your account is awaiting administrator approval. You will be able to log in once approved.");
-        // Switch to login tab after successful registration
-        registerTab.classList.remove('active');
-        loginTab.classList.add('active');
-        registerForm.classList.add('hidden');
-        loginForm.classList.remove('hidden');
-        forgotPasswordLink.classList.remove('hidden'); // Ensure it's visible for the login tab
-
-      } catch (error) {
-        alert("Registration failed: " + error.message);
-      }
-    });
-
-
-    // Form submission handler for admin login
-    document.getElementById('adminLoginBtn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const email = document.getElementById('adminEmail').value.trim();
-      const password = document.getElementById('adminPassword').value;
-
-      if (!email || !password) {
-        alert('Please fill in all fields');
-        return;
-      }
-
-      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        alert('Admin login successful! Redirecting to admin panel...');
-        adminLoginModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-        // In a real application, you would redirect to the admin panel here
-        // window.location.href = '/admin';
-      } else {
-        alert('Invalid admin credentials');
-      }
-    });
-
-    // Form submission handler for forgot password (user)
-    document.getElementById('resetPasswordBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const email = document.getElementById('forgotEmail').value.trim();
-
-      if (!email) {
-        alert('Please enter your email address.');
-        return;
-      }
-
-      try {
-        await auth.sendPasswordResetEmail(email);
-        alert(`Password reset link sent to ${email}. Please check your inbox.`);
-        forgotPasswordModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      } catch (error) {
-        alert("Failed to send password reset email: " + error.message);
-      }
-    });
-
-    // Form submission handler for admin forgot password
-    document.getElementById('adminResetPasswordBtn').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const email = document.getElementById('adminForgotEmail').value.trim();
-
-      if (!email) {
-        alert('Please enter admin email address.');
-        return;
-      }
-
-      // Note: Firebase `sendPasswordResetEmail` does not distinguish between user and admin roles.
-      // It sends to any valid email in Firebase Auth. The "admin" distinction here is purely for client-side
-      // messaging. In a real app, you'd likely have a separate admin auth system.
-      if (email === ADMIN_EMAIL) {
-         try {
-            await auth.sendPasswordResetEmail(email); // This will send to the Firebase Auth user if exists
-            alert(`Admin password reset link sent to ${email}. Please check your inbox.`);
-            adminForgotPasswordModal.classList.remove('active');
-            document.body.style.overflow = 'auto';
-         } catch (error) {
-            alert("Failed to send admin password reset email: " + error.message);
-         }
-      } else {
-        alert('This email is not registered as admin in our demo system.');
-      }
-    });
-  </script>
+    // Note: Firebase `sendPasswordResetEmail` does not distinguish between user and admin roles.
+    // It sends to any valid email in Firebase Auth. The "admin" distinction here is purely for client-side
+    // messaging. In a real app, you'd likely have a separate admin auth system.
+    if (email === ADMIN_EMAIL) {
+       try {
+          await auth.sendPasswordResetEmail(email); // This will send to the Firebase Auth user if exists
+          alert(`Admin password reset link sent to ${email}. Please check your inbox.`);
+          adminForgotPasswordModal.classList.remove('active');
+          document.body.style.overflow = 'auto';
+       } catch (error) {
+          alert("Failed to send admin password reset email: " + error.message);
+       }
+    } else {
+      alert('This email is not registered as admin in our demo system.');
+    }
+  });
+</script>
 </body>
 </html>
