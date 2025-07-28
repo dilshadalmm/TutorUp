@@ -1,1377 +1,365 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>TutorUps - Modern E-Learning Platform</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<style>
-    :root {
-      --primary: #4361ee;
-      --secondary: #3f37c9;
-      --accent: #4cc9f0;
-      --light: #f8f9fa;
-      --dark: #212529;
-      --success: #4CAF50;
-      --warning: #ffb703;
-      --danger: #e63946;
-      --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-      --transition: all 0.3s ease;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
-      color: var(--dark);
-      line-height: 1.6;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* Header Styles */
-    .header {
-      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-      display: flex;
-      align-items: center;
-      padding: 15px 20px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      height: 70px;
-    }
-
-    /* Search Box */
-    .search-container {
-      flex: 1;
-      margin: 0 20px;
-      max-width: 500px;
-      position: relative;
-    }
-
-    .search-box {
-      width: 100%;
-      padding: 10px 15px 10px 40px;
-      border-radius: 30px;
-      border: none;
-      font-size: 0.9rem;
-      transition: var(--transition);
-      background: rgba(255,255,255,0.9);
-    }
-
-    .search-box:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
-      background: white;
-    }
-
-    .search-icon {
-      position: absolute;
-      left: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #666;
-    }
-
-    /* Auth Buttons Container */
-    .auth-container {
-      display: flex;
-      gap: 15px;
-      margin-left: auto;
-      align-items: center;
-    }
-
-    .auth-btn {
-      padding: 10px 25px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border: none;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      height: 45px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .login-btn {
-      background: white;
-      color: var(--primary);
-    }
-
-    .auth-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    }
-
-    .auth-btn i {
-      font-size: 0.9rem;
-    }
-
-    /* Brand Logo */
-    .brand {
-      color: white;
-      font-size: 1.8rem;
-      font-weight: 700;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      height: 45px;
-      display: flex;
-      align-items: center;
-    }
-
-    /* Category Buttons */
-    .category-section {
-      padding: 20px 20px 10px;
-      background: white;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
-
-    .section-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 15px;
-      color: var(--secondary);
-      display: flex;
-      align-items: center;
-      padding-left: 10px;
-    }
-
-    .section-title i {
-      margin-right: 10px;
-    }
-
-    .category-buttons {
-      display: flex;
-      overflow-x: auto;
-      gap: 12px;
-      padding-bottom: 5px;
-      scrollbar-width: thin;
-    }
-
-    .category-buttons::-webkit-scrollbar {
-      height: 6px;
-    }
-
-    .category-buttons::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 10px;
-    }
-
-    .category-buttons::-webkit-scrollbar-thumb {
-      background: #c5c5c5;
-      border-radius: 10px;
-    }
-
-    .category {
-      padding: 10px 20px;
-      border-radius: 30px;
-      border: none;
-      font-weight: 500;
-      background: #edf2ff;
-      color: var(--primary);
-      white-space: nowrap;
-      cursor: pointer;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      font-size: 0.9rem;
-      min-width: max-content;
-    }
-
-    .category i {
-      margin-right: 8px;
-      font-size: 0.9rem;
-    }
-
-    .category:hover {
-      background: #dbe4ff;
-    }
-
-    .category.active {
-      background: var(--primary);
-      color: white;
-      box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
-    }
-
-    .join-class-btn {
-      background: #e63946;
-      color: white;
-    }
-
-    .join-class-btn:hover {
-      background: #d62839;
-    }
-
-    /* Course Container */
-    .main-container {
-      padding: 20px;
-    }
-
-    .course-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 25px;
-      margin-top: 20px;
-    }
-
-    /* Course Card */
-    .course-card {
-      background: white;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: var(--card-shadow);
-      position: relative;
-    }
-
-    .course-card:hover {
-      transform: translateY(-10px);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-    }
-
-    .course-header {
-      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 15px;
-      color: white;
-    }
-
-    .course-logo {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary);
-      font-weight: 700;
-      font-size: 1.2rem;
-    }
-
-    .course-platform {
-      font-weight: 600;
-      font-size: 1rem;
-    }
-
-    .badge-new {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: var(--warning);
-      color: var(--dark);
-      font-size: 0.8rem;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-      z-index: 2;
-    }
-
-    .course-thumbnail {
-      position: relative;
-      height: 180px;
-      overflow: hidden;
-      background-size: cover;
-      background-position: center;
-    }
-
-    .course-thumbnail::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5));
-    }
-
-    .course-title-overlay {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      padding: 15px;
-      color: white;
-      font-weight: 600;
-      font-size: 1.2rem;
-      z-index: 1;
-    }
-
-    .course-content {
-      padding: 20px;
-    }
-
-    .course-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.9rem;
-      color: #666;
-      margin-bottom: 15px;
-    }
-
-    .course-instructor {
-      display: flex;
-      align-items: center;
-    }
-
-    .instructor-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: linear-gradient(45deg, var(--accent), var(--primary));
-      margin-right: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 0.7rem;
-    }
-
-    .rating {
-      display: flex;
-      align-items: center;
-    }
-
-    .rating i {
-      color: var(--warning);
-      font-size: 0.9rem;
-      margin-right: 3px;
-    }
-
-    .course-description {
-      margin-bottom: 20px;
-      color: #555;
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    .course-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 20px 20px;
-    }
-
-    .price-box {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .old-price {
-      text-decoration: line-through;
-      color: #999;
-      font-size: 0.9rem;
-    }
-
-    .new-price {
-      font-weight: 700;
-      font-size: 1.3rem;
-      color: var(--primary);
-    }
-
-    .enroll-btn {
-      background: linear-gradient(90deg, var(--success) 0%, #2e8b57 100%);
-      color: white;
-      border: none;
-      padding: 10px 25px;
-      font-weight: 600;
-      border-radius: 30px;
-      cursor: pointer;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .enroll-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-    }
-
-    .enroll-btn i {
-      margin-right: 8px;
-    }
-
-    /* Footer */
-    .footer {
-      background: var(--dark);
-      color: white;
-      padding: 40px 20px 20px;
-      margin-top: 50px;
-      border-top-left-radius: 30px;
-      border-top-right-radius: 30px;
-    }
-
-    .footer-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 30px;
-      margin-bottom: 30px;
-    }
-
-    .footer-column h3 {
-      font-size: 1.2rem;
-      margin-bottom: 20px;
-      position: relative;
-      padding-bottom: 10px;
-    }
-
-    .footer-column h3::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 50px;
-      height: 3px;
-      background: var(--accent);
-    }
-
-    .footer-links {
-      list-style: none;
-    }
-
-    .footer-links li {
-      margin-bottom: 12px;
-    }
-
-    .footer-links a {
-      color: #aaa;
-      text-decoration: none;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-    }
-
-    .footer-links a:hover {
-      color: white;
-      transform: translateX(5px);
-    }
-
-    .footer-links i {
-      margin-right: 10px;
-      width: 20px;
-    }
-
-    .social-icons {
-      display: flex;
-      gap: 15px;
-      margin-top: 20px;
-    }
-
-    .social-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 1.2rem;
-      transition: var(--transition);
-    }
-
-    .social-icon:hover {
-      transform: translateY(-3px);
-      background: var(--primary);
-    }
-
-    .copyright {
-      text-align: center;
-      padding-top: 20px;
-      border-top: 1px solid #444;
-      color: #888;
-      font-size: 0.9rem;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      .header {
-        padding: 15px;
-      }
-
-      .brand {
-        font-size: 1.5rem;
-      }
-
-      .search-container {
-        display: none;
-      }
-
-      .course-container {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      }
-
-      .auth-btn {
-        padding: 8px 15px;
-        font-size: 0.9rem;
-      }
-    }
-
-    @media (max-width: 576px) {
-      .header {
-        padding: 10px 15px;
-      }
-
-      .brand {
-        font-size: 1.4rem;
-      }
-
-      .auth-container {
-        gap: 8px;
-      }
-
-      .auth-btn {
-        padding: 8px 12px;
-        font-size: 0.8rem;
-      }
-    }
-
-    /* Animation for cards */
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .course-card {
-      animation: fadeInUp 0.5s ease-out;
-      animation-fill-mode: both;
-    }
-
-    .course-card:nth-child(1) { animation-delay: 0.1s; }
-    .course-card:nth-child(2) { animation-delay: 0.2s; }
-    .course-card:nth-child(3) { animation-delay: 0.3s; }
-    .course-card:nth-child(4) { animation-delay: 0.4s; }
-
-    /* Modern Login Modal Styles */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease;
-    }
-
-    .modal-overlay.active {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .login-container {
-      width: 100%;
-      max-width: 380px;
-      background: white;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 15px 50px rgba(0,0,0,0.2);
-      transform: scale(0.95);
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .modal-overlay.active .login-container {
-      transform: scale(1);
-    }
-
-    /* Login Panel Body */
-    .login-body {
-      padding: 30px;
-    }
-
-    /* Form Styles */
-    .form-group {
-      margin-bottom: 25px;
-      position: relative;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 10px;
-      font-weight: 500;
-      color: #555;
-      font-size: 0.95rem;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 14px 20px;
-      border: 1px solid rgba(0,0,0,0.1);
-      border-radius: 10px;
-      font-size: 15px;
-      transition: var(--transition);
-      background: white;
-    }
-
-    .form-group input:focus {
-      border-color: var(--primary);
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-    }
-
-    /* Submit Button */
-    .submit-btn {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(to right, var(--primary), var(--secondary));
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-top: 10px;
-      box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .submit-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
-    }
-
-    /* Close Button */
-    .close-btn {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: rgba(255,255,255,0.2);
-      border: none;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      font-size: 1rem;
-      color: var(--dark);
-      cursor: pointer;
-      z-index: 10;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .close-btn:hover {
-      background: rgba(0,0,0,0.1);
-      transform: rotate(90deg);
-    }
-
-    /* Ripple Effect */
-    .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background-color: rgba(255, 255, 255, 0.7);
-      transform: scale(0);
-      animation: ripple-animation 0.6s linear;
-      pointer-events: none;
-    }
-
-    @keyframes ripple-animation {
-      to {
-        transform: scale(4);
-        opacity: 0;
-      }
-    }
-
-    /* Tab buttons in modal */
-    .auth-tabs {
-      display: flex;
-      border-bottom: 1px solid #eee;
-      margin-bottom: 20px;
-    }
-
-    .auth-tab {
-      flex: 1;
-      text-align: center;
-      padding: 15px;
-      cursor: pointer;
-      font-weight: 600;
-      color: #666;
-      transition: var(--transition);
-    }
-
-    .auth-tab.active {
-      color: var(--primary);
-      border-bottom: 3px solid var(--primary);
-    }
-
-    /* Hidden class */
-    .hidden {
-      display: none;
-    }
-
-    /* Forgot password link */
-    .forgot-password {
-      text-align: center;
-      margin-top: 15px;
-    }
-
-    .forgot-password a {
-      color: var(--primary);
-      text-decoration: none;
-      font-size: 0.9rem;
-      transition: var(--transition);
-    }
-
-    .forgot-password a:hover {
-      text-decoration: underline;
-    }
-
-    /* Admin panel link */
-    .admin-link {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 15px;
-    }
-
-    .admin-link a {
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 0.9rem;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .admin-link a:hover {
-      text-decoration: underline;
-    }
-
-    /* Admin login modal */
-    .admin-login-container {
-      width: 100%;
-      max-width: 380px;
-      background: white;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 15px 50px rgba(0,0,0,0.2);
-      transform: scale(0.95);
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .modal-overlay.active .admin-login-container {
-      transform: scale(1);
-    }
-
-    .admin-login-body {
-      padding: 30px;
-    }
-
-    .admin-login-title {
-      text-align: center;
-      margin-bottom: 20px;
-      color: var(--primary);
-      font-weight: 600;
-    }
-
-    /* Admin credentials note */
-    .admin-note {
-      font-size: 0.8rem;
-      color: #666;
-      text-align: center;
-      margin-top: 15px;
-    }
-
-    /* Loading spinner */
-    .spinner {
-      display: none;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      border-top-color: white;
-      animation: spin 1s ease-in-out infinite;
-      margin-left: 10px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://openfpcdn.io/fingerprintjs/v4"></script>
-
-<script>
-  // Your Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyCvxuIDHuT9BPGVD9ZfrF2MrN7FECIxN70",
-    authDomain: "dilshad-almm.firebaseapp.com",
-    projectId: "dilshad-almm",
-    storageBucket: "dilshad-almm.firebasestorage.app",
-    messagingSenderId: "559661476201",
-    appId: "1:559661476201:web:bbc65b8a7b74121d91f5f8"
-  };
-
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-
-  // Initialize FingerprintJS
-  let currentDeviceId = null;
-  (async () => {
-      try {
-          const fp = await FingerprintJS.load();
-          const result = await fp.get();
-          currentDeviceId = result.visitorId;
-          console.log("Current Device ID:", currentDeviceId);
-      } catch (error) {
-          console.error("Error loading FingerprintJS:", error);
-          currentDeviceId = 'fallback_device_id_' + Math.random().toString(36).substr(2, 9);
-      }
-  })();
-</script>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>TutorUps - Student Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4CAF50;
+            --warning: #ffb703;
+            --danger: #e63946;
+            --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4f0f1 100%);
+            min-height: 100vh; /* Ensure body takes full height */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Basic Header Styling */
+        header {
+            background-color: var(--primary);
+            color: var(--light);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--card-shadow);
+        }
+
+        header .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        header nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        header nav a {
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        header nav a:hover {
+            color: var(--accent);
+        }
+
+        .student-name-container {
+            background-color: var(--light);
+            color: var(--dark);
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .student-name-container i {
+            color: var(--primary);
+        }
+
+        /* Main Content Area */
+        main {
+            flex-grow: 1; /* Allows main content to expand and fill available space */
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        section {
+            background-color: var(--light);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .video-container {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .video-container:hover {
+            transform: translateY(-5px);
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: 180px; /* YouTube thumbnail aspect ratio */
+            background-color: #ccc; /* Placeholder background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #666;
+            overflow: hidden; /* Ensure content doesn't spill */
+        }
+        /* For actual YouTube embeds */
+        .video-thumbnail iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-description-box {
+            padding: 1rem;
+            background-color: var(--light);
+            color: var(--dark);
+        }
+
+        .video-description-box h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .video-description-box p {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #555;
+        }
+        
+        /* Footer Styling */
+        footer {
+            background-color: var(--dark);
+            color: var(--light);
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 2rem; /* Add some space above footer */
+        }
+    </style>
 </head>
 <body>
-<!-- Your HTML content remains the same until the script section -->
-<script>
-    // DOM Elements
-    const loginModal = document.getElementById('loginModal');
-    const adminLoginModal = document.getElementById('adminLoginModal');
-    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
-    const adminForgotPasswordModal = document.getElementById('adminForgotPasswordModal');
-    const closeModal = document.getElementById('closeModal');
-    const closeAdminModal = document.getElementById('closeAdminModal');
-    const closeForgotModal = document.getElementById('closeForgotModal');
-    const closeAdminForgotModal = document.getElementById('closeAdminForgotModal');
-    const enrollButtons = document.querySelectorAll('.enroll-btn');
-    const headerLoginBtn = document.getElementById('headerLoginBtn');
-    const adminLoginLink = document.getElementById('adminLoginLink');
-    const authTabs = document.getElementById('authTabs');
-    const loginTab = document.getElementById('loginTab');
-    const registerTab = document.getElementById('registerTab');
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-    const forgotPassword = document.getElementById('forgotPassword');
-    const backToLogin = document.getElementById('backToLogin');
-    const adminForgotPassword = document.getElementById('adminForgotPassword');
-    const backToAdminLogin = document.getElementById('backToAdminLogin');
+    <header>
+        <div class="logo">TutorUps</div>
+        <nav>
+            <ul>
+                <li><a href="#recorded-lectures">RECORDED LECTURES</a></li>
+                <li><a href="#modules">MODULES</a></li>
+                <li><a href="#routine">ROUTINE</a></li>
+                <li><a href="#doubt">DOUBT</a></li>
+            </ul>
+        </nav>
+        <div class="student-name-container">
+            <i class="fas fa-user-circle"></i>
+            <span id="studentName">Student Name</span> <button id="logoutBtn" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 1.2rem; margin-left: 0.5rem;"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </header>
 
-    // Create spinner element for buttons
-    function createSpinner() {
-      const spinner = document.createElement('div');
-      spinner.className = 'spinner';
-      return spinner;
-    }
+    <main>
+        <section id="featured-content-section">
+            <h2>Featured Content</h2>
+            <div class="video-grid">
+                <div class="video-container">
+                    <div class="video-thumbnail">
+                        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                    <div class="video-description-box">
+                        <h3>Welcome to TutorUps!</h3>
+                        <p>An introductory lecture to help you get started with the platform and your courses.</p>
+                    </div>
+                </div>
+                <div class="video-container">
+                    <div class="video-thumbnail">
+                        <iframe src="https://www.youtube.com/embed/your_video_id_2" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                    <div class="video-description-box">
+                        <h3>Quick Study Tips</h3>
+                        <p>Learn effective study techniques to boost your performance.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    // Function to create ripple effect
-    function createRipple(event) {
-      const button = event.currentTarget;
-      const circle = document.createElement("span");
-      const diameter = Math.max(button.clientWidth, button.clientHeight);
-      const radius = diameter / 2;
+        <section id="recorded-lectures">
+            <h2>RECORDED LECTURES</h2>
+            <div class="video-grid">
+                <div class="video-container">
+                    <div class="video-thumbnail">
+                        <iframe src="https://www.youtube.com/embed/your_video_id_3" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                    <div class="video-description-box">
+                        <h3>Algebra Basics - Part 1</h3>
+                        <p>Fundamental concepts of algebra for beginners.</p>
+                    </div>
+                </div>
+                <div class="video-container">
+                    <div class="video-thumbnail">
+                        <iframe src="https://www.youtube.com/embed/your_video_id_4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                    <div class="video-description-box">
+                        <h3>Physics: Newton's Laws</h3>
+                        <p>Detailed explanation of Newton's Laws of Motion.</p>
+                    </div>
+                </div>
+                </div>
+        </section>
 
-      circle.style.width = circle.style.height = `${diameter}px`;
-      circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
-      circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
-      circle.classList.add("ripple");
+        <section id="modules">
+            <h2>MODULES</h2>
+            <div class="video-grid">
+                <div class="video-container">
+                    <div class="video-thumbnail">
+                        <iframe src="https://www.youtube.com/embed/your_video_id_5" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                    <div class="video-description-box">
+                        <h3>Module 1: Introduction to Calculus</h3>
+                        <p>First module covering limits and derivatives.</p>
+                    </div>
+                </div>
+                </div>
+        </section>
 
-      const ripple = button.getElementsByClassName("ripple")[0];
-      if (ripple) {
-        ripple.remove();
-      }
+        <section id="routine">
+            <h2>ROUTINE</h2>
+            <div class="video-grid">
+                <div class="video-container">
+                    <div class="video-thumbnail">
+                        <iframe src="https://www.youtube.com/embed/your_video_id_6" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                    <div class="video-description-box">
+                        <h3>Your Weekly Study Routine</h3>
+                        <p>A guide on how to plan your study schedule effectively.</p>
+                    </div>
+                </div>
+                </div>
+        </section>
 
-      button.appendChild(circle);
-    }
+        <section id="doubt">
+            <h2>DOUBT</h2>
+            <div class="video-grid">
+                <div class="video-container">
+                    <div class="video-thumbnail">
+                        <iframe src="https://www.youtube.com/embed/your_video_id_7" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                    <div class="video-description-box">
+                        <h3>Solving Quadratic Equations</h3>
+                        <p>Addressing common doubts in quadratic equations.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    // Add ripple effect to buttons
-    const buttons = document.querySelectorAll('.auth-btn, .enroll-btn, .submit-btn');
-    buttons.forEach(button => {
-      button.addEventListener('click', createRipple);
-    });
+    </main>
 
-    // Open modal when enroll button is clicked (shows both login and register)
-    enrollButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // When opened via enroll, show both tabs
-        authTabs.classList.remove('hidden');
-        forgotPasswordLink.classList.remove('hidden');
-        loginTab.classList.add('active');
-        registerTab.classList.remove('active');
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
-        loginModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-      });
-    });
+    <footer>
+        <p>&copy; 2025 TutorUps. All rights reserved.</p>
+    </footer>
 
-    // Open modal when header login button is clicked (shows both login and register)
-    headerLoginBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      authTabs.classList.remove('hidden');
-      forgotPasswordLink.classList.remove('hidden');
-      loginTab.classList.add('active');
-      registerTab.classList.remove('active');
-      loginForm.classList.remove('hidden');
-      registerForm.classList.add('hidden');
-      loginModal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    });
+    <script type="module">
+        // Import Firebase SDKs (same as your main page)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js";
 
-    // Open admin login modal
-    adminLoginLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      adminLoginModal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    });
+        // Your web app's Firebase configuration (copy from your index.html)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvxuIDHuT9BPGVD9ZfrF2MrN7FECIxN70",
+            authDomain: "dilshad-almm.firebaseapp.com",
+            projectId: "dilshad-almm",
+            storageBucket: "dilshad-almm.firebasestorage.app",
+            messagingSenderId: "559661476201",
+            appId: "1:559661476201:web:bbc65b8a7b74121d91f5f8"
+        };
 
-    // Open forgot password modal
-    forgotPassword.addEventListener('click', (e) => {
-      e.preventDefault();
-      loginModal.classList.remove('active');
-      forgotPasswordModal.classList.add('active');
-    });
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-    // Open admin forgot password modal
-    adminForgotPassword.addEventListener('click', (e) => {
-      e.preventDefault();
-      adminLoginModal.classList.remove('active');
-      adminForgotPasswordModal.classList.add('active');
-    });
+        // DOM Elements for Dashboard
+        const studentNameSpan = document.getElementById('studentName');
+        const logoutBtn = document.getElementById('logoutBtn');
 
-    // Back to login from forgot password
-    backToLogin.addEventListener('click', (e) => {
-      e.preventDefault();
-      forgotPasswordModal.classList.remove('active');
-      loginModal.classList.add('active');
-    });
+        // Check authentication state
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // User is signed in
+                console.log("User is signed in:", user.email);
+                studentNameSpan.textContent = user.email; // Default to email if name not found
 
-    // Back to admin login from admin forgot password
-    backToAdminLogin.addEventListener('click', (e) => {
-      e.preventDefault();
-      adminForgotPasswordModal.classList.remove('active');
-      adminLoginModal.classList.add('active');
-    });
+                // Try to get the user's name from Firestore 'users' collection
+                try {
+                    const userDocRef = doc(db, 'users', user.uid); // Assuming you saved user data with UID as doc ID
+                    const userDocSnap = await getDoc(userDocRef);
 
-    // Close modals
-    closeModal.addEventListener('click', (e) => {
-      e.stopPropagation();
-      loginModal.classList.remove('active');
-      document.body.style.overflow = 'auto';
-    });
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        if (userData.fullName) {
+                            studentNameSpan.textContent = userData.fullName; // Display full name if available
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error fetching user data from Firestore:", error);
+                    // Continue even if name fetch fails, use email as fallback
+                }
 
-    closeAdminModal.addEventListener('click', (e) => {
-      e.stopPropagation();
-      adminLoginModal.classList.remove('active');
-      document.body.style.overflow = 'auto';
-    });
-
-    closeForgotModal.addEventListener('click', (e) => {
-      e.stopPropagation();
-      forgotPasswordModal.classList.remove('active');
-      document.body.style.overflow = 'auto';
-    });
-
-    closeAdminForgotModal.addEventListener('click', (e) => {
-      e.stopPropagation();
-      adminForgotPasswordModal.classList.remove('active');
-      document.body.style.overflow = 'auto';
-    });
-
-    // Close modals when clicking outside
-    loginModal.addEventListener('click', (e) => {
-      if (e.target === loginModal) {
-        loginModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      }
-    });
-
-    adminLoginModal.addEventListener('click', (e) => {
-      if (e.target === adminLoginModal) {
-        adminLoginModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      }
-    });
-
-    forgotPasswordModal.addEventListener('click', (e) => {
-      if (e.target === forgotPasswordModal) {
-        forgotPasswordModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      }
-    });
-
-    adminForgotPasswordModal.addEventListener('click', (e) => {
-      if (e.target === adminForgotPasswordModal) {
-        adminForgotPasswordModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      }
-    });
-
-    // Switch between login and register tabs
-    loginTab.addEventListener('click', () => {
-        loginTab.classList.add('active');
-        registerTab.classList.remove('active');
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
-        forgotPasswordLink.classList.remove('hidden');
-    });
-
-    registerTab.addEventListener('click', () => {
-        registerTab.classList.add('active');
-        loginTab.classList.remove('active');
-        registerForm.classList.remove('hidden');
-        loginForm.classList.add('hidden');
-        forgotPasswordLink.classList.add('hidden');
-    });
-
-    // Improved error handling function
-    function getAuthErrorMessage(error) {
-      switch (error.code) {
-        case 'auth/invalid-email':
-          return 'Invalid email address format.';
-        case 'auth/user-disabled':
-          return 'This account has been disabled.';
-        case 'auth/user-not-found':
-          return 'No account found with this email.';
-        case 'auth/wrong-password':
-          return 'Incorrect password.';
-        case 'auth/email-already-in-use':
-          return 'This email is already registered.';
-        case 'auth/operation-not-allowed':
-          return 'Email/password accounts are not enabled.';
-        case 'auth/weak-password':
-          return 'Password should be at least 6 characters.';
-        case 'auth/too-many-requests':
-          return 'Too many attempts. Try again later.';
-        case 'auth/requires-recent-login':
-          return 'Please log in again to perform this action.';
-        default:
-          return error.message || 'An unknown error occurred.';
-      }
-    }
-
-    // Form submission handler for login
-    document.getElementById('loginBtn').addEventListener('click', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const loginBtn = document.getElementById('loginBtn');
-
-      if (!email || !password) {
-        alert('Please fill in all fields');
-        return;
-      }
-
-      // Show loading state
-      loginBtn.disabled = true;
-      const spinner = createSpinner();
-      loginBtn.appendChild(spinner);
-      spinner.style.display = 'inline-block';
-
-      try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-
-        // Check user access in Firestore
-        const userDoc = await db.collection('users').doc(email).get();
-        
-        if (!userDoc.exists) {
-          throw new Error('User record not found in database.');
-        }
-
-        const userData = userDoc.data();
-        
-        if (!userData.access) {
-          await auth.signOut();
-          throw new Error('Your account is pending approval. Please contact support.');
-        }
-
-        // Ensure device ID is available
-        if (!currentDeviceId) {
-          currentDeviceId = 'fallback_device_id_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        // Check for existing device ID
-        if (userData.activeDeviceId && userData.activeDeviceId !== currentDeviceId) {
-          await auth.signOut();
-          throw new Error('You have been logged out. Another login detected from a different device.');
-        }
-
-        // Update device ID in Firestore
-        await db.collection('users').doc(email).update({
-          activeDeviceId: currentDeviceId,
-          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            } else {
+                // No user is signed in. Redirect to login page.
+                console.log("No user signed in. Redirecting to login page.");
+                window.location.href = 'index.html'; // Adjust this to your login page URL
+            }
         });
 
-        // Success - close modal and update UI
-        alert('Login successful! Welcome back.');
-        loginModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-        
-        // Update UI to show logged in state
-        headerLoginBtn.innerHTML = `<i class="fas fa-user"></i> MY ACCOUNT`;
-        headerLoginBtn.classList.add('logged-in');
-
-      } catch (error) {
-        alert('Login error: ' + getAuthErrorMessage(error));
-        console.error('Login error:', error);
-      } finally {
-        // Reset button state
-        loginBtn.disabled = false;
-        const spinner = loginBtn.querySelector('.spinner');
-        if (spinner) spinner.remove();
-      }
-    });
-
-    // Form submission handler for register
-    document.getElementById('registerBtn').addEventListener('click', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('regName').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value;
-      const confirmPassword = document.getElementById('regConfirmPassword').value;
-      const registerBtn = document.getElementById('registerBtn');
-
-      if (!name || !email || !password || !confirmPassword) {
-        alert('Please fill in all fields.');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        alert('Passwords do not match.');
-        return;
-      }
-
-      if (password.length < 6) {
-        alert('Password should be at least 6 characters.');
-        return;
-      }
-
-      // Show loading state
-      registerBtn.disabled = true;
-      const spinner = createSpinner();
-      registerBtn.appendChild(spinner);
-      spinner.style.display = 'inline-block';
-
-      try {
-        // Create user in Firebase Auth
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-
-        // Create user document in Firestore
-        await db.collection('users').doc(email).set({
-          fullName: name,
-          email: email,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          access: false, // Needs admin approval
-          isAdmin: false,
-          activeDeviceId: null,
-          coursesEnrolled: []
+        // Logout functionality
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                alert("Logged out successfully!");
+                window.location.href = 'index.html'; // Redirect to login page after logout
+            } catch (error) {
+                console.error("Logout error:", error);
+                alert("Logout failed: " + error.message);
+            }
         });
 
-        // Send email verification (optional)
-        await user.sendEmailVerification();
-
-        alert(`Registration successful! Your account is pending approval. You'll receive an email when approved.`);
-        
-        // Switch to login tab after successful registration
-        registerTab.classList.remove('active');
-        loginTab.classList.add('active');
-        registerForm.classList.add('hidden');
-        loginForm.classList.remove('hidden');
-        forgotPasswordLink.classList.remove('hidden');
-
-        // Clear registration form
-        document.getElementById('regName').value = '';
-        document.getElementById('regEmail').value = '';
-        document.getElementById('regPassword').value = '';
-        document.getElementById('regConfirmPassword').value = '';
-
-      } catch (error) {
-        alert('Registration error: ' + getAuthErrorMessage(error));
-        console.error('Registration error:', error);
-      } finally {
-        // Reset button state
-        registerBtn.disabled = false;
-        const spinner = registerBtn.querySelector('.spinner');
-        if (spinner) spinner.remove();
-      }
-    });
-
-    // Form submission handler for admin login
-    document.getElementById('adminLoginBtn').addEventListener('click', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('adminEmail').value.trim();
-      const password = document.getElementById('adminPassword').value;
-      const adminLoginBtn = document.getElementById('adminLoginBtn');
-
-      if (!email || !password) {
-        alert('Please fill in all fields');
-        return;
-      }
-
-      // Show loading state
-      adminLoginBtn.disabled = true;
-      const spinner = createSpinner();
-      adminLoginBtn.appendChild(spinner);
-      spinner.style.display = 'inline-block';
-
-      try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        
-        // Check if user is admin in Firestore
-        const userDoc = await db.collection('users').doc(email).get();
-        
-        if (!userDoc.exists || !userDoc.data().isAdmin) {
-          await auth.signOut();
-          throw new Error('You do not have admin privileges.');
-        }
-
-        alert('Admin login successful! Redirecting to admin panel...');
-        adminLoginModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-        
-        // In a real app, you would redirect to admin panel here
-        // window.location.href = '/admin';
-
-      } catch (error) {
-        alert('Admin login error: ' + getAuthErrorMessage(error));
-        console.error('Admin login error:', error);
-      } finally {
-        // Reset button state
-        adminLoginBtn.disabled = false;
-        const spinner = adminLoginBtn.querySelector('.spinner');
-        if (spinner) spinner.remove();
-      }
-    });
-
-    // Form submission handler for forgot password (user)
-    document.getElementById('resetPasswordBtn').addEventListener('click', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('forgotEmail').value.trim();
-      const resetBtn = document.getElementById('resetPasswordBtn');
-
-      if (!email) {
-        alert('Please enter your email address.');
-        return;
-      }
-
-      // Show loading state
-      resetBtn.disabled = true;
-      const spinner = createSpinner();
-      resetBtn.appendChild(spinner);
-      spinner.style.display = 'inline-block';
-
-      try {
-        await auth.sendPasswordResetEmail(email);
-        alert(`Password reset link sent to ${email}. Please check your inbox.`);
-        forgotPasswordModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      } catch (error) {
-        alert('Password reset error: ' + getAuthErrorMessage(error));
-        console.error('Password reset error:', error);
-      } finally {
-        // Reset button state
-        resetBtn.disabled = false;
-        const spinner = resetBtn.querySelector('.spinner');
-        if (spinner) spinner.remove();
-      }
-    });
-
-    // Form submission handler for admin forgot password
-    document.getElementById('adminResetPasswordBtn').addEventListener('click', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('adminForgotEmail').value.trim();
-      const adminResetBtn = document.getElementById('adminResetPasswordBtn');
-
-      if (!email) {
-        alert('Please enter admin email address.');
-        return;
-      }
-
-      // Show loading state
-      adminResetBtn.disabled = true;
-      const spinner = createSpinner();
-      adminResetBtn.appendChild(spinner);
-      spinner.style.display = 'inline-block';
-
-      try {
-        // First check if email is registered as admin
-        const userDoc = await db.collection('users').doc(email).get();
-        
-        if (!userDoc.exists || !userDoc.data().isAdmin) {
-          throw new Error('This email is not registered as admin.');
-        }
-
-        await auth.sendPasswordResetEmail(email);
-        alert(`Admin password reset link sent to ${email}. Please check your inbox.`);
-        adminForgotPasswordModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      } catch (error) {
-        alert('Admin password reset error: ' + getAuthErrorMessage(error));
-        console.error('Admin password reset error:', error);
-      } finally {
-        // Reset button state
-        adminResetBtn.disabled = false;
-        const spinner = adminResetBtn.querySelector('.spinner');
-        if (spinner) spinner.remove();
-      }
-    });
-
-    // Initialize admin account (run once to create admin)
-    async function initializeAdminAccount() {
-      const adminEmail = "admintutorups@gmail.com";
-      const adminPassword = "admin@tutorups@778220";
-      
-      try {
-        // Check if admin already exists
-        const adminDoc = await db.collection('users').doc(adminEmail).get();
-        
-        if (!adminDoc.exists) {
-          // Create admin user
-          const userCredential = await auth.createUserWithEmailAndPassword(adminEmail, adminPassword);
-          
-          // Create admin document in Firestore
-          await db.collection('users').doc(adminEmail).set({
-            fullName: "Admin TutorUps",
-            email: adminEmail,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            access: true,
-            isAdmin: true,
-            activeDeviceId: null
-          });
-          
-          console.log("Admin account created successfully");
-        }
-      } catch (error) {
-        console.error("Error initializing admin account:", error);
-      }
-    }
-
-    // Uncomment to run once to create admin account
-    // initializeAdminAccount();
-  </script>
+        // You will also need to handle the redirection from index.html to dashboard.html upon successful login.
+        // In your index.html's loginBtn handler, after 'Login successful!' alert, add:
+        // window.location.href = 'dashboard.html';
+    </script>
 </body>
 </html>
