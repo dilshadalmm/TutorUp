@@ -1,31 +1,1479 @@
-// Form submission handler for admin login
-document.getElementById('adminLoginBtn').addEventListener('click', async (e) => {
-  e.stopPropagation();
-  const email = document.getElementById('adminEmail').value.trim();
-  const password = document.getElementById('adminPassword').value;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TutorUps - Modern E-Learning Platform</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+    :root {
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --accent: #4cc9f0;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --success: #4CAF50;
+      --warning: #ffb703;
+      --danger: #e63946;
+      --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      --transition: all 0.3s ease;
+    }
 
-  if (!email || !password) {
-    alert('Please fill in all fields');
-    return;
-  }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-  try {
-    const userCredential = await auth.signInWithEmailAndPassword(email, password);
-    const user = userCredential.user;
-    
-    // Check if user is admin in Firestore
-    const userDoc = await db.collection('users').doc(email).get();
-    
-    if (userDoc.exists && userDoc.data().isAdmin) {
-      alert('Admin login successful! Redirecting to admin panel...');
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Header Styles */
+    .header {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      display: flex;
+      align-items: center;
+      padding: 15px 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 70px;
+    }
+
+    /* Search Box */
+    .search-container {
+      flex: 1;
+      margin: 0 20px;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 10px 15px 10px 40px;
+      border-radius: 30px;
+      border: none;
+      font-size: 0.9rem;
+      transition: var(--transition);
+      background: rgba(255,255,255,0.9);
+    }
+
+    .search-box:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+      background: white;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #666;
+    }
+
+    /* Auth Buttons Container */
+    .auth-container {
+      display: flex;
+      gap: 15px;
+      margin-left: auto;
+      align-items: center;
+    }
+
+    .auth-btn {
+      padding: 10px 25px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      height: 45px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-btn {
+      background: white;
+      color: var(--primary);
+    }
+
+    .auth-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .auth-btn i {
+      font-size: 0.9rem;
+    }
+
+    /* Brand Logo */
+    .brand {
+      color: white;
+      font-size: 1.8rem;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      height: 45px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Category Buttons */
+    .category-section {
+      padding: 20px 20px 10px;
+      background: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: var(--secondary);
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+    }
+
+    .section-title i {
+      margin-right: 10px;
+    }
+
+    .category-buttons {
+      display: flex;
+      overflow-x: auto;
+      gap: 12px;
+      padding-bottom: 5px;
+      scrollbar-width: thin;
+    }
+
+    .category-buttons::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .category-buttons::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    .category-buttons::-webkit-scrollbar-thumb {
+      background: #c5c5c5;
+      border-radius: 10px;
+    }
+
+    .category {
+      padding: 10px 20px;
+      border-radius: 30px;
+      border: none;
+      font-weight: 500;
+      background: #edf2ff;
+      color: var(--primary);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+      min-width: max-content;
+    }
+
+    .category i {
+      margin-right: 8px;
+      font-size: 0.9rem;
+    }
+
+    .category:hover {
+      background: #dbe4ff;
+    }
+
+    .category.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+    }
+
+    .join-class-btn {
+      background: #e63946;
+      color: white;
+    }
+
+    .join-class-btn:hover {
+      background: #d62839;
+    }
+
+    /* Course Container */
+    .main-container {
+      padding: 20px;
+    }
+
+    .course-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 25px;
+      margin-top: 20px;
+    }
+
+    /* Course Card */
+    .course-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      position: relative;
+    }
+
+    .course-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .course-header {
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px;
+      color: white;
+    }
+
+    .course-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    .course-platform {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .badge-new {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: var(--warning);
+      color: var(--dark);
+      font-size: 0.8rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      z-index: 2;
+    }
+
+    .course-thumbnail {
+      position: relative;
+      height: 180px;
+      overflow: hidden;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .course-thumbnail::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5));
+    }
+
+    .course-title-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 15px;
+      color: white;
+      font-weight: 600;
+      font-size: 1.2rem;
+      z-index: 1;
+    }
+
+    .course-content {
+      padding: 20px;
+    }
+
+    .course-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    .course-instructor {
+      display: flex;
+      align-items: center;
+    }
+
+    .instructor-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, var(--accent), var(--primary));
+      margin-right: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.7rem;
+    }
+
+    .rating {
+      display: flex;
+      align-items: center;
+    }
+
+    .rating i {
+      color: var(--warning);
+      font-size: 0.9rem;
+      margin-right: 3px;
+    }
+
+    .course-description {
+      margin-bottom: 20px;
+      color: #555;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .course-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px 20px;
+    }
+
+    .price-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .old-price {
+      text-decoration: line-through;
+      color: #999;
+      font-size: 0.9rem;
+    }
+
+    .new-price {
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--primary);
+    }
+
+    .enroll-btn {
+      background: linear-gradient(90deg, var(--success) 0%, #2e8b57 100%);
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      font-weight: 600;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .enroll-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    }
+
+    .enroll-btn i {
+      margin-right: 8px;
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--dark);
+      color: white;
+      padding: 40px 20px 20px;
+      margin-top: 50px;
+      border-top-left-radius: 30px;
+      border-top-right-radius: 30px;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .footer-column h3 {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      position: relative;
+      padding-bottom: 10px;
+    }
+
+    .footer-column h3::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 50px;
+      height: 3px;
+      background: var(--accent);
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: #aaa;
+      text-decoration: none;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+    }
+
+    .footer-links a:hover {
+      color: white;
+      transform: translateX(5px);
+    }
+
+    .footer-links i {
+      margin-right: 10px;
+      width: 20px;
+    }
+
+    .social-icons {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .social-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+      transition: var(--transition);
+    }
+
+    .social-icon:hover {
+      transform: translateY(-3px);
+      background: var(--primary);
+    }
+
+    .copyright {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #444;
+      color: #888;
+      font-size: 0.9rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .header {
+        padding: 15px;
+      }
+
+      .brand {
+        font-size: 1.5rem;
+      }
+
+      .search-container {
+        display: none;
+      }
+
+      .course-container {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      }
+
+      .auth-btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .header {
+        padding: 10px 15px;
+      }
+
+      .brand {
+        font-size: 1.4rem;
+      }
+
+      .auth-container {
+        gap: 8px;
+      }
+
+      .auth-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+      }
+    }
+
+    /* Animation for cards */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .course-card {
+      animation: fadeInUp 0.5s ease-out;
+      animation-fill-mode: both;
+    }
+
+    .course-card:nth-child(1) { animation-delay: 0.1s; }
+    .course-card:nth-child(2) { animation-delay: 0.2s; }
+    .course-card:nth-child(3) { animation-delay: 0.3s; }
+    .course-card:nth-child(4) { animation-delay: 0.4s; }
+
+    /* Modern Login Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 380px;
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-overlay.active .login-container {
+      transform: scale(1);
+    }
+
+    /* Login Panel Body */
+    .login-body {
+      padding: 30px;
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 25px;
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 20px;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 10px;
+      font-size: 15px;
+      transition: var(--transition);
+      background: white;
+    }
+
+    .form-group input:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+    }
+
+    /* Close Button */
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 1rem;
+      color: var(--dark);
+      cursor: pointer;
+      z-index: 10;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-btn:hover {
+      background: rgba(0,0,0,0.1);
+      transform: rotate(90deg);
+    }
+
+    /* Ripple Effect */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.7);
+      transform: scale(0);
+      animation: ripple-animation 0.6s linear;
+      pointer-events: none;
+    }
+
+    @keyframes ripple-animation {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* Tab buttons in modal */
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 20px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 15px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      transition: var(--transition);
+    }
+
+    .auth-tab.active {
+      color: var(--primary);
+      border-bottom: 3px solid var(--primary);
+    }
+
+    /* Hidden class */
+    .hidden {
+      display: none;
+    }
+
+    /* Forgot password link */
+    .forgot-password {
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .forgot-password a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+
+    .forgot-password a:hover {
+      text-decoration: underline;
+    }
+
+    /* Admin panel link */
+    .admin-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    .admin-link a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .admin-link a:hover {
+      text-decoration: underline;
+    }
+
+    /* Admin login modal */
+    .admin-login-container {
+      width: 100%;
+      max-width: 380px;
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .modal-overlay.active .admin-login-container {
+      transform: scale(1);
+    }
+
+    .admin-login-body {
+      padding: 30px;
+    }
+
+    .admin-login-title {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Admin credentials note */
+    .admin-note {
+      font-size: 0.8rem;
+      color: #666;
+      text-align: center;
+      margin-top: 15px;
+    }
+  </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://openfpcdn.io/fingerprintjs/v4"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCvxuIDHuT9BPGVD9ZfrF2MrN7FECIxN70",
+    authDomain: "dilshad-almm.firebaseapp.com",
+    projectId: "dilshad-almm",
+    storageBucket: "dilshad-almm.firebasestorage.app",
+    messagingSenderId: "559661476201",
+    appId: "1:559661476201:web:bbc65b8a7b74121d91f5f8"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+</script>
+
+
+</head>
+<body>
+<header class="header">
+<div class="brand">TutorUps</div>
+<div class="search-container">
+<i class="fas fa-search search-icon"></i>
+<input class="search-box" placeholder="Search courses, subjects, or instructors..." type="text"/>
+</div>
+<div class="auth-container">
+<button class="auth-btn login-btn" id="headerLoginBtn">
+<i class="fas fa-sign-in-alt"></i> LOGIN || REGISTER
+      </button>
+</div>
+</header>
+<section class="category-section">
+<h2 class="section-title"><i class="fas fa-layer-group"></i> Browse Categories</h2>
+<div class="category-buttons">
+<button class="category join-class-btn"><i class="fas fa-video"></i> JOIN CLASS</button>
+<button class="category active"><i class="fas fa-graduation-cap"></i> SEE</button>
+<button class="category"><i class="fas fa-flask"></i> NEB SCIENCE</button>
+<button class="category"><i class="fas fa-bridge"></i> BRIDGE COURSE</button>
+<button class="category"><i class="fas fa-chart-line"></i> NEB COMMERCE</button>
+<button class="category"><i class="fas fa-landmark"></i> LOKSEWA</button>
+</div>
+</section>
+<main class="main-container">
+<h2 class="section-title"><i class="fas fa-fire"></i> Featured Courses</h2>
+<div class="course-container">
+<div class="course-card">
+<div class="badge-new">NEW</div>
+<div class="course-header">
+<div class="course-logo">TU</div>
+<h3 class="course-platform">TutorUps E-learning</h3>
+</div>
+<div class="course-thumbnail" style="background-image: url('see_preparation_thumbnail.jpg');">
+<div class="course-title-overlay">SEE Preparation Course</div>
+</div>
+<div class="course-content">
+<div class="course-meta">
+<div class="course-instructor">
+<div class="instructor-avatar">AP</div>
+<span>Dr. Anil Pandey</span>
+</div>
+<div class="rating">
+<i class="fas fa-star"></i>
+<span>4.8 (120)</span>
+</div>
+</div>
+<p class="course-description">
+            Comprehensive curriculum for SEE students covering all science subjects with practical labs and exam preparation strategies.
+          </p>
+</div>
+<div class="course-footer">
+<div class="price-box">
+<span class="old-price">Rs. 3000</span>
+<span class="new-price">Rs. 1599</span>
+</div>
+<button class="enroll-btn" data-modal-type="enroll"><i class="fas fa-shopping-cart"></i> ENROLL</button>
+</div>
+</div>
+<div class="course-card">
+<div class="badge-new">HOT</div>
+<div class="course-header">
+<div class="course-logo">TU</div>
+<h3 class="course-platform">TutorUps E-learning</h3>
+</div>
+<div class="course-thumbnail" style="background-image: url('neb_science_thumbnail.jpg');">
+<div class="course-title-overlay">NEB Science Program</div>
+</div>
+<div class="course-content">
+<div class="course-meta">
+<div class="course-instructor">
+<div class="instructor-avatar">RS</div>
+<span>Rajesh Sharma</span>
+</div>
+<div class="rating">
+<i class="fas fa-star"></i>
+<span>4.9 (95)</span>
+</div>
+</div>
+<p class="course-description">
+            Advanced physics, chemistry, and biology courses for NEB Science students with problem-solving techniques.
+          </p>
+</div>
+<div class="course-footer">
+<div class="price-box">
+<span class="old-price">Rs. 3500</span>
+<span class="new-price">Rs. 1999</span>
+</div>
+<button class="enroll-btn" data-modal-type="enroll"><i class="fas fa-shopping-cart"></i> ENROLL</button>
+</div>
+</div>
+<div class="course-card">
+<div class="course-header">
+<div class="course-logo">TU</div>
+<h3 class="course-platform">TutorUps E-learning</h3>
+</div>
+<div class="course-thumbnail" style="background-image: url('bridge_course_thumbnail.jpg');">
+<div class="course-title-overlay">Bridge Course</div>
+</div>
+<div class="course-content">
+<div class="course-meta">
+<div class="course-instructor">
+<div class="instructor-avatar">SP</div>
+<span>Sarita Poudel</span>
+</div>
+<div class="rating">
+<i class="fas fa-star"></i>
+<span>4.7 (86)</span>
+</div>
+</div>
+<p class="course-description">
+            Smooth transition from secondary to higher secondary education with foundational concepts in core science subjects.
+          </p>
+</div>
+<div class="course-footer">
+<div class="price-box">
+<span class="old-price">Rs. 2500</span>
+<span class="new-price">Rs. 1299</span>
+</div>
+<button class="enroll-btn" data-modal-type="enroll"><i class="fas fa-shopping-cart"></i> ENROLL</button>
+</div>
+</div>
+</div>
+</main>
+<footer class="footer">
+<div class="footer-content">
+<div class="footer-column">
+<h3>About TutorUps</h3>
+<p style="color: #bbb; margin-bottom: 20px;">Empowering students with quality education through innovative e-learning solutions.</p>
+<div class="social-icons">
+<a class="social-icon" href="https://www.facebook.com/share/14JkfUhmQXK/" target="_blank"><i class="fab fa-facebook-f"></i></a>
+<a class="social-icon" href="#"><i class="fab fa-twitter"></i></a>
+<a class="social-icon" href="#"><i class="fab fa-instagram"></i></a>
+<a class="social-icon" href="#"><i class="fab fa-linkedin-in"></i></a>
+</div>
+</div>
+<div class="footer-column">
+<h3>Quick Links</h3>
+<ul class="footer-links">
+<li><a href="#"><i class="fas fa-chevron-right"></i> Home</a></li>
+<li><a href="#"><i class="fas fa-chevron-right"></i> Courses</a></li>
+<li><a href="#"><i class="fas fa-chevron-right"></i> Instructors</a></li>
+<li><a href="#"><i class="fas fa-chevron-right"></i> Pricing</a></li>
+</ul>
+</div>
+<div class="footer-column">
+<h3>Popular Courses</h3>
+<ul class="footer-links">
+<li><a href="#"><i class="fas fa-chevron-right"></i> SEE Preparation</a></li>
+<li><a href="#"><i class="fas fa-chevron-right"></i> NEB Science</a></li>
+<li><a href="#"><i class="fas fa-chevron-right"></i> Bridge Course</a></li>
+<li><a href="#"><i class="fas fa-chevron-right"></i> NEB Commerce</a></li>
+</ul>
+</div>
+<div class="footer-column">
+<h3>Contact Us</h3>
+<ul class="footer-links">
+<li><i class="fas fa-user"></i> Dilshad Alam</li>
+<li><a href="tel:+9779823778220"><i class="fas fa-phone"></i> +977 9823778220</a></li>
+<li><a href="mailto:info@tutorups.com"><i class="fas fa-envelope"></i> info@tutorups.com</a></li>
+<li><a href="https://www.facebook.com/share/14JkfUhmQXK/" target="_blank"><i class="fab fa-facebook"></i> Facebook</a></li>
+<li class="admin-link">
+<a href="#" id="adminLoginLink">
+<i class="fas fa-lock"></i> Admin Panel Login
+            </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="copyright">
+      © 2023 TutorUps E-Learning Platform. All rights reserved.
+    </div>
+</footer>
+<div class="modal-overlay" id="loginModal">
+<div class="login-container">
+<button class="close-btn" id="closeModal">×</button>
+<div class="login-body">
+<div class="auth-tabs" id="authTabs">
+<div class="auth-tab active" id="loginTab">LOGIN</div>
+<div class="auth-tab" id="registerTab">REGISTER</div>
+</div>
+<div id="loginForm">
+<div class="form-group">
+<label for="email">Email Address</label>
+<input id="email" placeholder="Enter your email" type="email"/>
+</div>
+<div class="form-group">
+<label for="password">Password</label>
+<input id="password" placeholder="Enter your password" type="password"/>
+</div>
+<button class="submit-btn" id="loginBtn">LOGIN</button>
+<div class="forgot-password" id="forgotPasswordLink">
+<a href="#" id="forgotPassword">Forgot your password?</a>
+</div>
+</div>
+<div class="hidden" id="registerForm">
+<div class="form-group">
+<label for="regName">Full Name</label>
+<input id="regName" placeholder="Enter your full name" type="text"/>
+</div>
+<div class="form-group">
+<label for="regEmail">Email Address</label>
+<input id="regEmail" placeholder="Enter your email" type="email"/>
+</div>
+<div class="form-group">
+<label for="regPassword">Password</label>
+<input id="regPassword" placeholder="Create a password" type="password"/>
+</div>
+<div class="form-group">
+<label for="regConfirmPassword">Confirm Password</label>
+<input id="regConfirmPassword" placeholder="Confirm your password" type="password"/>
+</div>
+<button class="submit-btn" id="registerBtn">REGISTER</button>
+</div>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="adminLoginModal">
+<div class="admin-login-container">
+<button class="close-btn" id="closeAdminModal">×</button>
+<div class="admin-login-body">
+<h3 class="admin-login-title"><i class="fas fa-lock"></i> Admin Login</h3>
+<div class="form-group">
+<label for="adminEmail">Admin Email</label>
+<input id="adminEmail" placeholder="Enter admin email" type="email"/>
+</div>
+<div class="form-group">
+<label for="adminPassword">Password</label>
+<input id="adminPassword" placeholder="Enter password" type="password"/>
+</div>
+<button class="submit-btn" id="adminLoginBtn">LOGIN</button>
+<div class="forgot-password">
+<a href="#" id="adminForgotPassword">Forgot password?</a>
+</div>
+<div class="admin-note">
+          Demo credentials: admintutorups@gmail.com / admin@tutorups@778220
+        </div>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="forgotPasswordModal">
+<div class="login-container">
+<button class="close-btn" id="closeForgotModal">×</button>
+<div class="login-body">
+<h3 class="admin-login-title"><i class="fas fa-key"></i> Reset Password</h3>
+<div class="form-group">
+<label for="forgotEmail">Email Address</label>
+<input id="forgotEmail" placeholder="Enter your registered email" type="email"/>
+</div>
+<button class="submit-btn" id="resetPasswordBtn">SEND RESET LINK</button>
+<div class="forgot-password" style="margin-top: 20px;">
+<a href="#" id="backToLogin">Back to login</a>
+</div>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="adminForgotPasswordModal">
+<div class="login-container">
+<button class="close-btn" id="closeAdminForgotModal">×</button>
+<div class="login-body">
+<h3 class="admin-login-title"><i class="fas fa-key"></i> Admin Password Reset</h3>
+<div class="form-group">
+<label for="adminForgotEmail">Admin Email</label>
+<input id="adminForgotEmail" placeholder="Enter admin email" type="email"/>
+</div>
+<button class="submit-btn" id="adminResetPasswordBtn">SEND RESET LINK</button>
+<div class="forgot-password" style="margin-top: 20px;">
+<a href="#" id="backToAdminLogin">Back to admin login</a>
+</div>
+</div>
+</div>
+</div>
+<script>
+    // DOM Elements
+    const loginModal = document.getElementById('loginModal');
+    const adminLoginModal = document.getElementById('adminLoginModal');
+    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+    const adminForgotPasswordModal = document.getElementById('adminForgotPasswordModal');
+    const closeModal = document.getElementById('closeModal');
+    const closeAdminModal = document.getElementById('closeAdminModal');
+    const closeForgotModal = document.getElementById('closeForgotModal');
+    const closeAdminForgotModal = document.getElementById('closeAdminForgotModal');
+    const enrollButtons = document.querySelectorAll('.enroll-btn');
+    const headerLoginBtn = document.getElementById('headerLoginBtn');
+    const adminLoginLink = document.getElementById('adminLoginLink');
+    const authTabs = document.getElementById('authTabs');
+    const loginTab = document.getElementById('loginTab');
+    const registerTab = document.getElementById('registerTab');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const forgotPassword = document.getElementById('forgotPassword');
+    const backToLogin = document.getElementById('backToLogin');
+    const adminForgotPassword = document.getElementById('adminForgotPassword');
+    const backToAdminLogin = document.getElementById('backToAdminLogin');
+
+    // Admin credentials (WARNING: FOR DEMO ONLY. In production, handle securely on server-side.)
+    const ADMIN_EMAIL = "admintutorups@gmail.com";
+    const ADMIN_PASSWORD = "admin@tutorups@778220";
+
+    // Initialize currentDeviceId using FingerprintJS
+    let currentDeviceId = null;
+    (async () => {
+        try {
+            const fp = await FingerprintJS.load();
+            const result = await fp.get();
+            currentDeviceId = result.visitorId;
+            console.log("Current Device ID:", currentDeviceId);
+        } catch (error) {
+            console.error("Error loading FingerprintJS or getting device ID:", error);
+            // Fallback or handle cases where FingerprintJS might be blocked/fail
+            currentDeviceId = 'unknown_device_' + Date.now(); // Simple fallback
+        }
+    })();
+
+
+    // Function to create ripple effect
+    function createRipple(event) {
+      const button = event.currentTarget;
+      const circle = document.createElement("span");
+      const diameter = Math.max(button.clientWidth, button.clientHeight);
+      const radius = diameter / 2;
+
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+      circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+      circle.classList.add("ripple");
+
+      const ripple = button.getElementsByClassName("ripple")[0];
+      if (ripple) {
+        ripple.remove();
+      }
+
+      button.appendChild(circle);
+    }
+
+    // Add ripple effect to buttons
+    const buttons = document.querySelectorAll('.auth-btn, .enroll-btn, .submit-btn');
+    buttons.forEach(button => {
+      button.addEventListener('click', createRipple);
+    });
+
+    // Open modal when enroll button is clicked (shows both login and register)
+    enrollButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // When opened via enroll, show both tabs
+        authTabs.classList.remove('hidden');
+        forgotPasswordLink.classList.remove('hidden'); // Forgot password link should be visible for login
+        loginTab.classList.add('active'); // Default to login tab
+        registerTab.classList.remove('active');
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        loginModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      });
+    });
+
+    // Open modal when header login button is clicked (shows both login and register)
+    headerLoginBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      authTabs.classList.remove('hidden');
+      forgotPasswordLink.classList.remove('hidden');
+      loginTab.classList.add('active');
+      registerTab.classList.remove('active');
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
+      loginModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+
+    // Open admin login modal
+    adminLoginLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      adminLoginModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+
+    // Open forgot password modal
+    forgotPassword.addEventListener('click', (e) => {
+      e.preventDefault();
+      loginModal.classList.remove('active');
+      forgotPasswordModal.classList.add('active');
+    });
+
+    // Open admin forgot password modal
+    adminForgotPassword.addEventListener('click', (e) => {
+      e.preventDefault();
+      adminLoginModal.classList.remove('active');
+      adminForgotPasswordModal.classList.add('active');
+    });
+
+    // Back to login from forgot password
+    backToLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      forgotPasswordModal.classList.remove('active');
+      loginModal.classList.add('active');
+    });
+
+    // Back to admin login from admin forgot password
+    backToAdminLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      adminForgotPasswordModal.classList.remove('active');
+      adminLoginModal.classList.add('active');
+    });
+
+    // Close modals
+    closeModal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      loginModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+
+    closeAdminModal.addEventListener('click', (e) => {
+      e.stopPropagation();
       adminLoginModal.classList.remove('active');
       document.body.style.overflow = 'auto';
-      // Redirect to admin panel or show admin UI
-    } else {
-      await auth.signOut();
-      alert('You do not have admin privileges');
-    }
-  } catch (error) {
-    alert("Admin login failed: " + error.message);
-  }
-});
+    });
+
+    closeForgotModal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      forgotPasswordModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+
+    closeAdminForgotModal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      adminForgotPasswordModal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+
+    // Close modals when clicking outside
+    loginModal.addEventListener('click', (e) => {
+      if (e.target === loginModal) {
+        loginModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+    });
+
+    adminLoginModal.addEventListener('click', (e) => {
+      if (e.target === adminLoginModal) {
+        adminLoginModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+    });
+
+    forgotPasswordModal.addEventListener('click', (e) => {
+      if (e.target === forgotPasswordModal) {
+        forgotPasswordModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+    });
+
+    adminForgotPasswordModal.addEventListener('click', (e) => {
+      if (e.target === adminForgotPasswordModal) {
+        adminForgotPasswordModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+    });
+
+    // Switch between login and register tabs
+    loginTab.addEventListener('click', () => {
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        forgotPasswordLink.classList.remove('hidden'); // Always show forgot password for login
+    });
+
+    registerTab.addEventListener('click', () => {
+        registerTab.classList.add('active');
+        loginTab.classList.remove('active');
+        registerForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+        forgotPasswordLink.classList.add('hidden'); // Hide forgot password for register
+    });
+
+
+    // Form submission handler for login
+    document.getElementById('loginBtn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        // Use 'users' collection for both login and registration
+        const docRef = db.collection('users').doc(email);
+        const docSnap = await docRef.get();
+
+        if (!docSnap.exists || !docSnap.data().access) {
+          alert("Access Denied: Your account is not approved by the administrator.");
+          await auth.signOut(); // Sign out the user if not approved
+          return;
+        }
+
+        const savedDeviceId = docSnap.data().activeDeviceId;
+
+        // Ensure currentDeviceId is available before comparison
+        if (!currentDeviceId) {
+            console.warn("currentDeviceId not yet determined. Attempting to re-evaluate.");
+            const fp = await FingerprintJS.load();
+            const result = await fp.get();
+            currentDeviceId = result.visitorId;
+        }
+
+
+        if (savedDeviceId && savedDeviceId !== currentDeviceId) {
+          alert("You have been logged out. Another login detected from a different device.");
+          await auth.signOut();
+          return;
+        }
+
+        // Update active device ID in Firestore
+        await docRef.update({ activeDeviceId: currentDeviceId });
+
+        alert("Login successful! You can now access the course features.");
+        loginModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+
+        // In a real application, you would now redirect the user to the course page
+        // or load course content dynamically.
+
+      } catch (error) {
+        alert("Login failed: " + error.message);
+      }
+    });
+
+
+    // Form submission handler for register
+    document.getElementById('registerBtn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+      if (!name || !email || !password || !confirmPassword) {
+        alert('Please fill in all fields.');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alert('Passwords do not match.');
+        return;
+      }
+
+      if (password.length < 6) {
+        alert('Password should be at least 6 characters.');
+        return;
+      }
+
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        // Add user data to Firestore with 'access: false' by default
+        await db.collection('users').doc(email).set({
+          fullName: name,
+          email: email,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          access: false, // User needs admin approval
+          activeDeviceId: null // No active device until first approved login
+        });
+
+        alert("Registration successful! Your account is awaiting administrator approval. You will be able to log in once approved.");
+        // Switch to login tab after successful registration
+        registerTab.classList.remove('active');
+        loginTab.classList.add('active');
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+        forgotPasswordLink.classList.remove('hidden'); // Ensure it's visible for the login tab
+
+      } catch (error) {
+        alert("Registration failed: " + error.message);
+      }
+    });
+
+
+    // Form submission handler for admin login
+    document.getElementById('adminLoginBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const email = document.getElementById('adminEmail').value.trim();
+      const password = document.getElementById('adminPassword').value;
+
+      if (!email || !password) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        alert('Admin login successful! Redirecting to admin panel...');
+        adminLoginModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        // In a real application, you would redirect to the admin panel here
+        // window.location.href = '/admin';
+      } else {
+        alert('Invalid admin credentials');
+      }
+    });
+
+    // Form submission handler for forgot password (user)
+    document.getElementById('resetPasswordBtn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const email = document.getElementById('forgotEmail').value.trim();
+
+      if (!email) {
+        alert('Please enter your email address.');
+        return;
+      }
+
+      try {
+        await auth.sendPasswordResetEmail(email);
+        alert(`Password reset link sent to ${email}. Please check your inbox.`);
+        forgotPasswordModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      } catch (error) {
+        alert("Failed to send password reset email: " + error.message);
+      }
+    });
+
+    // Form submission handler for admin forgot password
+    document.getElementById('adminResetPasswordBtn').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const email = document.getElementById('adminForgotEmail').value.trim();
+
+      if (!email) {
+        alert('Please enter admin email address.');
+        return;
+      }
+
+      // Note: Firebase `sendPasswordResetEmail` does not distinguish between user and admin roles.
+      // It sends to any valid email in Firebase Auth. The "admin" distinction here is purely for client-side
+      // messaging. In a real app, you'd likely have a separate admin auth system.
+      if (email === ADMIN_EMAIL) {
+         try {
+            await auth.sendPasswordResetEmail(email); // This will send to the Firebase Auth user if exists
+            alert(`Admin password reset link sent to ${email}. Please check your inbox.`);
+            adminForgotPasswordModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+         } catch (error) {
+            alert("Failed to send admin password reset email: " + error.message);
+         }
+      } else {
+        alert('This email is not registered as admin in our demo system.');
+      }
+    });
+  </script>
+</body>
+</html>
