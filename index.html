@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Viewport meta tag to disable zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TutorUp AI</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+    <!-- Page Libraries -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=Poppins:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- PDF.js for PDF rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
+    <style>
+        /* --- General Setup --- */
+        :root {
+            --primary: #1a73e8;
+            --primary-gradient: linear-gradient(135deg, #1a73e8 0%, #6c5ce7 100%);
+            --primary-light: #e8f0fe;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --bg-color: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f1f3f4;
+            --border-color: #dadce0;
+            --message-ai-bg: #f8f9fa;
+            --message-user-bg: #e8f0fe;
+            --code-bg: #282c34;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.12);
+            --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
+            --radius: 16px;
+            --radius-small: 8px;
+            --app-height: 100vh;
+        }
+
+        .dark-theme {
+            --primary: #8ab4f8;
+            --primary-gradient: linear-gradient(135deg, #8ab4f8 0%, #a78bfa 100%);
+            --primary-light: #1e3a5f;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --bg-color: #202124;
+            --bg-secondary: #303134;
+            --bg-tertiary: #3c4043;
+            --border-color: #5f6368;
+            --message-ai-bg: #303134;
+            --message-user-bg: #1e3a5f;
+            --code-bg: #2d2e30;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.2s;
+        }
+
+        body {
+            height: var(--app-height);
+            font-family: 'Inter', sans-serif;
+            /* Disable text selection and mobile long-press menus */
+            -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        pre, code { -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text; user-select: text; }
+
+        /* --- Login Page Styles --- */
+        #login-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        #login-page .login-container {
+            width: 100%;
+            max-width: 420px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        #login-page .login-header {
+            background: #4f46e5;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        #login-page .login-header h1 { font-family: 'Merriweather', serif; font-size: 48px; font-weight: 700; margin-bottom: 5px; letter-spacing: -1px; }
+        #login-page .login-header p { font-size: 16px; opacity: 0.9; font-weight: 400; }
+        #login-page .form-container { padding: 40px 30px; }
+        #login-page .input-group { margin-bottom: 25px; position: relative; }
+
+        #login-page .input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 14px; font-family: 'Poppins', sans-serif; }
+        #login-page .input-group input { width: 100%; padding: 14px 14px 14px 45px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
+        #login-page .input-group input:focus { border-color: #4f46e5; outline: none; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+        #login-page .input-group i { position: absolute; left: 15px; top: 45px; color: #9ca3af; font-size: 18px; transition: color 0.3s ease; }
+        #login-page .input-group input:focus + i { color: #4f46e5; }
+
+        #login-page .btn { width: 100%; padding: 15px; background: #4f46e5; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; justify-content: center; align-items: center; gap: 8px; font-family: 'Poppins', sans-serif; }
+        #login-page .btn:hover { background: #4338ca; transform: translateY(-3px); box-shadow: 0 7px 20px rgba(79, 70, 229, 0.3); }
+        #login-page .btn:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        #login-page .alert { padding: 12px 16px; border-radius: 10px; margin-top: 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; font-size: 14px; display: none; }
+        #login-page .loader { width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- Chat Page Styles --- */
+        #chat-page {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+        }
+
+        #chat-page .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--border-color); background-color: var(--bg-color); height: 64px; flex-shrink: 0; }
+        #chat-page .header-left { display: flex; align-items: center; gap: 16px; }
+        #chat-page .menu-toggle { display: none; background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; }
+        #chat-page .logo { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 22px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: 'Merriweather', serif; }
+        #chat-page .logo-icon { font-size: 28px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #chat-page .header-actions { display: flex; align-items: center; gap: 12px; }
+        #chat-page .theme-toggle, #chat-page .logout-btn { background: none; border: 1px solid var(--border-color); color: var(--text-secondary); cursor: pointer; font-size: 16px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        #chat-page .theme-toggle:hover, #chat-page .logout-btn:hover { color: var(--primary); background-color: var(--bg-tertiary); }
+        #chat-page .main { display: flex; flex: 1; overflow: hidden; }
+        #chat-page .sidebar { width: 320px; border-right: 1px solid var(--border-color); background-color: var(--bg-secondary); padding: 24px 0; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease-in-out; }
+        #chat-page .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); z-index: 99; }
+        #chat-page .new-chat-btn { margin: 0 24px 24px; padding: 14px 20px; background: var(--primary-gradient); color: white; border: none; border-radius: var(--radius); display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; }
+        #chat-page .history-list { overflow-y: auto; flex: 1; }
+        #chat-page .history-item { padding: 14px 24px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+        #chat-page .history-item:hover { background-color: var(--bg-tertiary); }
+        #chat-page .history-item.active { background-color: var(--primary-light); color: var(--primary); }
+        #chat-page .chat-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        #chat-page .chat-messages { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+        #chat-page .message { display: flex; gap: 16px; max-width: 85%; animation: messageFadeIn 0.3s ease; }
+        @keyframes messageFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #chat-page .message-ai { align-self: flex-start; }
+        #chat-page .message-user { align-self: flex-end; flex-direction: row-reverse; }
+        #chat-page .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        #chat-page .ai-avatar { background: var(--primary-gradient); color: white; }
+        #chat-page .user-msg-avatar { background: #6c5ce7; color: white; }
+        #chat-page .message-content { padding: 18px; border-radius: var(--radius); line-height: 1.6; background-color: var(--message-ai-bg); color: var(--text-primary); }
+        #chat-page .message-user .message-content { background-color: var(--message-user-bg); }
+        #chat-page .message-content pre { position: relative; background-color: var(--code-bg); padding: 16px; border-radius: var(--radius-small); overflow-x: auto; margin: 12px 0; font-size: 14px; color: #abb2bf; }
+        #chat-page .message-content pre .copy-btn { position: absolute; top: 8px; right: 8px; background: #4a4f58; border: 1px solid #5f6368; color: #e8eaed; cursor: pointer; padding: 4px 8px; border-radius: var(--radius-small); font-size: 12px; opacity: 0; transition: opacity 0.2s; }
+        #chat-page .message-content pre:hover .copy-btn { opacity: 1; }
+        #chat-page .message-content p { margin: 0; }
+        #chat-page .message-content p:not(:last-child) { margin-bottom: 1em; }
+        #chat-page .chat-input-container { padding: 20px 24px; border-top: 1px solid var(--border-color); background-color: var(--bg-color); }
+        #chat-page .input-wrapper { display: flex; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 8px 16px; background-color: var(--bg-color); align-items: center; gap: 8px; }
+        #chat-page .input-wrapper:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+        #chat-page .chat-input { flex: 1; border: none; outline: none; padding: 14px 0; background: transparent; color: var(--text-primary); resize: none; max-height: 150px; font-size: 16px; }
+        #chat-page .upload-btn, #chat-page .send-btn { background: var(--primary-gradient); border: none; color: white; cursor: pointer; font-size: 14px; font-weight: 500; width: 44px; height: 44px; border-radius: var(--radius-small); flex-shrink: 0; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
+        #chat-page .upload-btn { background: var(--bg-tertiary); color: var(--text-secondary); margin-right: 4px; }
+        #chat-page .upload-btn:hover { background: var(--border-color); }
+        #chat-page .send-btn:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+        #chat-page .send-btn:disabled { background: var(--bg-tertiary); cursor: not-allowed; transform: none; box-shadow: none; color: var(--text-secondary); }
+        #chat-page .send-btn .fa-spinner { animation: spin 1s linear infinite; }
+        
+        /* Context menu for chat history items */
+        .context-menu {
+            position: absolute;
+            background: var(--bg-color);
+            border-radius: var(--radius-small);
+            box-shadow: var(--shadow-hover);
+            z-index: 1000;
+            padding: 8px 0;
+            min-width: 150px;
+            display: none;
+        }
+        .context-menu button {
+            width: 100%;
+            text-align: left;
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        .context-menu button:hover {
+            background-color: var(--bg-tertiary);
+        }
+        
+        /* Rename modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        .modal {
+            background: var(--bg-color);
+            border-radius: var(--radius);
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow-hover);
+        }
+        .modal h3 {
+            margin-bottom: 16px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-small);
+            margin-bottom: 16px;
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-small);
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .modal-btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .modal-btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+        
+        /* Course Explorer Styles */
+        .courses-toggle {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        
+        .courses-panel {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 320px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            z-index: 101;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .courses-panel.active {
+            transform: translateX(0);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        .courses-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-color);
+        }
+        
+        .courses-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .close-courses {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .courses-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 0;
+        }
+        
+        .course-item, .subject-item, .chapter-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .course-item:hover, .subject-item:hover, .chapter-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+        
+        .course-item i, .subject-item i, .chapter-item i {
+            transition: transform 0.3s;
+        }
+        
+        .course-item.active i, .subject-item.active i, .chapter-item.active i {
+            transform: rotate(90deg);
+        }
+        
+        .nested-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background-color: var(--bg-color);
+        }
+        
+        .nested-list.active {
+            max-height: 1000px;
+        }
+        
+        .resource-item {
+            padding: 12px 20px 12px 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .resource-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+        
+        /* PDF Viewer Modal */
+        .pdf-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            z-index: 1002;
+            display: none;
+            flex-direction: column;
+        }
+        
+        .pdf-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-color);
+        }
+        
+        .pdf-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70%;
+        }
+        
+        .close-pdf {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .pdf-container {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            background-color: #525659; /* PDF.js background color */
+        }
+        
+        .pdf-viewer {
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            max-width: 100%;
+        }
+        
+        .pdf-controls {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            background-color: var(--bg-color);
+        }
+        
+        .pdf-controls button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-small);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .pdf-controls span {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        /* Video Player Modal */
+        .video-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1002;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .video-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+            z-index: 10;
+        }
+        
+        .video-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70%;
+        }
+        
+        .close-video {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .video-player-container {
+            width: 100%;
+            max-width: 900px;
+            position: relative;
+        }
+        
+        .video-player {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: black;
+        }
+        
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+        
+        .video-player-container:hover .video-controls {
+            opacity: 1;
+        }
+        
+        .play-pause-btn, .skip-backward-btn, .skip-forward-btn, .speed-btn, .orientation-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .play-pause-btn:hover, .skip-backward-btn:hover, .skip-forward-btn:hover, .speed-btn:hover, .orientation-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .progress-container {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 2px;
+            width: 0%;
+        }
+        
+        .time-display {
+            color: white;
+            font-size: 14px;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .video-fullscreen .video-player-container {
+            max-width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .video-fullscreen .video-player {
+            height: 100%;
+            aspect-ratio: unset;
+        }
+        
+        /* Loading indicator */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+        
+        .dark-theme .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+        }
+        
+        @media (max-width: 768px) {
+            #chat-page .menu-toggle { display: block; }
+            #chat-page .sidebar { position: fixed; left: 0; top: 0; height: 100%; z-index: 100; transform: translateX(-100%); border-right: 1px solid var(--border-color); }
+            #chat-page .sidebar.active { transform: translateX(0); box-shadow: var(--shadow-hover); }
+            #chat-page .sidebar-overlay.active { display: block; }
+            
+            .courses-panel {
+                width: 100%;
+            }
+            
+            .pdf-container {
+                padding: 10px;
+            }
+            
+            .video-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .progress-container {
+                order: 1;
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Page Content -->
+    <div id="login-page">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>TutorUp</h1>
+                <p>Please SignIn To Continue</p>
+            </div>
+            <div class="form-container">
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="input-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                         <i class="fas fa-lock"></i>
+                    </div>
+                    <button type="submit" class="btn" id="loginBtn">
+                        <div class="loader" id="loginLoader"></div>
+                        <span id="loginBtnText">Sign In</span>
+                    </button>
+                     <div id="errorMessage" class="alert"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Page Content -->
+    <div id="chat-page" style="display: none;">
+        <header class="header">
+            <div class="header-left">
+                <button class="courses-toggle" id="courses-toggle" aria-label="Open Courses"><i class="fas fa-book"></i></button>
+                <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Menu"><i class="fas fa-bars"></i></button>
+                <div class="logo"><i class="fas fa-brain logo-icon"></i><span>TutorUp</span></div>
+            </div>
+            <div class="header-actions">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle Theme"><i class="fas fa-moon"></i></button>
+                <button class="logout-btn" id="logout-btn" aria-label="Logout"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="sidebar-overlay" id="sidebar-overlay"></div>
+            <aside class="sidebar" id="sidebar">
+                <button class="new-chat-btn" id="new-chat-btn"><i class="fas fa-plus"></i>New Chat</button>
+                <div class="history-list" id="history-list">
+                    <!-- Chat history will be populated here -->
+                </div>
+            </aside>
+            <section class="chat-container">
+                <div class="chat-messages" id="chat-messages"></div>
+                <div class="chat-input-container">
+                    <div class="input-wrapper">
+                        <button class="upload-btn" id="upload-btn" aria-label="Upload file"><i class="fas fa-link"></i></button>
+                        <textarea class="chat-input" id="chat-input" placeholder="Message TutorUp..." rows="1"></textarea>
+                        <button class="send-btn" id="send-btn" aria-label="Send message"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Context Menu for Chat History Items -->
+    <div class="context-menu" id="context-menu">
+        <button id="rename-chat-btn"><i class="fas fa-edit"></i>Rename</button>
+        <button id="delete-chat-btn"><i class="fas fa-trash"></i>Delete</button>
+    </div>
+
+    <!-- Rename Modal -->
+    <div class="modal-overlay" id="rename-modal">
+        <div class="modal">
+            <h3>Rename Chat</h3>
+            <input type="text" class="modal-input" id="rename-input" placeholder="Enter new chat name">
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-secondary" id="rename-cancel">Cancel</button>
+                <button class="modal-btn modal-btn-primary" id="rename-save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Panel -->
+    <div class="courses-panel" id="courses-panel">
+        <div class="courses-header">
+            <h2>Course Explorer</h2>
+            <button class="close-courses" id="close-courses"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="courses-content" id="courses-content">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div class="pdf-modal" id="pdf-modal">
+        <div class="pdf-header">
+            <h3 id="pdf-title">Document</h3>
+            <button class="close-pdf" id="close-pdf"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="pdf-container" id="pdf-container">
+            <canvas id="pdf-viewer" class="pdf-viewer"></canvas>
+        </div>
+        <div class="pdf-controls">
+            <button id="pdf-prev"><i class="fas fa-chevron-left"></i> Previous</button>
+            <span id="pdf-page-num">Page 1 of 1</span>
+            <button id="pdf-next">Next <i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div class="video-modal" id="video-modal">
+        <div class="video-header">
+            <h3 id="video-title">Lecture</h3>
+            <button class="close-video" id="close-video"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="video-player-container" id="video-player-container">
+            <video class="video-player" id="video-player" controlsList="nodownload noremoteplayback" disablePictureInPicture>
+                Your browser does not support the video tag.
+            </video>
+            <div class="video-controls">
+                <button class="play-pause-btn" id="play-pause-btn"><i class="fas fa-play"></i></button>
+                <button class="skip-backward-btn" id="skip-backward-btn"><i class="fas fa-backward"></i> 10s</button>
+                <button class="skip-forward-btn" id="skip-forward-btn">10s <i class="fas fa-forward"></i></button>
+                <button class="speed-btn" id="speed-btn">1x</button>
+                <div class="progress-container" id="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <div class="time-display" id="time-display">00:00 / 00:00</div>
+                <button class="orientation-btn" id="orientation-btn"><i class="fas fa-expand"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // DOM Elements
+        const loginPage = document.getElementById('login-page');
+        const chatPage = document.getElementById('chat-page');
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginBtnText = document.getElementById('loginBtnText');
+        const loginLoader = document.getElementById('loginLoader');
+        const errorMessage = document.getElementById('errorMessage');
+        const logoutBtn = document.getElementById('logout-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const historyList = document.getElementById('history-list');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const uploadBtn = document.getElementById('upload-btn');
+        const contextMenu = document.getElementById('context-menu');
+        const renameModal = document.getElementById('rename-modal');
+        const renameInput = document.getElementById('rename-input');
+        const renameCancel = document.getElementById('rename-cancel');
+        const renameSave = document.getElementById('rename-save');
+        
+        // Course Explorer Elements
+        const coursesToggle = document.getElementById('courses-toggle');
+        const coursesPanel = document.getElementById('courses-panel');
+        const closeCourses = document.getElementById('close-courses');
+        const coursesContent = document.getElementById('courses-content');
+        
+        // PDF Viewer Elements
+        const pdfModal = document.getElementById('pdf-modal');
+        const pdfTitle = document.getElementById('pdf-title');
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const pdfContainer = document.getElementById('pdf-container');
+        const closePdf = document.getElementById('close-pdf');
+        const pdfPrev = document.getElementById('pdf-prev');
+        const pdfNext = document.getElementById('pdf-next');
+        const pdfPageNum = document.getElementById('pdf-page-num');
+        
+        // Video Player Elements
+        const videoModal = document.getElementById('video-modal');
+        const videoTitle = document.getElementById('video-title');
+        const videoPlayer = document.getElementById('video-player');
+        const videoPlayerContainer = document.getElementById('video-player-container');
+        const closeVideo = document.getElementById('close-video');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const skipBackwardBtn = document.getElementById('skip-backward-btn');
+        const skipForwardBtn = document.getElementById('skip-forward-btn');
+        const speedBtn = document.getElementById('speed-btn');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const timeDisplay = document.getElementById('time-display');
+        const orientationBtn = document.getElementById('orientation-btn');
+
+        // State variables
+        let currentUser = null;
+        let currentChatId = null;
+        let chatHistory = [];
+        let pdfDoc = null;
+        let pdfPageNumCurrent = 1;
+        let pdfPageRendering = false;
+        let pdfPageNumPending = null;
+        let pdfScale = 1.5;
+        let videoPlaybackRates = [0.5, 1, 1.5, 2];
+        let currentPlaybackRateIndex = 1;
+        let isVideoFullscreen = false;
+        let coursesData = {};
+
+        // Initialize the application
+        function init() {
+            // Check authentication state
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    loginPage.style.display = 'none';
+                    chatPage.style.display = 'flex';
+                    loadChatHistory();
+                    loadCourses();
+                } else {
+                    currentUser = null;
+                    loginPage.style.display = 'flex';
+                    chatPage.style.display = 'none';
+                }
+            });
+
+            // Event listeners
+            loginForm.addEventListener('submit', handleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            themeToggle.addEventListener('click', toggleTheme);
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+            });
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+            });
+            newChatBtn.addEventListener('click', startNewChat);
+            chatInput.addEventListener('input', adjustTextareaHeight);
+            chatInput.addEventListener('keydown', handleChatInputKeydown);
+            sendBtn.addEventListener('click', handleSendMessage);
+            uploadBtn.addEventListener('click', handleUpload);
+            
+            // Course Explorer event listeners
+            coursesToggle.addEventListener('click', () => {
+                coursesPanel.classList.add('active');
+            });
+            closeCourses.addEventListener('click', () => {
+                coursesPanel.classList.remove('active');
+            });
+            
+            // PDF Viewer event listeners
+            closePdf.addEventListener('click', closePdfViewer);
+            pdfPrev.addEventListener('click', () => {
+                if (pdfPageNumCurrent <= 1) return;
+                pdfPageNumCurrent--;
+                renderPdfPage(pdfPageNumCurrent);
+            });
+            pdfNext.addEventListener('click', () => {
+                if (pdfPageNumCurrent >= pdfDoc.numPages) return;
+                pdfPageNumCurrent++;
+                renderPdfPage(pdfPageNumCurrent);
+            });
+            
+            // Video Player event listeners
+            closeVideo.addEventListener('click', closeVideoPlayer);
+            playPauseBtn.addEventListener('click', togglePlayPause);
+            skipBackwardBtn.addEventListener('click', () => skipVideo(-10));
+            skipForwardBtn.addEventListener('click', () => skipVideo(10));
+            speedBtn.addEventListener('click', changePlaybackSpeed);
+            orientationBtn.addEventListener('click', toggleOrientation);
+            videoPlayer.addEventListener('timeupdate', updateProgress);
+            videoPlayer.addEventListener('loadedmetadata', () => {
+                timeDisplay.textContent = formatTime(videoPlayer.currentTime) + ' / ' + formatTime(videoPlayer.duration);
+            });
+            progressContainer.addEventListener('click', seekVideo);
+            videoPlayer.addEventListener('click', () => {
+                // Don't toggle play/pause on video click as per requirements
+            });
+            
+            // Disable right-click context menu for security
+            document.addEventListener('contextmenu', (e) => {
+                // Allow context menu only in chat messages for copy functionality
+                if (!e.target.closest('.message-content')) {
+                    e.preventDefault();
+                }
+            });
+            
+            // Disable text selection except for code and messages
+            document.addEventListener('selectstart', (e) => {
+                if (!e.target.closest('.message-content') && !e.target.closest('pre') && !e.target.closest('code')) {
+                    e.preventDefault();
+                }
+            });
+            
+            // Check for saved theme preference
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-theme');
+                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+            
+            // Initialize PDF.js
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        }
+
+        // Authentication functions
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            loginBtn.disabled = true;
+            loginBtnText.textContent = 'Signing in...';
+            loginLoader.style.display = 'block';
+            errorMessage.style.display = 'none';
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    // Login successful
+                    loginBtn.disabled = false;
+                    loginBtnText.textContent = 'Sign In';
+                    loginLoader.style.display = 'none';
+                })
+                .catch(error => {
+                    // Login failed
+                    loginBtn.disabled = false;
+                    loginBtnText.textContent = 'Sign In';
+                    loginLoader.style.display = 'none';
+                    errorMessage.textContent = error.message;
+                    errorMessage.style.display = 'block';
+                });
+        }
+
+        function handleLogout() {
+            auth.signOut()
+                .then(() => {
+                    currentChatId = null;
+                    chatHistory = [];
+                    historyList.innerHTML = '';
+                    chatMessages.innerHTML = '';
+                })
+                .catch(error => {
+                    console.error('Logout error:', error);
+                });
+        }
+
+        // Theme functions
+        function toggleTheme() {
+            if (document.body.classList.contains('dark-theme')) {
+                document.body.classList.remove('dark-theme');
+                themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.add('dark-theme');
+                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Chat functions
+        function loadChatHistory() {
+            historyList.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+            
+            db.collection('chats')
+                .where('userId', '==', currentUser.uid)
+                .orderBy('createdAt', 'desc')
+                .onSnapshot(snapshot => {
+                    chatHistory = [];
+                    historyList.innerHTML = '';
+                    
+                    snapshot.forEach(doc => {
+                        const chat = { id: doc.id, ...doc.data() };
+                        chatHistory.push(chat);
+                        
+                        const historyItem = document.createElement('div');
+                        historyItem.className = 'history-item';
+                        historyItem.dataset.chatId = chat.id;
+                        historyItem.innerHTML = `
+                            <i class="fas fa-message"></i>
+                            <span>${chat.title}</span>
+                        `;
+                        
+                        historyItem.addEventListener('click', () => loadChat(chat.id));
+                        historyItem.addEventListener('contextmenu', (e) => {
+                            e.preventDefault();
+                            showContextMenu(e, chat.id);
+                        });
+                        
+                        historyList.appendChild(historyItem);
+                    });
+                    
+                    if (chatHistory.length > 0 && !currentChatId) {
+                        loadChat(chatHistory[0].id);
+                    } else if (chatHistory.length === 0) {
+                        startNewChat();
+                    }
+                }, error => {
+                    console.error('Error loading chat history:', error);
+                    historyList.innerHTML = '<div class="history-item">Error loading chats</div>';
+                });
+      }
+
+        function startNewChat() {
+            currentChatId = null;
+            chatMessages.innerHTML = '';
+            chatInput.value = '';
+            adjustTextareaHeight();
+            
+            // Create a new chat document
+            const newChat = {
+                title: 'New Chat',
+                userId: currentUser.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                messages: []
+            };
+            
+            db.collection('chats').add(newChat)
+                .then(docRef => {
+                    currentChatId = docRef.id;
+                })
+                .catch(error => {
+                    console.error('Error creating new chat:', error);
+                });
+        }
+
+        function loadChat(chatId) {
+            currentChatId = chatId;
+            
+            // Update active state in history list
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.chatId === chatId) {
+                    item.classList.add('active');
+                }
+            });
+            
+            chatMessages.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+            
+            db.collection('chats').doc(chatId).get()
+                .then(doc => {
+                    if (doc.exists) {
+                        const chat = doc.data();
+                        chatMessages.innerHTML = '';
+                        
+                        if (chat.messages && chat.messages.length > 0) {
+                            chat.messages.forEach(message => {
+                                addMessageToChat(message.text, message.sender, false);
+                            });
+                        } else {
+                            addMessageToChat("Hello! I'm TutorUp AI. How can I help you today?", 'ai', false);
+                        }
+                        
+                        scrollToBottom();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading chat:', error);
+                    chatMessages.innerHTML = '<div class="message message-ai"><div class="avatar ai-avatar"><i class="fas fa-robot"></i></div><div class="message-content">Error loading chat</div></div>';
+                });
+        }
+
+        function handleChatInputKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+        }
+
+        function adjustTextareaHeight() {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
+        }
+
+        function handleSendMessage() {
+            const message = chatInput.value.trim();
+            if (!message || !currentChatId) return;
+            
+            // Add user message to chat
+            addMessageToChat(message, 'user', true);
+            chatInput.value = '';
+            adjustTextareaHeight();
+            sendBtn.disabled = true;
+            
+            // Save message to Firestore
+            const newMessage = {
+                text: message,
+                sender: 'user',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            db.collection('chats').doc(currentChatId).update({
+                messages: firebase.firestore.FieldValue.arrayUnion(newMessage),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                // Simulate AI response (in a real app, this would call an AI API)
+                setTimeout(() => {
+                    const aiResponse = generateAIResponse(message);
+                    addMessageToChat(aiResponse, 'ai', true);
+                    
+                    const aiMessage = {
+                        text: aiResponse,
+                        sender: 'ai',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    db.collection('chats').doc(currentChatId).update({
+                        messages: firebase.firestore.FieldValue.arrayUnion(aiMessage),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        title: generateChatTitle(message)
+                    });
+                }, 1000);
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                addMessageToChat("Sorry, I encountered an error processing your message.", 'ai', true);
+            });
+        }
+
+        function addMessageToChat(message, sender, saveToHistory = false) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message message-${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = sender === 'ai' ? 'avatar ai-avatar' : 'avatar user-msg-avatar';
+            avatar.innerHTML = sender === 'ai' ? '<i class="fas fa-robot"></i>' : '<i class="fas fa-user"></i>';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            // Process message with Markdown
+            const processedMessage = marked.parse(message);
+            messageContent.innerHTML = processedMessage;
+            
+            // Add copy button to code blocks
+            messageContent.querySelectorAll('pre').forEach(pre => {
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-btn';
+                copyButton.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                copyButton.addEventListener('click', () => {
+                    const code = pre.querySelector('code')?.innerText || pre.innerText;
+                    navigator.clipboard.writeText(code).then(() => {
+                        copyButton.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                        setTimeout(() => {
+                            copyButton.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                        }, 2000);
+                    });
+                });
+                pre.appendChild(copyButton);
+            });
+            
+            // Render LaTeX with KaTeX
+            renderMathInElement(messageContent, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+            
+            // Highlight code blocks
+            messageContent.querySelectorAll('pre code').forEach(block => {
+                hljs.highlightElement(block);
+            });
+            
+            messageEl.appendChild(avatar);
+            messageEl.appendChild(messageContent);
+            chatMessages.appendChild(messageEl);
+            
+            if (saveToHistory) {
+                scrollToBottom();
+            }
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function generateAIResponse(message) {
+            // This is a simplified simulation of an AI response
+            // In a real application, this would call an AI API
+            const responses = [
+                "I understand you're asking about " + message + ". That's an interesting topic!",
+                "Thanks for your question about " + message + ". Here's what I can tell you...",
+                "I've analyzed your query about " + message + ", and here's my response...",
+                "Great question about " + message + "! Let me break it down for you...",
+                "Regarding " + message + ", I can provide the following information..."
+            ];
+            
+            return responses[Math.floor(Math.random() * responses.length)] + 
+                "\n\nThis is a simulated response. In a real application, this would be generated by an AI model like GPT-4.";
+        }
+
+        function generateChatTitle(message) {
+            // Generate a title from the first message
+            return message.length > 30 ? message.substring(0, 30) + '...' : message;
+        }
+
+        function handleUpload() {
+            // This would typically open a file upload dialog
+            // For this example, we'll just show a message
+            addMessageToChat("File upload functionality would be implemented here. You could upload documents, images, or other files for analysis.", 'ai', true);
+        }
+
+        function showContextMenu(e, chatId) {
+            e.preventDefault();
+            
+            // Position the context menu
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = e.pageY + 'px';
+            
+            // Set up event listeners
+            const renameChatBtn = document.getElementById('rename-chat-btn');
+            const deleteChatBtn = document.getElementById('delete-chat-btn');
+            
+            const hideMenu = () => {
+                contextMenu.style.display = 'none';
+                document.removeEventListener('click', hideMenu);
+            };
+            
+            document.addEventListener('click', hideMenu);
+            
+            renameChatBtn.onclick = (e) => {
+                e.stopPropagation();
+                showRenameModal(chatId);
+                hideMenu();
+            };
+            
+            deleteChatBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteChat(chatId);
+                hideMenu();
+            };
+        }
+
+        function showRenameModal(chatId) {
+            const chat = chatHistory.find(c => c.id === chatId);
+            if (chat) {
+                renameInput.value = chat.title;
+                renameModal.style.display = 'flex';
+                
+                renameCancel.onclick = () => {
+                    renameModal.style.display = 'none';
+                };
+                
+                renameSave.onclick = () => {
+                    const newTitle = renameInput.value.trim();
+                    if (newTitle) {
+                        renameChat(chatId, newTitle);
+                        renameModal.style.display = 'none';
+                    }
+                };
+            }
+        }
+
+        function renameChat(chatId, newTitle) {
+            db.collection('chats').doc(chatId).update({
+                title: newTitle
+            })
+            .catch(error => {
+                console.error('Error renaming chat:', error);
+            });
+        }
+
+        function deleteChat(chatId) {
+            if (confirm('Are you sure you want to delete this chat?')) {
+                db.collection('chats').doc(chatId).delete()
+                .catch(error => {
+                    console.error('Error deleting chat:', error);
+                });
+            }
+        }
+
+        // Course Explorer Functions
+        function loadCourses() {
+            coursesContent.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+            
+            db.collection('courses').get()
+                .then(snapshot => {
+                    coursesData = {};
+                    coursesContent.innerHTML = '';
+                    
+                    if (snapshot.empty) {
+                        coursesContent.innerHTML = '<div class="course-item">No courses available</div>';
+                        return;
+                    }
+                    
+                    snapshot.forEach(doc => {
+                        const course = { id: doc.id, ...doc.data() };
+                        coursesData[doc.id] = course;
+                        
+                        const courseItem = document.createElement('div');
+                        courseItem.className = 'course-item';
+                        courseItem.innerHTML = `
+                            <span>${course.name}</span>
+                            <i class="fas fa-chevron-right"></i>
+                        `;
+                        
+                        const subjectList = document.createElement('div');
+                        subjectList.className = 'nested-list';
+                        
+                        courseItem.addEventListener('click', () => {
+                            courseItem.classList.toggle('active');
+                            subjectList.classList.toggle('active');
+                            
+                            // Load subjects if not already loaded
+                            if (subjectList.innerHTML === '' && courseItem.classList.contains('active')) {
+                                loadSubjects(course.id, subjectList);
+                            }
+                        });
+                        
+                        coursesContent.appendChild(courseItem);
+                        coursesContent.appendChild(subjectList);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading courses:', error);
+                    coursesContent.innerHTML = '<div class="course-item">Error loading courses</div>';
+                });
+        }
+
+        function loadSubjects(courseId, container) {
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+            
+            db.collection(`courses/${courseId}/subjects`).get()
+                .then(snapshot => {
+                    container.innerHTML = '';
+                    
+                    if (snapshot.empty) {
+                        container.innerHTML = '<div class="subject-item">No subjects available</div>';
+                        return;
+                    }
+                    
+                    snapshot.forEach(doc => {
+                        const subject = { id: doc.id, ...doc.data() };
+                        
+                        const subjectItem = document.createElement('div');
+                        subjectItem.className = 'subject-item';
+                        subjectItem.innerHTML = `
+                            <span>${subject.name}</span>
+                            <i class="fas fa-chevron-right"></i>
+                        `;
+                        
+                        const chapterList = document.createElement('div');
+                        chapterList.className = 'nested-list';
+                        
+                        subjectItem.addEventListener('click', () => {
+                            subjectItem.classList.toggle('active');
+                            chapterList.classList.toggle('active');
+                            
+                            // Load chapters if not already loaded
+                            if (chapterList.innerHTML === '' && subjectItem.classList.contains('active')) {
+                                loadChapters(courseId, subject.id, chapterList);
+                            }
+                        });
+                        
+                        container.appendChild(subjectItem);
+                        container.appendChild(chapterList);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading subjects:', error);
+                    container.innerHTML = '<div class="subject-item">Error loading subjects</div>';
+                });
+        }
+
+        function loadChapters(courseId, subjectId, container) {
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+            
+            db.collection(`courses/${courseId}/subjects/${subjectId}/chapters`).get()
+                .then(snapshot => {
+                    container.innerHTML = '';
+                    
+                    if (snapshot.empty) {
+                        container.innerHTML = '<div class="chapter-item">No chapters available</div>';
+                        return;
+                    }
+                    
+                    snapshot.forEach(doc => {
+                        const chapter = { id: doc.id, ...doc.data() };
+                        
+                        const chapterItem = document.createElement('div');
+                        chapterItem.className = 'chapter-item';
+                        chapterItem.innerHTML = `
+                            <span>${chapter.name}</span>
+                            <i class="fas fa-chevron-right"></i>
+                        `;
+                        
+                        const resourceList = document.createElement('div');
+                        resourceList.className = 'nested-list';
+                        
+                        chapterItem.addEventListener('click', () => {
+                            chapterItem.classList.toggle('active');
+                            resourceList.classList.toggle('active');
+                            
+                            // Load resources if not already loaded
+                            if (resourceList.innerHTML === '' && chapterItem.classList.contains('active')) {
+                                loadResources(courseId, subjectId, chapter.id, resourceList);
+                            }
+                        });
+                        
+                        container.appendChild(chapterItem);
+                        container.appendChild(resourceList);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading chapters:', error);
+                    container.innerHTML = '<div class="chapter-item">Error loading chapters</div>';
+                });
+        }
+
+        function loadResources(courseId, subjectId, chapterId, container) {
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+            
+            // Load notes
+            db.collection(`courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/notes`).get()
+                .then(notesSnapshot => {
+                    // Load lectures
+                    return db.collection(`courses/${courseId}/subjects/${subjectId}/chapters/${chapterId}/lectures`).get()
+                        .then(lecturesSnapshot => {
+                            container.innerHTML = '';
+                            
+                            if (notesSnapshot.empty && lecturesSnapshot.empty) {
+                                container.innerHTML = '<div class="resource-item">No resources available</div>';
+                                return;
+                            }
+                            
+                            // Add notes
+                            notesSnapshot.forEach(doc => {
+                                const note = { id: doc.id, ...doc.data() };
+                                
+                                const noteItem = document.createElement('div');
+                                noteItem.className = 'resource-item';
+                                noteItem.innerHTML = `
+                                    <i class="fas fa-file-pdf"></i>
+                                    <span>${note.fileName}</span>
+                                `;
+                                
+                                noteItem.addEventListener('click', () => {
+                                    openPdfViewer(note.url, note.fileName);
+                                });
+                                
+                                container.appendChild(noteItem);
+                            });
+                            
+                            // Add lectures
+                            lecturesSnapshot.forEach(doc => {
+                                const lecture = { id: doc.id, ...doc.data() };
+                                
+                                const lectureItem = document.createElement('div');
+                                lectureItem.className = 'resource-item';
+                                lectureItem.innerHTML = `
+                                    <i class="fas fa-video"></i>
+                                    <span>${lecture.fileName}</span>
+                                `;
+                                
+                                lectureItem.addEventListener('click', () => {
+                                    openVideoPlayer(lecture.url, lecture.fileName);
+                                });
+                                
+                                container.appendChild(lectureItem);
+                            });
+                        });
+                })
+                .catch(error => {
+                    console.error('Error loading resources:', error);
+                    container.innerHTML = '<div class="resource-item">Error loading resources</div>';
+                });
+        }
+
+        // PDF Viewer Functions
+        function openPdfViewer(url, fileName) {
+            pdfTitle.textContent = fileName;
+            pdfModal.style.display = 'flex';
+            pdfPageNumCurrent = 1;
+            
+            // Load PDF document
+            pdfjsLib.getDocument(url).promise.then(pdf => {
+                pdfDoc = pdf;
+                pdfPageNum.textContent = `Page ${pdfPageNumCurrent} of ${pdfDoc.numPages}`;
+                renderPdfPage(pdfPageNumCurrent);
+            }).catch(error => {
+                console.error('Error loading PDF:', error);
+                pdfContainer.innerHTML = '<div style="color: white; text-align: center; padding: 20px;">Error loading PDF document</div>';
+            });
+        }
+
+        function renderPdfPage(pageNum) {
+            pdfPageRendering = true;
+            
+            pdfDoc.getPage(pageNum).then(page => {
+                const viewport = page.getViewport({ scale: pdfScale });
+                pdfViewer.height = viewport.height;
+                pdfViewer.width = viewport.width;
+                
+                const renderContext = {
+                    canvasContext: pdfViewer.getContext('2d'),
+                    viewport: viewport
+                };
+                
+                const renderTask = page.render(renderContext);
+                
+                renderTask.promise.then(() => {
+                    pdfPageRendering = false;
+                    pdfPageNum.textContent = `Page ${pageNum} of ${pdfDoc.numPages}`;
+                    
+                    if (pdfPageNumPending !== null) {
+                        renderPdfPage(pdfPageNumPending);
+                        pdfPageNumPending = null;
+                    }
+                });
+            }).catch(error => {
+                console.error('Error rendering PDF page:', error);
+            });
+        }
+
+        function closePdfViewer() {
+            pdfModal.style.display = 'none';
+            pdfDoc = null;
+        }
+
+        // Video Player Functions
+        function openVideoPlayer(url, fileName) {
+            videoTitle.textContent = fileName;
+            videoModal.style.display = 'flex';
+            videoPlayer.src = url;
+            videoPlayer.load();
+            
+            // Reset playback speed
+            currentPlaybackRateIndex = 1;
+            videoPlayer.playbackRate = videoPlaybackRates[currentPlaybackRateIndex];
+            speedBtn.textContent = videoPlaybackRates[currentPlaybackRateIndex] + 'x';
+            
+            // Reset fullscreen state
+            isVideoFullscreen = false;
+            videoPlayerContainer.classList.remove('video-fullscreen');
+            orientationBtn.innerHTML = '<i class="fas fa-expand"></i>';
+            
+            // Play the video
+            videoPlayer.play().then(() => {
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            }).catch(error => {
+                console.error('Error playing video:', error);
+            });
+        }
+
+        function togglePlayPause() {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                videoPlayer.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        }
+
+        function skipVideo(seconds) {
+            videoPlayer.currentTime += seconds;
+        }
+
+        function changePlaybackSpeed() {
+            currentPlaybackRateIndex = (currentPlaybackRateIndex + 1) % videoPlaybackRates.length;
+            videoPlayer.playbackRate = videoPlaybackRates[currentPlaybackRateIndex];
+            speedBtn.textContent = videoPlaybackRates[currentPlaybackRateIndex] + 'x';
+        }
+
+        function updateProgress() {
+            const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+            progressBar.style.width = progress + '%';
+            timeDisplay.textContent = formatTime(videoPlayer.currentTime) + ' / ' + formatTime(videoPlayer.duration);
+        }
+
+        function seekVideo(e) {
+            const rect = progressContainer.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            videoPlayer.currentTime = pos * videoPlayer.duration;
+        }
+
+        function toggleOrientation() {
+            if (isVideoFullscreen) {
+                document.exitFullscreen().catch(err => {
+                    console.error('Error exiting fullscreen:', err);
+                });
+                videoPlayerContainer.classList.remove('video-fullscreen');
+                orientationBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                isVideoFullscreen = false;
+            } else {
+                videoPlayerContainer.requestFullscreen().catch(err => {
+                    console.error('Error entering fullscreen:', err);
+                });
+                videoPlayerContainer.classList.add('video-fullscreen');
+                orientationBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                isVideoFullscreen = true;
+            }
+        }
+
+        function closeVideoPlayer() {
+            videoModal.style.display = 'none';
+            videoPlayer.pause();
+            videoPlayer.src = '';
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            seconds = Math.floor(seconds % 60);
+            return minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+        }
+
+        // Initialize the application when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
