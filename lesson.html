@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TutorUp CEE Update</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Oleo+Script:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.4s ease;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            font-family: 'Oleo Script', cursive;
+            white-space: nowrap;
+        }
+
+        .video-player-container {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            transition: all 0.4s ease;
+        }
+
+        .custom-video-player {
+            width: 100%;
+            display: block;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background: #000;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        #vimeo-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .video-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f1f3f9;
+            transition: all 0.4s ease;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: #4e54c8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-btn:hover {
+            background: #3a3fb8;
+            transform: scale(1.05);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .play-pause-btn {
+            background: #4e54c8;
+            width: 50px;
+            height: 50px;
+        }
+
+        .speed-control {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .speed-control:hover {
+            background: #f5f5f5;
+        }
+
+        .landscape-btn {
+            padding: 8px 15px;
+            background: #4e54c8;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .landscape-btn:hover {
+            background: #3a3fb8;
+        }
+
+        .video-title {
+            font-size: 1.1rem;
+            margin: 15px 0;
+            color: #2c3e50;
+            text-align: center;
+            padding: 0 15px;
+            font-weight: 600;
+        }
+
+        /* Disable text selection and context menu */
+        body {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Landscape mode styles */
+        .landscape-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0;
+        }
+        
+        .landscape-mode .container {
+            max-width: 100%;
+            border-radius: 0;
+            padding: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+        
+        .landscape-mode .video-player-container {
+            border-radius: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .landscape-mode .video-wrapper {
+            padding-top: 0;
+            flex-grow: 1;
+            border-radius: 0;
+        }
+        
+        .landscape-mode .video-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            border-radius: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            z-index: 1001;
+        }
+        
+        .landscape-mode .header {
+            display: none;
+        }
+        
+        .landscape-mode .video-title {
+            color: white;
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            z-index: 1001;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+        }
+        
+        .exit-landscape {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1002;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .exit-landscape:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .video-controls {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .control-group {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .header h1 {
+                font-size: 1.7rem;
+            }
+            
+            body {
+                padding: 10px;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .control-group {
+                gap: 8px;
+            }
+            
+            .control-btn {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .play-pause-btn {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .landscape-btn {
+                padding: 6px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>TutorUp CEE Update</h1>
+        </div>
+        
+        <div class="video-player-container">
+            <div class="custom-video-player">
+                <div class="video-wrapper">
+                    <div style="width:100%;height:100%;position:absolute;top:0;left:0;">
+                        <iframe id="vimeo-player" src="https://player.vimeo.com/video/1116462600?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                </div>
+                
+                <h3 class="video-title">SCIENCE || GRAVITATIONAL || CL10</h3>
+                
+                <div class="video-controls">
+                    <div class="control-group">
+                        <button class="control-btn" onclick="skipBackward()">
+                            <i class="fas fa-backward-step"></i>
+                        </button>
+                        <button class="control-btn play-pause-btn" onclick="togglePlayPause()">
+                            <i class="fas fa-play" id="play-pause-icon"></i>
+                        </button>
+                        <button class="control-btn" onclick="skipForward()">
+                            <i class="fas fa-forward-step"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="speed-control" onclick="changeSpeed()">
+                            <span id="speed-text">1x</span>
+                        </div>
+                        <button class="landscape-btn" onclick="toggleLandscape()">
+                            <i class="fas fa-expand" id="landscape-icon"></i> Landscape
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="exit-landscape" onclick="toggleLandscape()">
+        <i class="fas fa-compress"></i>
+    </button>
+
+    <script src="https://player.vimeo.com/api/player.js"></script>
+    <script>
+        // DOM elements
+        const playPauseIcon = document.getElementById('play-pause-icon');
+        const speedText = document.getElementById('speed-text');
+        const landscapeIcon = document.getElementById('landscape-icon');
+        const exitLandscapeBtn = document.querySelector('.exit-landscape');
+        
+        // State variables
+        const speeds = [0.5, 1, 1.5, 2];
+        let currentSpeedIndex = 1;
+        let isLandscapeMode = false;
+        let vimeoPlayer;
+
+        // Initialize Vimeo player
+        function initPlayer() {
+            const iframe = document.getElementById('vimeo-player');
+            vimeoPlayer = new Vimeo.Player(iframe);
+            
+            // Set up event listeners
+            vimeoPlayer.on('play', function() {
+                playPauseIcon.className = 'fas fa-pause';
+            });
+            
+            vimeoPlayer.on('pause', function() {
+                playPauseIcon.className = 'fas fa-play';
+            });
+            
+            vimeoPlayer.on('ended', function() {
+                playPauseIcon.className = 'fas fa-play';
+            });
+            
+            // Set initial speed
+            vimeoPlayer.setPlaybackRate(speeds[currentSpeedIndex]);
+        }
+
+        // Function to toggle play/pause
+        function togglePlayPause() {
+            vimeoPlayer.getPaused().then(function(paused) {
+                if (paused) {
+                    vimeoPlayer.play();
+                    playPauseIcon.className = 'fas fa-pause';
+                } else {
+                    vimeoPlayer.pause();
+                    playPauseIcon.className = 'fas fa-play';
+                }
+            }).catch(function(error) {
+                console.error('Error toggling play/pause:', error);
+            });
+        }
+
+        // Function to skip forward 10 seconds
+        function skipForward() {
+            vimeoPlayer.getCurrentTime().then(function(seconds) {
+                vimeoPlayer.setCurrentTime(seconds + 10);
+            }).catch(function(error) {
+                console.error('Error skipping forward:', error);
+            });
+        }
+
+        // Function to skip backward 10 seconds
+        function skipBackward() {
+            vimeoPlayer.getCurrentTime().then(function(seconds) {
+                vimeoPlayer.setCurrentTime(seconds - 10);
+            }).catch(function(error) {
+                console.error('Error skipping backward:', error);
+            });
+        }
+
+        // Function to change playback speed
+        function changeSpeed() {
+            currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
+            const newSpeed = speeds[currentSpeedIndex];
+            
+            vimeoPlayer.setPlaybackRate(newSpeed).then(function() {
+                speedText.textContent = newSpeed + 'x';
+            }).catch(function(error) {
+                console.error('Error changing speed:', error);
+            });
+        }
+
+        // Function to toggle landscape mode
+        function toggleLandscape() {
+            isLandscapeMode = !isLandscapeMode;
+            
+            if (isLandscapeMode) {
+                // Enter landscape mode
+                document.body.classList.add('landscape-mode');
+                exitLandscapeBtn.style.display = 'flex';
+                landscapeIcon.className = 'fas fa-compress';
+                
+                // Request fullscreen on mobile devices
+                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    const container = document.querySelector('.container');
+                    if (container.requestFullscreen) {
+                        container.requestFullscreen().catch(console.log);
+                    } else if (container.webkitRequestFullscreen) {
+                        container.webkitRequestFullscreen();
+                    } else if (container.msRequestFullscreen) {
+                        container.msRequestFullscreen();
+                    }
+                }
+            } else {
+                // Exit landscape mode
+                document.body.classList.remove('landscape-mode');
+                exitLandscapeBtn.style.display = 'none';
+                landscapeIcon.className = 'fas fa-expand';
+                
+                // Exit fullscreen if needed
+                if (document.fullscreenElement) {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().catch(console.log);
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+            }
+        }
+
+        // Exit landscape mode when exiting fullscreen
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement && isLandscapeMode) {
+                toggleLandscape();
+            }
+        });
+
+        // Handle escape key to exit landscape mode
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isLandscapeMode) {
+                toggleLandscape();
+            }
+        });
+
+        // Disable zooming
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=')) {
+                e.preventDefault();
+            }
+        });
+
+        // Initialize the player when page loads
+        window.onload = function() {
+            initPlayer();
+        };
+    </script>
+</body>
+                          </html>
