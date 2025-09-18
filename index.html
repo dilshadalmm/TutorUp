@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Chat</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #e5ddd5;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  #chat {
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    margin: auto;
+    height: 100vh;
+    background: #e5ddd5;
+  }
+  #chat-container {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .message {
+    padding: 10px 15px;
+    border-radius: 20px;
+    max-width: 75%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.4;
+    position: relative;
+  }
+  .user-message {
+    background: #dcf8c6;
+    align-self: flex-end;
+    border-radius: 18px 18px 18px 18px;
+  }
+  .friend-message {
+    background: #fff;
+    align-self: flex-start;
+    border-radius: 18px 18px 18px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .username {
+    font-weight: bold;
+    font-size: 0.85em;
+    margin-bottom: 2px;
+  }
+  .input-container {
+    display: flex;
+    padding: 10px;
+    background: #f0f0f0;
+    gap: 10px;
+  }
+  .input-container textarea {
+    flex: 1;
+    padding: 10px 15px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    outline: none;
+    resize: none;
+    font-family: Arial;
+  }
+  .input-container button {
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: none;
+    background: #128c7e;
+    color: white;
+    cursor: pointer;
+  }
+  a {
+    color: #0645AD;
+    text-decoration: underline;
+    word-break: break-all;
+  }
+</style>
+</head>
+<body>
+
+<div id="chat">
+  <div id="chat-container"></div>
+  <div class="input-container">
+    <textarea id="message-input" rows="1" placeholder="Type your message"></textarea>
+    <button id="send-btn">Send</button>
+  </div>
+</div>
+
+<script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyD24bNk7GLLLPaFFpI-_bmfhXKWIXDiwEk",
+    authDomain: "chatcodee.firebaseapp.com",
+    databaseURL: "https://chatcodee-default-rtdb.firebaseio.com/",
+    projectId: "chatcodee",
+    storageBucket: "chatcodee.firebasestorage.app",
+    messagingSenderId: "773326415522",
+    appId: "1:773326415522:web:0dafff23ba1a111ee899fb"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const chatCode = 'Inspecting123';
+  const chatContainer = document.getElementById('chat-container');
+  const messageInput = document.getElementById('message-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  // Ask for username on first visit
+  let username = localStorage.getItem('username');
+  if(!username) {
+    username = prompt("Enter your username:") || "User";
+    localStorage.setItem('username', username);
+  }
+
+  const userId = Date.now(); // unique ID for this user
+
+  function linkify(text) {
+    const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    return text.replace(urlPattern, function(url) {
+      return `<a href="${url}" target="_blank">${url}</a>`;
+    });
+  }
+
+  function displayMessage(msg){
+    const div = document.createElement('div');
+    div.classList.add('message');
+    div.classList.add(msg.userId === userId ? 'user-message' : 'friend-message');
+
+    const usernameDiv = document.createElement('div');
+    usernameDiv.classList.add('username');
+    usernameDiv.textContent = msg.username;
+    div.appendChild(usernameDiv);
+
+    const textDiv = document.createElement('div');
+    textDiv.innerHTML = linkify(msg.text);
+    div.appendChild(textDiv);
+
+    chatContainer.appendChild(div);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  // Load messages from localStorage
+  let localChat = JSON.parse(localStorage.getItem('chat_' + chatCode)) || [];
+  localChat.forEach(displayMessage);
+
+  // Listen for new messages in Firebase
+  const chatRef = db.ref('chats/' + chatCode);
+  chatRef.on('child_added', (snapshot) => {
+    const msg = snapshot.val();
+    if(!localChat.find(m => m.text === msg.text && m.userId === msg.userId)){
+      displayMessage(msg);
+      localChat.push(msg);
+      localStorage.setItem('chat_' + chatCode, JSON.stringify(localChat));
+    }
+  });
+
+  function sendMessage(){
+    const text = messageInput.value.trim();
+    if(!text) return;
+
+    const msg = { text, userId, username };
+    chatRef.push(msg);
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  messageInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  messageInput.addEventListener('input', () => {
+    messageInput.style.height = 'auto';
+    messageInput.style.height = messageInput.scrollHeight + 'px';
+  });
+</script>
+
+</body>
+  </html>
