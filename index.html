@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://www.gstatic.com/ https://*.firebaseio.com https://*.firebaseapp.com; script-src 'self' 'unsafe-eval' https://www.gstatic.com/ https://*.firebaseio.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline';">
     <title>ChatCode</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -291,6 +292,15 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
+        /* Status message */
+        .status-message {
+            text-align: center;
+            color: var(--text-gray);
+            font-size: 0.9em;
+            padding: 8px;
+            font-style: italic;
+        }
+
         /* Responsive Design */
         @media (min-width: 768px) {
             #app-container {
@@ -330,7 +340,9 @@
 
         <!-- Chat Interface -->
         <div id="chat">
-            <div id="chat-container"></div>
+            <div id="chat-container">
+                <div class="status-message" id="status-message">Loading messages...</div>
+            </div>
             <div class="input-container">
                 <textarea id="message-input" rows="1" placeholder="Type a message"></textarea>
                 <div class="send-button" id="send-btn">
@@ -343,216 +355,317 @@
     </div>
 
     <script>
-        // Firebase config
-        const firebaseConfig = {
-            apiKey: "AIzaSyD24bNk7GLLLPaFFpI-_bmfhXKWIXDiwEk",
-            authDomain: "chatcodee.firebaseapp.com",
-            databaseURL: "https://chatcodee-default-rtdb.firebaseio.com/",
-            projectId: "chatcodee",
-            storageBucket: "chatcodee.firebasestorage.app",
-            messagingSenderId: "773326415522",
-            appId: "1:773326415522:web:0dafff23ba1a111ee899fb"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        // UI Elements
-        const chatDiv = document.getElementById('chat');
-        const chatContainer = document.getElementById('chat-container');
-        const navAvatar = document.getElementById('nav-avatar');
-        const themeToggle = document.getElementById('theme-toggle');
-        const messageInput = document.getElementById('message-input');
-        const sendBtn = document.getElementById('send-btn');
-
-        // App state
-        const chatCode = 'Inspecting123';
-        let currentUserId = Date.now();
-        let username = 'User' + Math.floor(Math.random() * 1000);
-        let localChat = [];
-        let isDarkMode = localStorage.getItem('darkMode') === 'true';
-
-        // Initialize the app
-        function initApp() {
-            // Apply saved theme
-            if (isDarkMode) {
-                document.body.classList.add('dark-mode');
-                themeToggle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z" /></svg>`;
-            }
-            
-            // Set user info
-            navAvatar.textContent = username.charAt(0).toUpperCase();
-            
-            // Show chat interface directly (no auth)
-            chatDiv.style.display = 'flex';
-            
-            // Load messages
-            loadMessages();
-            
-            // Prevent zooming
-            disableZoom();
-            
-            // Prevent text selection
-            disableTextSelection();
-            
-            // Focus on input field
-            setTimeout(() => {
-                messageInput.focus();
-            }, 500);
-        }
-
-        // Load messages from Firebase and localStorage
-        function loadMessages() {
-            // Load messages from localStorage first
-            localChat = JSON.parse(localStorage.getItem('chat_' + chatCode)) || [];
-            localChat.forEach(displayMessage);
-
-            // Listen to new messages from Firebase
-            db.ref('chats/' + chatCode).on('child_added', snapshot => {
-                const msg = snapshot.val();
-                
-                // Check if we already have this message
-                if (!localChat.find(m => m.text === msg.text && m.userId === msg.userId && m.timestamp === msg.timestamp)) {
-                    displayMessage(msg);
-                    localChat.push(msg);
-                    localStorage.setItem('chat_' + chatCode, JSON.stringify(localChat));
-                }
-            });
-        }
-
-        // Format message text with link detection
-        function linkify(text) {
-            const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-            return text.replace(urlPattern, url => `<a href="${url}" target="_blank">${url}</a>`);
-        }
-
-        // Format timestamp
-        function formatTimestamp(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-
-        // Display a message in the chat
-        function displayMessage(msg) {
-            const isCurrentUser = msg.userId === currentUserId;
-            
-            const div = document.createElement('div');
-            div.classList.add('message');
-            div.classList.add(isCurrentUser ? 'user-message' : 'friend-message');
-
-            // Add username for messages from others
-            if (!isCurrentUser) {
-                const usernameDiv = document.createElement('div');
-                usernameDiv.classList.add('username');
-                usernameDiv.textContent = msg.username;
-                div.appendChild(usernameDiv);
-            }
-
-            // Message text
-            const textDiv = document.createElement('div');
-            textDiv.innerHTML = linkify(msg.text);
-            div.appendChild(textDiv);
-
-            // Timestamp
-            const timeDiv = document.createElement('span');
-            timeDiv.classList.add('timestamp');
-            timeDiv.textContent = formatTimestamp(msg.timestamp);
-            div.appendChild(timeDiv);
-
-            // Delete button for own messages
-            if (isCurrentUser) {
-                const delBtn = document.createElement('span');
-                delBtn.textContent = 'Delete';
-                delBtn.classList.add('delete-btn');
-                delBtn.onclick = () => {
-                    if (msg.key) {
-                        db.ref('chats/' + chatCode + '/' + msg.key).remove();
-                    }
-                    div.remove();
-                    localChat = localChat.filter(m => m.timestamp !== msg.timestamp);
-                    localStorage.setItem('chat_' + chatCode, JSON.stringify(localChat));
-                };
-                div.appendChild(delBtn);
-            }
-
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        // Send a new message
-        function sendMessage() {
-            const text = messageInput.value.trim();
-            if (!text) return;
-            
-            const msgRef = db.ref('chats/' + chatCode).push();
-            const msg = {
-                text: text,
-                userId: currentUserId,
-                username: username,
-                timestamp: Date.now(),
-                key: msgRef.key
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Firebase config
+            const firebaseConfig = {
+                apiKey: "AIzaSyD24bNk7GLLLPaFFpI-_bmfhXKWIXDiwEk",
+                authDomain: "chatcodee.firebaseapp.com",
+                databaseURL: "https://chatcodee-default-rtdb.firebaseio.com/",
+                projectId: "chatcodee",
+                storageBucket: "chatcodee.firebasestorage.app",
+                messagingSenderId: "773326415522",
+                appId: "1:773326415522:web:0dafff23ba1a111ee899fb"
             };
             
-            msgRef.set(msg);
-            messageInput.value = '';
-            messageInput.style.height = 'auto';
-        }
-
-        // Toggle dark/light mode
-        function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            document.body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', isDarkMode);
-            
-            // Update icon
-            if (isDarkMode) {
-                themeToggle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z" /></svg>`;
-            } else {
-                themeToggle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12,18C11.11,18 10.26,17.8 9.5,17.45C11.56,16.5 13,14.42 13,12C13,9.58 11.56,7.5 9.5,6.55C10.26,6.2 11.11,6 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31L23.31,12L20,8.69Z" /></svg>`;
+            // Initialize Firebase
+            try {
+                firebase.initializeApp(firebaseConfig);
+                console.log("Firebase initialized successfully");
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showStatus("Error connecting to server", true);
             }
-        }
+            
+            const db = firebase.database();
 
-        // Disable zooming
-        function disableZoom() {
-            document.addEventListener('touchstart', function(event) {
-                if (event.touches.length > 1) {
-                    event.preventDefault();
+            // UI Elements
+            const chatDiv = document.getElementById('chat');
+            const chatContainer = document.getElementById('chat-container');
+            const statusMessage = document.getElementById('status-message');
+            const navAvatar = document.getElementById('nav-avatar');
+            const themeToggle = document.getElementById('theme-toggle');
+            const messageInput = document.getElementById('message-input');
+            const sendBtn = document.getElementById('send-btn');
+
+            // App state
+            const chatCode = 'Inspecting123';
+            let currentUserId = Date.now();
+            let username = 'User' + Math.floor(Math.random() * 1000);
+            let localChat = [];
+            let isDarkMode = localStorage.getItem('darkMode') === 'true';
+            let firebaseConnected = false;
+
+            // Initialize the app
+            function initApp() {
+                // Apply saved theme
+                if (isDarkMode) {
+                    document.body.classList.add('dark-mode');
+                    themeToggle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 极速加速器 0,1 14,22H10A1,1 0,1 9,21M12,4A5,5 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16极速加速器14V13.58C15.77,12.81 17,11.05 17,9A5,5 0,0 12,4Z" /></svg>`;
                 }
-            }, { passive: false });
-            
-            document.addEventListener('gesturestart', function(e) {
-                e.preventDefault();
-            });
-            
-            document.addEventListener('dblclick', function(e) {
-                e.preventDefault();
-            }, { passive: false });
-        }
-
-        // Disable text selection
-        function disableTextSelection() {
-            document.addEventListener('selectstart', function(e) {
-                e.preventDefault();
-            });
-        }
-
-        // Event listeners
-        sendBtn.addEventListener('click', sendMessage);
-        themeToggle.addEventListener('click', toggleTheme);
-        
-        messageInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+                
+                // Set user info
+                navAvatar.textContent = username.charAt(0).toUpperCase();
+                
+                // Show chat interface directly (no auth)
+                chatDiv.style.display = 'flex';
+                
+                // Load messages
+                loadMessages();
+                
+                // Prevent zooming
+                disableZoom();
+                
+                // Prevent text selection
+                disableTextSelection();
+                
+                // Focus on input field
+                setTimeout(() => {
+                    messageInput.focus();
+                }, 500);
+                
+                // Check Firebase connection
+                checkFirebaseConnection();
             }
-        });
 
-        messageInput.addEventListener('input', () => {
-            messageInput.style.height = 'auto';
-            messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
-        });
+            // Check Firebase connection status
+            function checkFirebaseConnection() {
+                const connectedRef = db.ref(".info/connected");
+                connectedRef.on("value", function(snap) {
+                    firebaseConnected = snap.val() === true;
+                    if (firebaseConnected) {
+                        showStatus("Connected", false);
+                        console.log("Firebase connected");
+                    } else {
+                        showStatus("Offline - connecting...", true);
+                        console.log("Firebase disconnected");
+                    }
+                });
+            }
 
-        // Initialize the app
-        initApp();
+            // Show status message
+            function showStatus(message, isError = false) {
+                statusMessage.textContent = message;
+                statusMessage.style.color = isError ? '#f44336' : 'var(--text-gray)';
+                statusMessage.style.display = 'block';
+                
+                if (!isError) {
+                    setTimeout(() => {
+                        statusMessage.style.display = 'none';
+                    }, 2000);
+                }
+            }
+
+            // Load messages from Firebase and localStorage
+            function loadMessages() {
+                // Load messages from localStorage first
+                try {
+                    localChat = JSON.parse(localStorage.getItem('chat_' + chatCode)) || [];
+                    if (localChat.length > 0) {
+                        statusMessage.style.display = 'none';
+                        localChat.forEach(displayMessage);
+                    }
+                } catch (e) {
+                    console.error("Error loading from localStorage:", e);
+                    showStatus("Error loading messages", true);
+                }
+
+                // Listen to new messages from Firebase
+                try {
+                    db.ref('chats/' + chatCode).on('child_added', snapshot => {
+                        const msg = snapshot.val();
+                        
+                        // Check if we already have this message
+                        if (!localChat.find(m => m.text === msg.text && m.userId === msg.userId && m.timestamp === msg.timestamp)) {
+                            statusMessage.style.display = 'none';
+                            displayMessage(msg);
+                            localChat.push(msg);
+                            try {
+                                localStorage.setItem('chat_' + chatCode, JSON.stringify(localChat));
+                            } catch (e) {
+                                console.error("Error saving to localStorage:", e);
+                            }
+                        }
+                    });
+                    
+                    // Handle errors
+                    db.ref('chats/' + chatCode).on('value', () => {
+                        // This just establishes the connection
+                    }, (error) => {
+                        console.error("Firebase error:", error);
+                        showStatus("Connection error - using offline mode", true);
+                    });
+                } catch (error) {
+                    console.error("Error setting up Firebase listener:", error);
+                    showStatus("Offline mode - connect to sync", true);
+                }
+            }
+
+            // Format message text with link detection
+            function linkify(text) {
+                const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+                return text.replace(urlPattern, url => `<a href="${url}" target="_blank">${url}</a>`);
+            }
+
+            // Format timestamp
+            function formatTimestamp(timestamp) {
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+             // Display a message in the chat
+            function displayMessage(msg) {
+                const isCurrentUser = msg.userId === currentUserId;
+                
+                const div = document.createElement('div');
+                div.classList.add('message');
+                div.classList.add(isCurrentUser ? 'user-message' : 'friend-message');
+
+                // Add username for messages from others
+                if (!isCurrentUser) {
+                    const usernameDiv = document.createElement('div');
+                    usernameDiv.classList.add('username');
+                    usernameDiv.textContent = msg.username;
+                    div.appendChild(usernameDiv);
+                }
+
+                // Message text
+                const textDiv = document.createElement('div');
+                textDiv.innerHTML = linkify(msg.text);
+                div.appendChild(textDiv);
+
+                // Timestamp
+                const timeDiv = document.createElement('span');
+                timeDiv.classList.add('timestamp');
+                timeDiv.textContent = formatTimestamp(msg.timestamp);
+                div.appendChild(timeDiv);
+
+                // Delete button for own messages
+                if (isCurrentUser) {
+                    const delBtn = document.createElement('span');
+                    delBtn.textContent = 'Delete';
+                    delBtn.classList.add('delete-btn');
+                    delBtn.onclick = () => {
+                        if (msg.key && firebaseConnected) {
+                            db.ref('chats/' + chatCode + '/' + msg.key).remove().catch(e => {
+                                console.error("Error deleting message:", e);
+                                showStatus("Error deleting message", true);
+                            });
+                        }
+                        div.remove();
+                        localChat = localChat.filter(m => m.timestamp !== msg.timestamp);
+                        try {
+                            localStorage.setItem('chat_' + chatCode, JSON.stringify(localChat));
+                        } catch (e) {
+                            console.error("Error updating localStorage:", e);
+                        }
+                    };
+                    div.appendChild(delBtn);
+                }
+
+                chatContainer.appendChild(div);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            // Send a new message
+            function sendMessage() {
+                const text = messageInput.value.trim();
+                if (!text) return;
+                
+                const msg = {
+                    text: text,
+                    userId: currentUserId,
+                    username: username,
+                    timestamp: Date.now()
+                };
+                
+                // Add to UI immediately for better responsiveness
+                displayMessage(msg);
+                localChat.push(msg);
+                try {
+                    localStorage.setItem('chat_' + chatCode, JSON.stringify(localChat));
+                } catch (e) {
+                    console.error("Error saving to localStorage:", e);
+                }
+                
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                
+                // Try to send to Firebase
+                if (firebaseConnected) {
+                    try {
+                        const msgRef = db.ref('chats/' + chatCode).push();
+                        msg.key = msgRef.key;
+                        msgRef.set(msg).catch(error => {
+                            console.error("Error sending message:", error);
+                            showStatus("Message sent locally but failed to sync", true);
+                        });
+                    } catch (error) {
+                        console.error("Error with Firebase operation:", error);
+                        showStatus("Using offline mode", true);
+                    }
+                } else {
+                    showStatus("Message saved locally (offline)", true);
+                }
+            }
+
+            // Toggle dark/light mode
+            function toggleTheme() {
+                isDarkMode = !isDarkMode;
+                document.body.classList.toggle('dark-mode');
+                localStorage.setItem('darkMode', isDarkMode);
+                
+                // Update icon
+                if (isDarkMode) {
+                    themeToggle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A7,7 0 0,1 极速加速器,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z" /></svg>`;
+                } else {
+                    themeToggle.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12,18C11.11,18 10.26,17.8 9.5,17.45C11.56,16.5 13,14.42 13,12极速加速器13,9.58 11.56,7.5 9.5,6.55C10.26,6.2 11.11,6 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31L23.31,12L20,8.69Z" /></svg>`;
+                }
+            }
+
+            // Disable zooming
+            function disableZoom() {
+                document.addEventListener('touchstart', function(event) {
+                    if (event.touches.length > 1) {
+                        event.preventDefault();
+                    }
+                }, { passive: false });
+                
+                document.addEventListener('gesturestart', function(e) {
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('dblclick', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
+            }
+
+            // Disable text selection
+            function disableTextSelection() {
+                document.addEventListener('selectstart', function(e) {
+                    e.preventDefault();
+                });
+            }
+
+            // Event listeners
+            sendBtn.addEventListener('click', sendMessage);
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            messageInput.addEventListener('input', () => {
+                messageInput.style.height = 'auto';
+                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+            });
+
+            // Initialize the app
+            initApp();
+        });
     </script>
 </body>
 </html>
