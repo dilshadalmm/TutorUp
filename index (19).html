@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Updated viewport meta tag to disable user zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Lecture Player</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom styles for the Inter font and dark theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* slate-900 */
+            color: #f8fafc; /* slate-50 */
+            margin: 0;
+            padding: 0;
+            /* Disable text selection and copying */
+            user-select: none;
+            -webkit-user-select: none;
+            /* Prevents all vertical scrolling on the body */
+            overflow-y: hidden;
+        }
+
+        /* Class to show gradient fade on collapsed description */
+        .description-collapsed::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4rem;
+            background: linear-gradient(to top, #1e293b, transparent);
+            pointer-events: none;
+        }
+        
+        /* Ensure the video player container has no extra space */
+        #video-player-container {
+            line-height: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        /*
+        The z-index on the sticky button bar ensures it floats above
+        the main content as it scrolls, preventing any overlap.
+        */
+        #sticky-buttons {
+            z-index: 40;
+            /* Add this relative position to allow the pseudo-element to be positioned correctly */
+            position: relative;
+        }
+        
+        /* Ensure the video player is always on top */
+        #video-player-container {
+            z-index: 50;
+        }
+
+        /* A pseudo-element to extend the background color upwards.
+        It is absolutely positioned from the sticky-buttons container
+        and extends up to fill the gap created by the fixed video player.
+        */
+        #sticky-buttons::before {
+            content: '';
+            position: absolute;
+            /* Set the top position to a negative value equal to the sticky top position
+            to make it start at the very top of the viewport.
+            */
+            top: calc(-1 * var(--sticky-top, 0));
+            /* Extend the background down to the bottom of the sticky bar */
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #0f172a; /* Match the body background */
+            z-index: -1; /* Place it behind the button content */
+        }
+
+        /* 🚀 HIDE SCROLLBAR COMPLETELY */
+        html {
+            scrollbar-width: none;    /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+
+        html::-webkit-scrollbar {
+            display: none;            /* Chrome/Safari */
+        }
+        
+        /* The main container for the content, allowing its internal elements to scroll if needed,
+        but keeping the main body fixed. */
+        .scrollable-content {
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+        /* Hide the scrollbar for the horizontal carousel on Webkit browsers */
+        .horizontal-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Fixed video player section at the very top of the screen with a high z-index -->
+    <div id="video-player-container" class="w-full bg-black fixed top-0 left-0">
+        <!-- Thumbnail image, visible by default -->
+        <img 
+            id="video-thumbnail"
+            class="w-full h-full object-cover"
+            src="https://edtech.b-cdn.net/QUESTION%20NO.%2023%20(%20GROUP%20'C'%20)%202081_20250924_174716_0000.png"
+            alt="Lecture series thumbnail"
+        >
+        <!-- Video player (iframe or video tag) will be injected here. It's hidden by default. -->
+        <div id="player-wrapper" class="w-full h-full hidden">
+            <!-- Player (video or iframe) will be injected here by JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Spacer div to push content below the fixed video player. Its height is set dynamically by JavaScript. -->
+    <div id="video-player-spacer" style="height: 0;"></div>
+
+    <!-- Centered content section below the player -->
+    <div class="container mx-auto p-4 lg:p-8">
+        
+        <!-- Main content area for video details -->
+        <div class="flex flex-col">
+
+            <!-- Primary Content: Video details. Added a relative position and z-index to force it on top of the sibling "Up Next" section. -->
+            <main class="w-full relative z-10">
+                
+                <!-- This is the "Button section" which is now sticky. Its z-index ensures it stays above the content below. -->
+                <div id="sticky-buttons" class="flex flex-col bg-slate-900 transition-colors duration-200" style="position: sticky; top: var(--sticky-top, 0);">
+                    <!-- Video Title is now inside the sticky container -->
+                    <h1 id="video-title" class="text-2xl md:text-3xl font-extrabold tracking-tight text-white mb-1">
+                        SEE 2082 - COMPLETE SCIENCE
+                    </h1>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-700">
+                        <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                            <img class="w-12 h-12 rounded-full object-cover" src="https://edtech.b-cdn.net/IMG_20250919_214517_978.webp" alt="Lecturer Avatar">
+                            <div>
+                                <p class="text-lg font-bold text-white">Dilshad Alam</p>
+                                <p class="text-sm text-slate-400">Science Tutor</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <!-- Modern 'Home' icon (Home) -->
+                            <button id="home-button" class="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 transition-colors duration-200 rounded-full px-4 py-2 text-sm font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                <span>Home</span>
+                            </button>
+                            <!-- Updated: 'Course' button -->
+                            <button id="course-button" class="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 transition-colors duration-200 rounded-full px-4 py-2 text-sm font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                                <span>Course</span>
+                            </button>
+                            <!-- Modern 'Module' icon (Four squares) -->
+                            <button class="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 transition-colors duration-200 rounded-full px-4 py-2 text-sm font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                                <span>Module</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+        
+        <!-- Section title will be updated by JS -->
+        <section class="mt-4">
+            <h2 id="carousel-title" class="text-xl font-bold mb-4">Chapters</h2>
+            <div id="lecture-carousel" class="horizontal-scroll-container flex space-x-4 overflow-x-auto pb-4 transition-opacity duration-300 ease-in-out">
+                <!-- Content will be injected by JavaScript -->
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Data structure for chapters and lectures
+        const chapters = [
+            {
+                title: "Chapter 01 : Reaction Mechanism",
+                thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                tutor: "Dilshad Alam",
+                lecturesCount: 4,
+                lectures: [
+                    {
+                        title: "Lecture 01 : Reaction Mechanism",
+                        url: "https://edtech.b-cdn.net/L01_-_REACTION_MECHANISM.mp4",
+                        duration: "49:02",
+                        thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                        author: "Dilshad Alam",
+                        views: "25K"
+                    },
+                    {
+                        title: "Lecture 02 : Reaction Mechanism",
+                        url: "https://edtech.b-cdn.net/L02_-_REACTION_MECHANISM.mp4",
+                        duration: "50:23",
+                        thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                        author: "Dilshad Alam",
+                        views: "18K"
+                    },
+                    {
+                        title: "Lecture 03 : Reaction Mechanism",
+                        url: "https://edtech.b-cdn.net/L03_-_REACTION_MECHANISM.mp4",
+                        duration: "01:13:10",
+                        thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                        author: "Dilshad Alam",
+                        views: "12K"
+                    },
+                    {
+                        title: "Lecture 04 : Reaction Mechanism",
+                        url: "https://edtech.b-cdn.net/L04_-_REACTION_MECHANISM.mp4",
+                        duration: "01:09:56",
+                        thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                        author: "Dilshad Alam",
+                        views: "9K"
+                    }
+                ]
+            },
+            {
+                title: "Chapter 02 : Organic Chemistry",
+                thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                tutor: "Dilshad Alam",
+                lecturesCount: 6,
+                lectures: [
+                    {
+                        title: "Lecture 01 : Organic Chemistry",
+                        url: "https://edtech.b-cdn.net/L01_-_REACTION_MECHANISM.mp4",
+                        duration: "49:02",
+                        thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                        author: "Dilshad Alam",
+                        views: "25K"
+                    },
+                    {
+                        title: "Lecture 02 : Organic Chemistry",
+                        url: "https://edtech.b-cdn.net/L02_-_REACTION_MECHANISM.mp4",
+                        duration: "50:23",
+                        thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                        author: "Dilshad Alam",
+                        views: "18K"
+                    },
+                    {
+                        title: "Lecture 03 : Organic Chemistry",
+                        url: "https://edtech.b-cdn.net/L03_-_REACTION_MECHANISM.mp4",
+                        duration: "01:13:10",
+                        thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                        author: "Dilshad Alam",
+                        views: "12K"
+                    },
+                    {
+                        title: "Lecture 04 : Organic Chemistry",
+                        url: "https://edtech.b-cdn.net/L04_-_REACTION_MECHANISM.mp4",
+                        duration: "01:09:56",
+                        thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                        author: "Dilshad Alam",
+                        views: "9K"
+                    },
+                    {
+                        title: "Lecture 05 : Organic Chemistry",
+                        type: 'youtube', // Specify the type for YouTube videos
+                        videoId: 'BPK7obvc_1c',
+                        duration: "YouTube",
+                        thumbnail: "https://i.ytimg.com/vi/BPK7obvc_1c/mqdefault.jpg",
+                        author: "Dilshad Alam",
+                        views: "via YouTube"
+                    },
+                    {
+                        title: "Lecture 06 : Organic Chemistry",
+                        url: "https://edtech.b-cdn.net/L02_-_REACTION_MECHANISM.mp4",
+                        duration: "50:23",
+                        thumbnail: "https://edtech.b-cdn.net/images%20(3).jpeg",
+                        author: "Dilshad Alam",
+                        views: "18K"
+                    }
+                ]
+            }
+        ];
+
+        // --- DOM ELEMENTS ---
+        const carousel = document.getElementById('lecture-carousel');
+        const carouselTitle = document.getElementById('carousel-title');
+        const playerWrapper = document.getElementById('player-wrapper');
+        const videoThumbnail = document.getElementById('video-thumbnail');
+        const videoTitle = document.getElementById('video-title');
+        const playerContainer = document.getElementById('video-player-container');
+        const homeButton = document.getElementById('home-button');
+        const spacer = document.getElementById('video-player-spacer');
+
+        // --- RENDERING FUNCTIONS ---
+        const TRANSITION_DURATION = 300; // Match CSS duration in ms
+
+        function renderChapters() {
+            carousel.style.opacity = '0';
+            setTimeout(() => {
+                carousel.innerHTML = ''; // Clear existing cards
+                carouselTitle.textContent = "Chapters";
+                
+                chapters.forEach((chapter, index) => {
+                    const card = document.createElement('div');
+                    card.classList.add('flex-shrink-0', 'w-72', 'rounded-xl', 'bg-slate-800/50', 'transition-all', 'duration-300', 'transform', 'cursor-pointer');
+                    card.dataset.index = index; // Store the chapter index
+                    card.innerHTML = `
+                        <img class="w-full h-48 object-cover rounded-t-xl" src="${chapter.thumbnail}" alt="${chapter.title} thumbnail">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-sm text-white leading-tight mb-1">${chapter.title}</h3>
+                            <p class="text-xs text-slate-400">${chapter.tutor}</p>
+                            <p class="text-xs text-slate-500 mt-1">${chapter.lecturesCount} Lectures</p>
+                        </div>
+                    `;
+                    carousel.appendChild(card);
+                });
+                carousel.style.opacity = '1';
+            }, TRANSITION_DURATION);
+        }
+        
+        function renderLectures(lectureArray, chapterIndex) {
+            carousel.style.opacity = '0';
+            setTimeout(() => {
+                carousel.innerHTML = ''; // Clear existing cards
+                carouselTitle.textContent = "Lectures From this Course";
+                
+                lectureArray.forEach((lecture, lectureIndex) => {
+                    const card = document.createElement('div');
+                    card.classList.add('flex-shrink-0', 'w-72', 'rounded-xl', 'bg-slate-800/50', 'transition-all', 'duration-300', 'transform', 'cursor-pointer');
+                    card.dataset.chapterIndex = chapterIndex;
+                    card.dataset.lectureIndex = lectureIndex;
+                    card.innerHTML = `
+                        <img class="w-full h-48 object-cover rounded-t-xl" src="${lecture.thumbnail}" alt="${lecture.title} thumbnail">
+                        <div class="p-4">
+                            <h3 class="font-semibold text-sm text-white leading-tight mb-1">${lecture.title}</h3>
+                            <p class="text-xs text-slate-400">${lecture.author}</p>
+                            <p class="text-xs text-slate-500 mt-1">${lecture.views} views • ${lecture.duration}</p>
+                        </div>
+                    `;
+                    carousel.appendChild(card);
+                });
+                carousel.style.opacity = '1';
+            }, TRANSITION_DURATION);
+        }
+
+        // Function to update the video player with the new lecture details
+        function updatePlayer(lecture) {
+            videoThumbnail.classList.add('hidden');
+            playerWrapper.classList.remove('hidden');
+            playerWrapper.innerHTML = ''; // Clear previous player
+
+            videoTitle.textContent = lecture.title;
+
+            if (lecture.type === 'youtube') {
+                // Embed YouTube video using an iframe.
+                // The 'youtube-nocookie.com' domain forces the privacy-enhanced mode.
+                // NOTE: There is no official YouTube API parameter to reliably disable "Share" or "Watch Later" buttons.
+                // Using `modestbranding=1` and `rel=0` provides the cleanest available player interface.
+                const iframe = document.createElement('iframe');
+                iframe.className = 'w-full h-full';
+                iframe.src = `https://www.youtube-nocookie.com/embed/${lecture.videoId}?autoplay=1&playsinline=1&modestbranding=1&rel=0`;
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                iframe.setAttribute('allowfullscreen', '');
+                playerWrapper.appendChild(iframe);
+            } else {
+                // Handle direct video links
+                const videoPlayer = document.createElement('video');
+                videoPlayer.className = 'w-full h-full object-cover';
+                videoPlayer.src = lecture.url;
+                videoPlayer.poster = lecture.thumbnail;
+                videoPlayer.controls = true;
+                videoPlayer.playsinline = true;
+                playerWrapper.appendChild(videoPlayer);
+                videoPlayer.play();
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        carousel.addEventListener('click', (event) => {
+            const card = event.target.closest('.rounded-xl');
+            if (card) {
+                // Check if it's a chapter card
+                if (card.dataset.index) {
+                    const chapterIndex = parseInt(card.dataset.index);
+                    const selectedChapter = chapters[chapterIndex];
+                    renderLectures(selectedChapter.lectures, chapterIndex);
+                } 
+                // Check if it's a lecture card
+                else if (card.dataset.chapterIndex !== undefined && card.dataset.lectureIndex !== undefined) {
+                    const chapterIndex = parseInt(card.dataset.chapterIndex);
+                    const lectureIndex = parseInt(card.dataset.lectureIndex);
+                    const lecture = chapters[chapterIndex].lectures[lectureIndex];
+                    updatePlayer(lecture);
+                }
+            }
+        });
+        
+        homeButton.addEventListener('click', () => {
+            // Show thumbnail and hide player
+            videoThumbnail.classList.remove('hidden');
+            playerWrapper.classList.add('hidden');
+            playerWrapper.innerHTML = ''; // This will stop any playing video/iframe
+
+            videoTitle.textContent = "SEE 2082 - COMPLETE SCIENCE"; // Set title back
+            renderChapters();
+        });
+
+
+        // --- SCRIPT FOR DYNAMIC PLAYER RESIZING AND STICKY HEADER POSITIONING ---
+        function resizeAndPositionElements() {
+            const screenWidth = window.innerWidth;
+            const playerHeight = screenWidth * 9 / 16;
+            
+            playerContainer.style.height = `${playerHeight}px`;
+            spacer.style.height = `${playerHeight}px`;
+            document.documentElement.style.setProperty('--sticky-top', `${playerHeight}px`);
+        }
+        
+        // --- INITIALIZATION ---
+        window.addEventListener('load', () => {
+            resizeAndPositionElements();
+            renderChapters(); // Render chapters on initial load
+        });
+        
+        window.addEventListener('resize', resizeAndPositionElements);
+    </script>
+</body>
+</html>
