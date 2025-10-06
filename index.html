@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>GeoBazar - Mobile Grocery App (Dark Mode) with Firebase</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Link to External Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col">
+    
+    <!-- Header / App Bar (Fixed Top) -->
+    <header id="app-header" class="sticky top-0 z-30 bg-gray-900 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="flex justify-between items-center h-16">
+                
+                <!-- Menu Toggle (Always prominent on mobile) -->
+                <button id="menu-toggle" class="lg:hidden text-gray-200 cursor-pointer p-2 rounded-xl hover:bg-gray-800 transition">
+                    <!-- Menu Icon (Hamburger) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                </button>
+
+                <!-- Logo & Branding (Centered in Yellow Box) -->
+                <a href="#" id="home-link-header" class="absolute left-1/2 transform -translate-x-1/2">
+                    <div class="bg-yellow-400 px-3 py-1 rounded-lg shadow-xl border-2 border-yellow-300 transform transition-transform duration-150 active:scale-95">
+                        <span class="text-2xl font-extrabold text-gray-900 leading-none">Geo<span class="text-blue-800">Bazar</span></span>
+                    </div>
+                </a>
+                
+                <!-- Action Icons (Order Tracking and Cart Count) -->
+                <div class="flex items-center space-x-3">
+                    
+                    <!-- Order Tracking Button -->
+                    <button id="track-order-header" class="text-gray-200 hover:text-blue-400 p-1 transition duration-150 transform active:scale-95">
+                        <!-- Truck/Delivery Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18H3c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h3"/><path d="M12 18H5V6h7l4 4v8"/><path d="M16 14h2l2 2v2h-4v-4zm-8 4v-4h4v4h-4z"/></svg>
+                    </button>
+                    
+                    <!-- Cart Count Button (Now Functional) -->
+                    <button id="cart-icon-header" class="text-gray-200 hover:text-green-400 relative p-1 transition duration-150 transform active:scale-95">
+                        <!-- Shopping Cart Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.72a2 2 0 0 0 2-1.58L23 6H6"/></svg>
+                        <span id="cart-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full ring-2 ring-gray-900">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- View Selector (Only shown on Home View) -->
+            <div id="view-selector-container" class="p-2 -mt-1 pb-4">
+                <div class="flex bg-gray-800 p-1 rounded-full shadow-inner border border-gray-700">
+                    <!-- Wholesale Market Button (Active by default) -->
+                    <button data-view="wholesale" 
+                            class="view-switch-btn flex-1 py-2 rounded-full text-sm font-bold transition duration-200 
+                                   bg-green-600 text-white shadow-xl transform active:scale-[0.98]">
+                        Wholesale Market
+                    </button>
+                    <!-- Retailer Store Button (Inactive by default) -->
+                    <button data-view="retailer" 
+                            class="view-switch-btn flex-1 py-2 rounded-full text-sm font-bold transition duration-200 
+                                   text-gray-300 hover:text-green-400">
+                        Retailer Store
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Sidebar Backdrop Overlay (Covers all content when sidebar is open) -->
+    <div id="sidebar-backdrop" 
+         class="fixed inset-0 bg-black/60 z-30 opacity-0 pointer-events-none transition-opacity duration-300"
+         aria-hidden="true" 
+         style="display: none;">
+    </div>
+
+
+    <!-- Sidebar Menu (Overlay for Mobile/Desktop) -->
+    <nav id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-gray-900 z-40 transform -translate-x-full transition-transform duration-300 shadow-2xl p-4 overflow-y-auto">
+        
+        <!-- MODIFIED: Contact Details Section Title (Red Box) -->
+        <div class="bg-red-800 border-2 border-red-500 p-3 rounded-xl shadow-xl mb-4 mt-4">
+            <h3 class="text-lg font-extrabold text-white text-center whitespace-nowrap">Contact Details</h3>
+        </div>
+        
+        <!-- MODIFIED: Contact Form Container (Yellow Box) -->
+        <div class="bg-yellow-600 border-2 border-yellow-400 p-3 rounded-xl shadow-xl">
+            <div class="text-sm text-gray-800 space-y-2">
+                <div>
+                    <label for="username-input" class="font-semibold">Username:</label>
+                    <input id="username-input" type="text" placeholder="Enter your name" class="w-full mt-1 p-2 bg-yellow-100 text-gray-900 placeholder:text-gray-600 rounded-md border border-yellow-500 focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label for="phone-input" class="font-semibold">Phone No:</label>
+                    <input id="phone-input" type="tel" placeholder="Enter your phone" class="w-full mt-1 p-2 bg-yellow-100 text-gray-900 placeholder:text-gray-600 rounded-md border border-yellow-500 focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <button id="save-details-btn" class="w-full bg-blue-700 text-white mt-3 py-2 rounded-lg font-bold hover:bg-blue-800 transition transform active:scale-95 shadow-md">
+                    Save Details
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="flex-grow max-w-7xl mx-auto w-full px-4 pt-2 pb-4 sm:px-6 sm:pt-4 lg:px-8 lg:pt-4">
+        
+        <!-- WHOLESALE MARKET VIEW (HOME) -->
+        <div id="wholesale-market-view" class="page-view">
+            
+            <section class="mb-8">
+                <div class="bg-blue-700 p-5 rounded-2xl shadow-xl text-white">
+                    <h3 class="text-xl font-bold mb-1 flex items-center">
+                        <span class="mr-3 text-3xl">統</span> Create a Shopping List
+                    </h3>
+                    <p class="text-blue-100 text-sm mb-4">
+                        Plan your weekly shop, save items to your list, and add them to the cart later!
+                    </p>
+                    <button class="bg-green-400 text-blue-900 px-5 py-2 rounded-full font-bold text-sm hover:bg-green-500 transition duration-150 shadow-lg w-full transform active:scale-95">
+                        Start Planning
+                    </button>
+                </div>
+            </section>
+
+            <section class="mb-8"> 
+                <div class="flex items-center justify-center mb-4">
+                    <div class="flex items-center flex-grow">
+                        <div class="h-0.5 w-full bg-red-600 rounded-full"></div>
+                        <div class="w-2 h-2 bg-red-600 rounded-full -ml-1 flex-shrink-0"></div>
+                    </div>
+                    <div class="bg-red-800 border-2 border-red-500 px-4 py-2 rounded-xl shadow-lg mx-2 flex-shrink-0">
+                        <h2 class="text-lg font-extrabold text-white text-center whitespace-nowrap">Top Deals Today (Swipe)</h2>
+                    </div>
+                    <div class="flex items-center flex-grow">
+                        <div class="w-2 h-2 bg-red-600 rounded-full -mr-1 flex-shrink-0"></div>
+                        <div class="h-0.5 w-full bg-red-600 rounded-full"></div>
+                    </div>
+                </div>
+                <div id="latest-products-grid" class="flex overflow-x-scroll space-x-4 pb-2 no-scrollbar snap-x snap-mandatory"></div>
+            </section>
+
+            <section class="mb-8">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="flex items-center flex-grow">
+                        <div class="h-0.5 w-full bg-red-600 rounded-full"></div>
+                        <div class="w-2 h-2 bg-red-600 rounded-full -ml-1 flex-shrink-0"></div>
+                    </div>
+                    <div class="bg-red-800 border-2 border-red-500 px-4 py-2 rounded-xl shadow-lg mx-2 flex-shrink-0">
+                        <h2 class="text-lg font-extrabold text-white text-center whitespace-nowrap">Featured Essentials</h2>
+                    </div>
+                    <div class="flex items-center flex-grow">
+                        <div class="w-2 h-2 bg-red-600 rounded-full -mr-1 flex-shrink-0"></div>
+                        <div class="h-0.5 w-full bg-red-600 rounded-full"></div>
+                    </div>
+                </div>
+                <div id="featured-products-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"></div>
+            </section>
+
+            <section class="mb-4"> 
+                <div class="bg-red-700 p-5 rounded-2xl shadow-xl text-white">
+                    <h3 class="text-xl font-bold mb-1 flex items-center">
+                        <span class="mr-3 text-3xl">腸</span> Manage Business Credit
+                    </h3>
+                    <p class="text-red-100 text-sm mb-4">
+                        Track your payment cycles and credit limits with different wholesalers in one place.
+                    </p>
+                    <button class="bg-yellow-400 text-red-900 px-5 py-2 rounded-full font-bold text-sm hover:bg-yellow-500 transition duration-150 shadow-lg w-full transform active:scale-95">
+                        View Credit Dashboard
+                    </button>
+                </div>
+            </section>
+        </div>
+        
+        <!-- CART REVIEW VIEW -->
+        <div id="cart-view" class="page-view">
+            <section class="p-2 -mt-1 pb-4">
+                <div id="payment-method-selector" class="flex bg-gray-800 p-1 rounded-full shadow-inner border border-gray-700">
+                    <button data-payment="esewa" class="payment-switch-btn flex-1 py-2 rounded-full text-sm font-bold transition duration-200 bg-green-600 text-white shadow-xl transform active:scale-[0.98]">eSewa</button>
+                    <button data-payment="cod" class="payment-switch-btn flex-1 py-2 rounded-full text-sm font-bold transition duration-200 text-gray-300 hover:text-green-400">Cash-On-Delivery</button>
+                </div>
+            </section>
+
+            <section class="mb-8">
+                <div class="bg-yellow-500 p-5 rounded-2xl shadow-xl text-gray-900">
+                    <h3 class="text-xl font-bold mb-1 flex items-center">
+                        <span class="mr-3 text-3xl">統</span> Create a Shopping List
+                    </h3>
+                    <p class="text-gray-800 text-sm mb-4">
+                        Plan your weekly shop, save items to your list, and add them to the cart later!
+                    </p>
+                    <button class="bg-red-700 text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-red-800 transition duration-150 shadow-lg w-full transform active:scale-95">
+                        Start Planning
+                    </button>
+                </div>
+            </section>
+            
+            <section class="mb-8">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="flex items-center flex-grow">
+                        <div class="h-0.5 w-full bg-blue-600 rounded-full"></div>
+                        <div class="w-2 h-2 bg-blue-600 rounded-full -ml-1 flex-shrink-0"></div>
+                    </div>
+                    <div class="bg-blue-800 border-2 border-blue-500 px-4 py-2 rounded-xl shadow-lg mx-2 flex-shrink-0">
+                        <h2 class="text-lg font-extrabold text-white text-center whitespace-nowrap">Your Shopping Cart (Review)</h2>
+                    </div>
+                    <div class="flex items-center flex-grow">
+                        <div class="w-2 h-2 bg-blue-600 rounded-full -mr-1 flex-shrink-0"></div>
+                        <div class="h-0.5 w-full bg-blue-600 rounded-full"></div>
+                    </div>
+                </div>
+                <div id="cart-items-list" class="space-y-3">
+                    <div class="text-center text-gray-500 mt-8">Your cart is empty.</div>
+                </div>
+                <div id="cart-summary-footer" class="bg-gray-800 p-4 rounded-xl shadow-lg mt-6">
+                    <div class="space-y-2 border-b border-gray-700 pb-3 mb-3">
+                        <div class="flex justify-between text-sm text-gray-300">
+                            <span>Subtotal:</span>
+                            <span id="subtotal-amount">NRs.0</span>
+                        </div>
+                        <div class="flex justify-between text-sm text-gray-300">
+                            <span>Delivery Fee:</span>
+                            <span id="delivery-fee-amount">NRs.0</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-xl font-bold text-green-400">
+                        <span>Total Payable:</span>
+                        <span id="total-amount">NRs.0</span>
+                    </div>
+                    <button id="checkout-button-cart" class="w-full bg-green-600 text-white py-3 mt-4 rounded-xl font-bold hover:bg-green-700 transition duration-150 transform active:scale-95 shadow-md disabled:bg-gray-500 disabled:cursor-not-allowed">
+                        Proceed to Checkout
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- ORDER TRACKING VIEW -->
+        <div id="tracking-view" class="page-view">
+            <section class="p-2 -mt-1 pb-4">
+                <div class="flex bg-gray-800 p-1 rounded-full shadow-inner border border-gray-700">
+                    <div class="flex-1 py-2 rounded-full text-sm font-bold bg-blue-600 text-white shadow-xl text-center">
+                        Order History
+                    </div>
+                </div>
+            </section>
+            <div id="past-orders-list" class="space-y-6">
+                 <div class="text-center text-gray-500 mt-8">Loading your past orders...</div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Navigation Bar (Fixed for App Feel) -->
+    <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-700 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.3)] h-16">
+        <div class="flex justify-around items-center h-full max-w-lg mx-auto">
+            <button data-page="home" class="nav-btn flex flex-col items-center justify-center text-green-400 transition duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span class="text-xs font-medium mt-0.5">Home</span>
+            </button>
+            <button id="bottom-nav-categories" class="flex flex-col items-center justify-center text-gray-400 hover:text-green-400 transition duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <span class="text-xs font-medium mt-0.5">Wholesalers</span>
+            </button>
+            <button data-page="cart" class="nav-btn flex flex-col items-center justify-center text-gray-400 hover:text-green-400 transition duration-150 relative">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.72a2 2 0 0 0 2-1.58L23 6H6"/></svg>
+                <span class="text-xs font-medium mt-0.5">Cart</span>
+                <span id="bottom-cart-count" class="absolute top-0 right-2 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+            </button>
+            <button data-page="account" class="nav-btn flex flex-col items-center justify-center text-gray-400 hover:text-green-400 transition duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="text-xs font-medium mt-0.5">Account</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Link to External JavaScript -->
+    <script src="script.js" type="module"></script>
+</body>
+</html>
+
