@@ -1,0 +1,54 @@
+body {
+    font-family: 'Inter', sans-serif;
+    /* Dark Mode Base Background */
+    background-color: #0d1117; /* bg-gray-950 equivalent for deep dark */
+    color: #d1d5db; /* Default light text color (text-gray-300) */
+    transition: background-color 0.3s ease;
+    /* NEW: Disable text selection/copy features for a native app feel */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Disable scrolling when menu is open */
+.menu-open {
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* Custom scrollbar style for horizontal category list/carousel */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+/* Ensure the main content is viewable above the fixed bottom navigation */
+main {
+    padding-bottom: 5rem !important; /* 80px, slightly more than the nav height, ensures buffer below last element */
+}
+
+/* Page views hidden by default, managed by JS */
+.page-view {
+    display: none;
+}
+
+/* Styles for blur and pointer disablement when menu is open */
+.main-blur {
+    /* Apply a visual darkening and slight blur effect to the main content */
+    filter: blur(3px) brightness(0.7);
+    pointer-events: none; /* Disable interaction with blurred content */
+    transition: filter 0.3s ease;
+}
+
+/* Apply the blur/pointer-events to the main interactive containers */
+#main-content.main-blur,
+#app-header.main-blur {
+    filter: blur(3px) brightness(0.7);
+    pointer-events: none;
+}
+
