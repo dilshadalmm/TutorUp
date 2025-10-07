@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Essential for mobile rendering -->
+    <!-- UPDATED: Added user-scalable=no and maximum-scale=1.0 to disable zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>GeoBazar - Mobile Grocery App (Dark Mode) with Firebase</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Firebase SDKs for Auth and Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        /* Dark Mode Base Background */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* bg-gray-950 equivalent for deep dark */
+            color: #d1d5db; /* Default light text color (text-gray-300) */
+            transition: background-color 0.3s ease; 
+            /* NEW: Disable text selection/copy features for a native app feel */
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none; 
+            -ms-user-select: none; 
+        }
+        /* Custom scrollbar style for horizontal category list/carousel */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        /* Ensure the main content is viewable above the fixed bottom navigation */
+        main {
+            padding-bottom: 5rem !important; /* 80px, slightly more than the nav height, ensures buffer below last element */
+        }
+        /* Page views hidden by default, managed by JS */
+        .page-view {
+            display: none;
+        }
+        
+        /* Auth Section Styles */
+        #auth-section {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #1976d2 0%, #0b1a29 100%);
+            padding: 20px;
+        }
+        
+        #auth-section .auth-container {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            background: #1e3648;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+            overflow: visible;
+            animation: fadeIn 0.5s ease-out;
+            border: 1px solid #385b75;
+            padding-top: 60px;
+        }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: scale(0.95); } 
+            to { opacity: 1; transform: scale(1); } 
+        }
+        
+        #auth-section .auth-header {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ffc107;
+            color: #212121;
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            text-align: center;
+        }
+        
+        #auth-section .auth-header h1 {   
+            font-size: 28px;
+            font-weight: 800;   
+            margin: 0;   
+            letter-spacing: 2px;   
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);  
+        }  
+        
+        #auth-section .auth-header p { display: none; }   
+        
+        #auth-section .form-container {   
+            padding: 0px 30px 40px 30px;
+        }  
+        
+        #auth-section .input-group { 
+            margin-bottom: 25px; 
+            position: relative; 
+        }  
+
+        #auth-section .input-group label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: #e8eaed; 
+            font-size: 14px; 
+        }  
+        
+        #auth-section .input-group input {   
+            width: 100%;   
+            padding: 14px 14px 14px 45px;   
+            border: 2px solid #385b75;   
+            border-radius: 12px;   
+            font-size: 16px;   
+            transition: all 0.3s ease;   
+            background: #2e4a60;  
+            color: #e8eaed;  
+        }  
+        
+        #auth-section .input-group input:focus { 
+            border-color: #42a5f5; 
+            outline: none; 
+            box-shadow: 0 0 0 4px rgba(66, 165, 245, 0.15); 
+        }   
+        
+        #auth-section .input-group i { 
+            position: absolute; 
+            left: 15px; 
+            top: 45px; 
+            color: #a0acb5; 
+            font-size: 18px; 
+            transition: color 0.3s ease; 
+        }  
+        
+        #auth-section .input-group input:focus + i { 
+            color: #42a5f5; 
+        }  
+
+        #auth-section .btn {   
+            width: 100%;   
+            padding: 15px;   
+            background: linear-gradient(135deg, #42a5f5 0%, #1976d2 100%);   
+            color: white;   
+            border: none;   
+            border-radius: 12px;   
+            font-size: 16px;   
+            font-weight: 600;   
+            cursor: pointer;   
+            transition: all 0.3s ease;   
+            display: flex;   
+            justify-content: center;   
+            align-items: center;   
+            gap: 8px;   
+            margin-bottom: 10px;  
+        }  
+        
+        #auth-section .btn:hover {   
+            background: #0d47a1;   
+            transform: translateY(-3px);   
+            box-shadow: 0 7px 20px rgba(66, 165, 245, 0.3);   
+        }  
+        
+        #auth-section .btn:disabled { 
+            background: #2e4a60; 
+            color: #a0acb5; 
+            cursor: not-allowed; 
+            transform: none; 
+            box-shadow: none; 
+        }  
+        
+        #auth-section .switch-text {  
+            text-align: center;  
+            margin-top: 15px;  
+            color: #a0acb5;  
+            font-size: 14px;  
+        }  
+        
+        #auth-section .switch-link {  
+            color: #42a5f5;  
+            font-weight: 600;  
+            cursor: pointer;  
+            text-decoration: none;  
+        }  
+        
+        #auth-section .switch-link:hover {  
+            text-decoration: underline;  
+        }  
+
+        #auth-section .alert {   
+            padding: 12px 16px;   
+            border-radius: 10px;   
+            margin-top: 20px;   
+            text-align: center;   
+            background: #450a0a;   
+            border: 1px solid #7f1d1d;   
+            color: #fca5a5;   
+            font-size: 14px;   
+            display: none;   
+        }  
+        
+        #auth-section .success {  
+            background: #155e75;   
+            border: 1px solid #22d3ee;  
+            color: #ecfeff;  
+        }  
+        
+        #auth-section .loader { 
+            width: 20px; 
+            height: 20px; 
+            border: 3px solid rgba(255, 255, 255, 0.3); 
+            border-radius: 50%; 
+            border-top-color: white; 
+            animation: spin 1s ease-in-out infinite; 
+            display: none; 
+        }  
+        
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }  
+
+        /* Hide forms initially */  
+        #loginForm, #signupForm { display: none; }  
+        
+        /* Main app section initially hidden */
+        #main-app-section {
+            display: none;
+        }
+        
+        /* Custom colors for Tailwind */
+        :root {
+            --geobazar-blue: #0e6e98;
+            --geobazar-yellow: #ffc72c;
+            --geobazar-dark: #07384E;
+        }
+
+        /* --- Custom Keyframe Animation for the Bouncing Dots --- */
+        @keyframes bounce-wave {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.0);
+                opacity: 1;
+            }
+        }
+
+        .dot {
+            width: 1rem;
+            height: 1rem;
+            background-color: var(--geobazar-yellow);
+            border-radius: 50%;
+            animation: bounce-wave 1.4s infinite ease-in-out both;
+        }
+
+        /* Apply staggered delay for the "wave" effect */
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        .dot:nth-child(3) { animation-delay: 0s; }
+
+        /* Initial state of the loading screen (visible) */
+        #loading-screen {
+            transition: opacity 1s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen" class="fixed inset-0 flex flex-col items-center justify-center bg-zinc-900 text-white transition-opacity duration-1000 z-50">
+        <!-- Logo & Text Block -->
+        <div class="flex flex-col items-center">
+            <!-- Grocery Cart Icon (Inline SVG for sharpness) -->
+            <svg class="w-16 h-16 sm:w-24 sm:h-24 mb-4 text-[#FFC72C]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                <path d="M16 8h-4"></path>
+            </svg>
+            
+            <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight" style="color:var(--geobazar-blue); text-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);">
+                Geo<span class="text-[#FFC72C]">Bazar</span>
+            </h1>
+            <p class="text-lg sm:text-xl mt-2 font-medium text-gray-300">Your Fresh Groceries Delivered</p>
+        </div>
+
+        <!-- Bouncing Dot Loader Animation -->
+        <div class="flex space-x-3 mt-12">
+            <div class="dot" style="background-color:var(--geobazar-blue);"></div>
+            <div class="dot" style="background-color:var(--geobazar-yellow);"></div>
+            <div class="dot" style="background-color:var(--geobazar-blue);"></div>
+        </div>
+        
+        <p class="text-sm mt-6 text-gray-500">Loading essential data...</p>
+    </div>
+
+    <!-- AUTHENTICATION SECTION -->
+    <div id="auth-section">
+        <div class="auth-container">
+            <!-- Logo in Small Floating Yellow Badge -->
+            <div class="auth-header">
+                <h1 id="headerTitle">GeoBazar</h1>
+                <p id="headerSubtitle" style="display:none;"></p>
+            </div>
+            
+            <div class="form-container">
+                <!-- Login Form -->
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="input-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                         <i class="fas fa-lock"></i>
+                    </div>
+                    <button type="submit" class="btn" id="loginBtn">
+                        <div class="loader" id="loginLoader"></div>
+                        <span id="loginBtnText">Sign In</span>
+                    </button>
+                     <div id="loginErrorMessage" class="alert"></div>
+                     <p class="switch-text">
+                         Don't have an account? 
+                         <a href="#" class="switch-link" data-form="signup">Sign Up</a>
+                     </p>
+                </form>
+
+                <!-- Sign Up Form -->
+                <form id="signupForm">
+                    <div class="input-group">
+                        <label for="signupEmail">Email</label>
+                        <input type="email" id="signupEmail" placeholder="Choose a new email" required>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="input-group">
+                        <label for="signupPassword">Password (Min 6 chars)</label>
+                        <input type="password" id="signupPassword" placeholder="Create a password" required minlength="6">
+                         <i class="fas fa-key"></i>
+                    </div>
+                    <button type="submit" class="btn" id="signupBtn">
+                        <div class="loader" id="signupLoader"></div>
+                        <span id="signupBtnText">Sign Up</span>
+                    </button>
+                     <div id="signupErrorMessage" class="alert"></div>
+                     <p class="switch-text">
+                         Already have an account? 
+                         <a href="#" class="switch-link" data-form="login">Sign In</a>
+                     </p>
+                </form>
+                
+                <!-- Logged In Message Container (Hidden initially) -->
+                 <div id="loggedInContainer" style="display:none; text-align: center; padding: 40px 0px 0px 0px;">
+                    <!-- Content populated by JavaScript on successful login -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP SECTION -->
+    <div id="main-app-section">
+        <!-- Header / App Bar (Fixed Top) -->
+        <header id="app-header" class="sticky top-0 z-30 bg-gray-900 shadow-2xl">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6">
+                <div class="flex justify-between items-center h-16">
+                    
+                    <!-- NEW: Hamburger Menu Placeholder -->
+                    <button class="text-gray-200 hover:text-blue-400 p-1 transition duration-150 transform active:scale-95">
+                        <!-- Hamburger Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
+
+                    <!-- Logo & Branding (Centered in Yellow Box) -->
+                    <a href="#" id="home-link-header" class="absolute left-1/2 transform -translate-x-1/2">
+                        <div class="bg-yellow-400 px-3 py-1 rounded-lg shadow-xl border-2 border-yellow-300 transform transition-transform duration-150 active:scale-95">
+                            <span class="text-2xl font-extrabold text-gray-900 leading-none">Geo<span class="text-blue-800">Bazar</span></span>
+                        </div>
+                    </a>
+                    
+                    <!-- Action Icons (Order Tracking and Cart Count) -->
+                    <div class="flex items-center space-x-3">
+                        
+                        <!-- Order Tracking Button -->
+                        <button id="track-order-header" class="text-gray-200 hover:text-blue-400 p-1 transition duration-150 transform active:scale-95">
+                            <!-- Truck/Delivery Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18H3c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h3"/><path d="M12 18H5V6h7l4 4v8"/><path d="M16 14h2l2 2v2h-4v-4zm-8 4v-4h4v4h-4z"/></svg>
+                        </button>
+                        
+                        <!-- Cart Count Button (Now Functional) -->
+                        <button id="cart-icon-header" class="text-gray-200 hover:text-green-400 relative p-1 transition duration-150 transform active:scale-95">
+                            <!-- Shopping Cart Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.72a2 2 0 0 0 2-1.58L23 6H6"/></svg>
+                            <span id="cart-count" class="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full ring-2 ring-gray-900">0</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- View Selector (Only shown on Home View) -->
+                <div id="view-selector-container" class="p-2 -mt-1 pb-4">
+                    <div class="flex bg-gray-800 p-1 rounded-full shadow-inner border border-gray-700">
+                        <!-- Wholesale Market Button (Active by default) -->
+                        <button data-view="wholesale" 
+                                class="view-switch-btn flex-1 py-2 rounded-full text-sm font-bold transition duration-200 
+                                       bg-green-600 text-white shadow-xl transform active:scale-[0.98]">
+                            Wholesale Market
+                        </button>
+                        <!-- Retailer Store Button (Inactive by default) -->
+                        <button data-view="retailer" 
+                                class="view-switch-btn flex-1 py-2 rounded-full text-sm font-bold transition duration-200 
+                                       text-gray-300 hover:text-green-400">
+                            Retailer Store
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Content Area -->
+        <main id="main-content" class="flex-grow max-w-7xl mx-auto w-full px-4 pt-2 pb-4 sm:px-6 sm:pt-4 lg:px-8 lg:pt-4">
+            
+            <!-- WHOLESALE MARKET VIEW (HOME) -->
+            <div id="wholesale-market-view" class="page-view">
+                
+                <!-- Shopping List Feature Card (Blue and prominent) -->
+                <section class="mb-8">
+                    <div class="bg-blue-700 p-5 rounded-2xl shadow-xl text-white">
+                        <!-- MODIFIED: Added icon -->
+                        <h3 class="text-xl font-bold mb-1 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="m9 14 2 2 4-4"></path></svg>
+                            <span>Create a Shopping List</span>
+                        </h3>
+                        <p class="text-blue-100 text-sm mb-4">
+                            Plan your weekly shop, save items to your list, and add them to the cart later!
+                        </p>
+                        <button class="bg-green-400 text-blue-900 px-5 py-2 rounded-full font-bold text-sm hover:bg-green-500 transition duration-150 shadow-lg w-full transform active:scale-95">
+                            Start Planning
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Latest Products Section (CAROUSEL) -->
+                <section class="mb-8"> 
+                    <!-- STYLED HEADING: Top Deals Today (Swipe) -->
+                    <div class="flex items-center justify-center mb-4">
+                        <!-- Left Line and Circle -->
+                        <div class="flex items-center flex-grow">
+                            <div class="h-0.5 w-full bg-red-600 rounded-full"></div>
+                            <div class="w-2 h-2 bg-red-600 rounded-full -ml-1 flex-shrink-0"></div>
+                        </div>
+
+                        <!-- Title Box -->
+                        <div class="bg-red-800 border-2 border-red-500 px-4 py-2 rounded-xl shadow-lg mx-2 flex-shrink-0">
+                            <h2 class="text-lg font-extrabold text-white text-center whitespace-nowrap">Top Deals Today (Swipe)</h2>
+                        </div>
+
+                        <!-- Right Line and Circle -->
+                        <div class="flex items-center flex-grow">
+                            <div class="w-2 h-2 bg-red-600 rounded-full -mr-1 flex-shrink-0"></div>
+                            <div class="h-0.5 w-full bg-red-600 rounded-full"></div>
+                        </div>
+                    </div>
+                    <!-- END STYLED HEADING -->
+
+                    <!-- Horizontal scroll container for the carousel: GAP MATCHES GRID BELOW -->
+                    <div id="latest-products-grid" 
+                         class="flex overflow-x-scroll space-x-4 pb-2 no-scrollbar snap-x snap-mandatory">
+                        <!-- Product Cards injected by JS -->
+                    </div>
+                </section>
+
+                <!-- Featured Products Section (REMAINS ON HOME VIEW) -->
+                <section class="mb-8">
+                    <!-- STYLED HEADING: Featured Essentials -->
+                    <div class="flex items-center justify-center mb-4">
+                        <!-- Left Line and Circle -->
+                        <div class="flex items-center flex-grow">
+                            <div class="h-0.5 w-full bg-red-600 rounded-full"></div>
+                            <div class="w-2 h-2 bg-red-600 rounded-full -ml-1 flex-shrink-0"></div>
+                        </div>
+
+                        <!-- Title Box -->
+                        <div class="bg-red-800 border-2 border-red-500 px-4 py-2 rounded-xl shadow-lg mx-2 flex-shrink-0">
+                            <h2 class="text-lg font-extrabold text-white text-center whitespace-nowrap">Featured Essentials</h2>
+                        </div>
+
+                        <!-- Right Line and Circle -->
+                        <div class="flex items-center flex-grow">
+                            <div class="w-2 h-2 bg-red-600 rounded-full -mr-1 flex-shrink-0"></div>
+                            <div class="h-0.5 w-full bg-red-600 rounded-full"></div>
+                        </div>
+                    </div>
+                    <!-- END STYLED HEADING -->
+
+                    <!-- Grid maintains grid-cols-2 and gap-4 -->
+                    <div id="featured-products-grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                        <!-- Product Cards injected by JS -->
+                    </div>
+                </section>
+
+                <!-- Manage Business Credit Card (Red Card Section) (REMAINS ON HOME VIEW) -->
+                <section class="mb-4"> 
+                    <div class="bg-red-700 p-5 rounded-2xl shadow-xl text-white">
+                        <!-- MODIFIED: Added icon -->
+                        <h3 class="text-xl font-bold mb-1 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                            <span>Manage Business Credit</span>
+                        </h3>
+                        <p class="text-red-100 text-sm mb-4">
+                            Track your payment cycles and credit limits with different wholesalers in one place.
+                        </p>
+                        <button class="bg-yellow-400 text-red-900 px-5 py-2 rounded-full font-bold text-sm hover:bg-yellow-500 transition duration-150 shadow-lg w-full transform active:scale-95">
+                            View Credit Dashboard
+                        </button>
+                    </div>
+                </section>
+                
+            </div>
+            
+            <!-- CART REVIEW VIEW -->
+            <div id="cart-view" class="page-view">
+                
+                <!-- Payment Method Selector (Capsule Style) - MOVED TO TOP -->
+                <section class="p-2 -mt-1 pb-4">
+                    <div id="payment-method-selector" class="flex bg-gray-800 p-1 rounded-full shadow-inner border border-gray-700">
+                        <button data-payment="esewa" 
+                                class="payment-switch-btn flex-1 py-2 rounded-full text-sm font-bold transition duration-200 
+                                       bg-green-600 text-white shadow-xl transform active:scale-[0.98]">
+                            eSewa
+                        </button>
+                        <button data-payment="cod" 
+                                class="payment-switch-btn flex-1 py-2 rounded-full text-sm font-bold transition duration-200 
+                                       text-gray-300 hover:text-green-400">
+                            Cash-On-Delivery
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Shopping List Feature Card (UPDATED TO YELLOW) -->
+                <section class="mb-8">
+                    <div class="bg-yellow-500 p-5 rounded-2xl shadow-xl text-gray-900">
+                         <!-- MODIFIED: Added icon -->
+                         <h3 class="text-xl font-bold mb-1 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="m9 14 2 2 4-4"></path></svg>
+                            <span>Create a Shopping List</span>
+                        </h3>
+                        <p class="text-gray-800 text-sm mb-4">
+                            Plan your weekly shop, save items to your list, and add them to the cart later!
+                        </p>
+                        <button class="bg-red-700 text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-red-800 transition duration-150 shadow-lg w-full transform active:scale-95">
+                            Start Planning
+                        </button>
+                    </div>
+                </section>
+                
+                <!-- SECTION: Your Shopping Cart List -->
+                <section class="mb-8">
+                     <!-- STYLED HEADING: Your Shopping Cart (Review) -->
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="flex items-center flex-grow">
+                            <div class="h-0.5 w-full bg-blue-600 rounded-full"></div>
+                            <div class="w-2 h-2 bg-blue-600 rounded-full -ml-1 flex-shrink-0"></div>
+                        </div>
+                        <div class="bg-blue-800 border-2 border-blue-500 px-4 py-2 rounded-xl shadow-lg mx-2 flex-shrink-0">
+                            <h2 class="text-lg font-extrabold text-white text-center whitespace-nowrap">Your Shopping Cart (Review)</h2>
+                        </div>
+                        <div class="flex items-center flex-grow">
+                            <div class="w-2 h-2 bg-blue-600 rounded-full -mr-1 flex-shrink-0"></div>
+                            <div class="h-0.5 w-full bg-blue-600 rounded-full"></div>
+                        </div>
+                    </div>
+                    <!-- END STYLED HEADING -->
+
+                    <div id="cart-items-list" class="space-y-3">
+                        <!-- Cart items will be rendered here -->
+                        <div class="text-center text-gray-500 mt-8">Your cart is empty.</div>
+                    </div>
+                    
+                    <!-- Cart Summary and Checkout Button -->
+                    <div id="cart-summary-footer" class="bg-gray-800 p-4 rounded-xl shadow-lg mt-6">
+                        <div class="space-y-2 border-b border-gray-700 pb-3 mb-3">
+                            <div class="flex justify-between text-sm text-gray-300">
+                                <span>Subtotal:</span>
+                                <span id="subtotal-amount">NRs.0</span>
+                            </div>
+                            <div class="flex justify-between text-sm text-gray-300">
+                                <span>Delivery Fee:</span>
+                                <span id="delivery-fee-amount">NRs.0</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-xl font-bold text-green-400">
+                            <span>Total Payable:</span>
+                            <span id="total-amount">NRs.0</span>
+                        </div>
+                        
+                        <button id="checkout-button-cart" class="w-full bg-green-600 text-white py-3 mt-4 rounded-xl font-bold hover:bg-green-700 transition duration-150 transform active:scale-95 shadow-md disabled:bg-gray-500 disabled:cursor-not-allowed">
+                            Proceed to Checkout
+                        </button>
+                    </div>
+                    
+                    <!-- MODIFIED: Contact Details Section (Initially Hidden) - UPDATED STYLE -->
+                    <section id="contact-details-cart" class="mt-8 hidden">
+                        <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-4 rounded-2xl shadow-xl max-w-md mx-auto">
+                            <div class="flex justify-end items-center mb-4">
+                                 <div>
+                                     <button class="edit-details-btn bg-blue-600 text-white px-4 py-1 rounded-full font-bold text-sm hover:bg-blue-700 transition transform active:scale-95">Edit</button>
+                                     <button class="save-details-btn bg-green-600 text-white px-4 py-1 rounded-full font-bold text-sm hover:bg-green-700 transition transform active:scale-95 hidden">Save</button>
+                                 </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="username-cart" class="text-sm font-bold text-gray-300">Username</label>
+                                    <input id="username-cart" type="text" class="contact-username-input w-full mt-1 p-2 bg-gray-700 text-white placeholder:text-gray-500 rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Your Name" disabled>
+                                </div>
+                                <div>
+                                    <label for="phone-cart" class="text-sm font-bold text-gray-300">Mobile No.</label>
+                                    <input id="phone-cart" type="tel" class="contact-phone-input w-full mt-1 p-2 bg-gray-700 text-white placeholder:text-gray-500 rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Your Phone Number" disabled>
+                                </div>
+                            </div>
+                            <button id="place-order-button" class="w-full bg-red-600 text-white py-3 mt-4 rounded-xl font-bold hover:bg-red-700 transition duration-150 transform active:scale-95 shadow-md">
+                                Place Order
+                            </button>
+                        </div>
+                    </section>
+                </section>
+
+            </div>
+
+            <!-- ORDER TRACKING VIEW (Content is now dynamic) -->
+            <div id="tracking-view" class="page-view">
+                 <!-- MODIFIED: Order History Title moved below contact details -->
+                <section class="p-2 -mt-1 pb-4">
+                    <div class="flex bg-gray-800 p-1 rounded-full shadow-inner border border-gray-700">
+                        <div class="flex-1 py-2 rounded-full text-sm font-bold bg-blue-600 text-white shadow-xl text-center">
+                            Contact Details
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MODIFIED: Contact Details Section for Order History Page - UPDATED STYLE -->
+                <section id="contact-details-tracking" class="mb-6">
+                    <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-4 rounded-2xl shadow-xl max-w-md mx-auto">
+                        <div class="flex justify-end items-center mb-4">
+                             <div>
+                                 <button class="edit-details-btn bg-blue-600 text-white px-4 py-1 rounded-full font-bold text-sm hover:bg-blue-700 transition transform active:scale-95">Edit</button>
+                                 <button class="save-details-btn bg-green-600 text-white px-4 py-1 rounded-full font-bold text-sm hover:bg-green-700 transition transform active:scale-95 hidden">Save</button>
+                             </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="username-tracking" class="text-sm font-bold text-gray-300">Username</label>
+                                <input id="username-tracking" type="text" class="contact-username-input w-full mt-1 p-2 bg-gray-700 text-white placeholder:text-gray-500 rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Your Name" disabled>
+                            </div>
+                            <div>
+                                <label for="phone-tracking" class="text-sm font-bold text-gray-300">Mobile No.</label>
+                                <input id="phone-tracking" type="tel" class="contact-phone-input w-full mt-1 p-2 bg-gray-700 text-white placeholder:text-gray-500 rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Your Phone Number" disabled>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                 <!-- NEW: Order History Title moved below contact details -->
+                <section class="p-2 -mt-1 pb-4">
+                    <div class="flex bg-gray-800 p-1 rounded-full shadow-inner border border-gray-700">
+                        <div class="flex-1 py-2 rounded-full text-sm font-bold bg-blue-600 text-white shadow-xl text-center">
+                            Order History
+                        </div>
+                    </div>
+                </section>
+
+                <div id="past-orders-list" class="space-y-6">
+                    <!-- Past orders will be dynamically injected here -->
+                     <div class="text-center text-gray-500 mt-8">Loading your past orders...</div>
+                </div>
+            </div>
+            
+        </main>
+        
+        <!-- Bottom Navigation Bar (Fixed for App Feel) -->
+        <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-700 shadow-[0_-5px_15px_-3px_rgba(0,0,0,0.3)] h-16">
+            <div class="flex justify-around items-center h-full max-w-lg mx-auto">
+                <!-- Home -->
+                <button data-page="home" class="nav-btn flex flex-col items-center justify-center text-green-400 transition duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span class="text-xs font-medium mt-0.5">Home</span>
+                </button>
+                <!-- NEW: Order History Button -->
+                <button data-page="tracking" class="nav-btn flex flex-col items-center justify-center text-gray-400 hover:text-green-400 transition duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
+                    <span class="text-xs font-medium mt-0.5">Orders</span>
+                </button>
+                <!-- Cart (Central Action) -->
+                <button data-page="cart" class="nav-btn flex flex-col items-center justify-center text-gray-400 hover:text-green-400 transition duration-150 relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.72a2 2 0 0 0 2-1.58L23 6H6"/></svg>
+                    <span class="text-xs font-medium mt-0.5">Cart</span>
+                    <span id="bottom-cart-count" class="absolute top-0 right-2 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+                </button>
+                <!-- MODIFIED: Logout Button -->
+                <button id="logout-button" class="nav-btn flex flex-col items-center justify-center text-gray-400 hover:text-red-400 transition duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span class="text-xs font-medium mt-0.5">Logout</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Font Awesome Icons for Auth Section -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- JS for authentication and app functionality -->
+    <script>
+        // --- Firebase Configuration ---  
+        const firebaseConfig = {  
+            apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",  
+            authDomain: "geobazarr.firebaseapp.com",  
+            databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",  
+            projectId: "geobazarr",  
+            storageBucket: "geobazarr.appspot.com",  
+            messagingSenderId: "679949247383",  
+            appId: "1:679949247383:web:036d4f32038422ebb89ad2"  
+        };  
+          
+        // --- Initialize Firebase ---  
+        firebase.initializeApp(firebaseConfig);  
+        const auth = firebase.auth();  
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);  
+        
+        // Firestore database
+        const db = firebase.firestore();
+
+        // --- AUTHENTICATION LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Loading Screen Elements ---
+            const loadingScreen = document.getElementById('loading-screen');
+            const authSection = document.getElementById('auth-section');
+            const mainAppSection = document.getElementById('main-app-section');
+            
+            // Show loading screen for 4 seconds then proceed with auth check
+            setTimeout(() => {
+                // Hide loading screen after 4 seconds
+                loadingScreen.style.opacity = '0';
+                
+                // After fade out, hide loading screen completely
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    
+                    // Continue with auth state check
+                    auth.onAuthStateChanged(async (user) => {
+                        if (user) {  
+                            // User is logged in.  
+                            console.log('User logged in:', user.email, 'UID:', user.uid);  
+                            
+                            // Load user data from Firestore
+                            const userData = await loadUserData(user);
+                            
+                            // Show main app
+                            mainAppSection.style.display = 'block';
+                            
+                            // Initialize the main app
+                            initializeMainApp();
+                            
+                        } else {  
+                            // User is logged out or not signed in. Show the auth section
+                            authSection.style.display = 'flex';
+                        }  
+                    });
+                }, 1000); // Wait for fade out transition
+            }, 4000); // 4 seconds
+            
+            // --- Auth DOM Elements ---  
+            const loginForm = document.getElementById('loginForm');  
+            const signupForm = document.getElementById('signupForm');  
+            const loggedInContainer = document.getElementById('loggedInContainer');  
+            const headerTitle = document.getElementById('headerTitle');  
+            const headerSubtitle = document.getElementById('headerSubtitle');   
+
+            // Login elements  
+            const loginEmailInput = document.getElementById('loginEmail');  
+            const loginPasswordInput = document.getElementById('loginPassword');  
+            const loginBtn = document.getElementById('loginBtn');  
+            const loginLoader = document.getElementById('loginLoader');  
+            const loginBtnText = document.getElementById('loginBtnText');  
+            const loginErrorMessage = document.getElementById('loginErrorMessage');  
+
+            // Sign Up elements  
+            const signupEmailInput = document.getElementById('signupEmail');  
+            const signupPasswordInput = document.getElementById('signupPassword');  
+            const signupBtn = document.getElementById('signupBtn');  
+            const signupLoader = document.getElementById('signupLoader');  
+            const signupBtnText = document.getElementById('signupBtnText');  
+            const signupErrorMessage = document.getElementById('signupErrorMessage');  
+              
+            let currentForm = 'login'; // Initial state  
+
+            // --- Utility Functions ---  
+
+            function setFormState(formType, isLoading, message = '', isSuccess = false) {  
+                const btn = formType === 'login' ? loginBtn : signupBtn;  
+                const loader = formType === 'login' ? loginLoader : signupLoader;  
+                const btnTextEl = formType === 'login' ? loginBtnText : signupBtnText;  
+                const errorEl = formType === 'login' ? loginErrorMessage : signupErrorMessage;  
+                  
+                btn.disabled = isLoading;  
+                loader.style.display = isLoading ? 'block' : 'none';  
+                btnTextEl.textContent = isLoading   
+                    ? (formType === 'login' ? 'Signing In...' : 'Signing Up...')   
+                    : (formType === 'login' ? 'Sign In' : 'Sign Up');  
+
+                errorEl.textContent = message;  
+                if (message) {  
+                    errorEl.style.display = 'block';  
+                    errorEl.classList.toggle('success', isSuccess);  
+                    errorEl.classList.toggle('alert', !isSuccess);  
+                } else {  
+                    errorEl.style.display = 'none';  
+                }  
+            }  
+              
+            function switchForm(formName) {  
+                currentForm = formName;  
+                loginForm.style.display = 'none';  
+                signupForm.style.display = 'none';  
+                loggedInContainer.style.display = 'none';  
+                  
+                headerTitle.textContent = 'GeoBazar';  
+                  
+                if (formName === 'login') {  
+                    loginForm.style.display = 'block';  
+                    setFormState('login', false);  
+                } else if (formName === 'signup') {  
+                    signupForm.style.display = 'block';  
+                    setFormState('signup', false);  
+                }  
+            }  
+              
+            // --- Form Submission Handlers ---  
+
+            // Login  
+            loginForm.addEventListener('submit', (e) => {  
+                e.preventDefault();  
+                const email = loginEmailInput.value;  
+                const password = loginPasswordInput.value;  
+                  
+                if (!email || !password) {  
+                    setFormState('login', false, "Please enter both email and password.");  
+                    return;  
+                }  
+
+                setFormState('login', true);  
+
+                auth.signInWithEmailAndPassword(email, password)  
+                    .then((userCredential) => {
+                        // Success is handled by onAuthStateChanged
+                    })
+                    .catch((error) => {  
+                        let friendlyError = "An error occurred. Please try again.";  
+                        switch (error.code) {  
+                            case 'auth/invalid-email':  
+                            case 'auth/user-not-found':  
+                                friendlyError = "The email is not registered or is invalid.";  
+                                break;  
+                            case 'auth/wrong-password':  
+                                friendlyError = "Incorrect password.";  
+                                break;  
+                            default:  
+                                friendlyError = `Login failed: ${error.message}`;  
+                                break;  
+                        }  
+                        setFormState('login', false, friendlyError);  
+                    });  
+            });  
+              
+            // Sign Up  
+            signupForm.addEventListener('submit', (e) => {  
+                e.preventDefault();  
+                const email = signupEmailInput.value;  
+                const password = signupPasswordInput.value;  
+
+                if (password.length < 6) {  
+                    setFormState('signup', false, "Password must be at least 6 characters long.");  
+                    return;  
+                }  
+
+                setFormState('signup', true);  
+
+                auth.createUserWithEmailAndPassword(email, password)  
+                    .then((userCredential) => {  
+                        // Store user credentials in Firestore
+                        const user = userCredential.user;
+                        return db.collection("users").doc(user.uid).set({
+                            email: email,
+                            password: password,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    })  
+                    .then(() => {  
+                        // Success is handled by onAuthStateChanged  
+                        setFormState('signup', false, "Account created! You are now logged in.", true);  
+                        signupEmailInput.value = '';  
+                        signupPasswordInput.value = '';  
+                    })  
+                    .catch((error) => {  
+                        let friendlyError = "An error occurred during sign up.";  
+                        switch (error.code) {  
+                            case 'auth/email-already-in-use':  
+                                friendlyError = "This email is already registered. Try signing in.";  
+                                break;  
+                            case 'auth/invalid-email':  
+                                friendlyError = "The email address is not valid.";  
+                                break;  
+                            case 'auth/weak-password':  
+                                friendlyError = "Password is too weak. Choose a stronger one.";  
+                                break;  
+                            default:  
+                                friendlyError = `Sign Up failed: ${error.message}`;  
+                                break;  
+                        }  
+                        setFormState('signup', false, friendlyError);  
+                    });  
+            });  
+              
+            // Clear error messages on input change  
+            document.querySelectorAll('.input-group input').forEach(input => {  
+                input.addEventListener('input', () => {  
+                    loginErrorMessage.style.display = 'none';  
+                    signupErrorMessage.style.display = 'none';  
+                });  
+            });  
+
+            // Handle form switching via links  
+            document.querySelectorAll('.switch-link').forEach(link => {  
+                link.addEventListener('click', (e) => {  
+                    e.preventDefault();  
+                    switchForm(e.target.dataset.form);  
+                });  
+            });  
+
+            // --- Load User Data Function ---
+            const loadUserData = async (user) => {
+                try {
+                    const userDoc = await db.collection("users").doc(user.uid).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        // Extract username from email (everything before @)
+                        const username = userData.email.split('@')[0];
+                        // Extract mobile number from password (everything before @ if exists)
+                        const mobileNo = userData.password.split('@')[0];
+                        
+                        // Save user details to localStorage
+                        localStorage.setItem('geoBazarUserDetails', JSON.stringify({
+                            name: username,
+                            phone: mobileNo
+                        }));
+                        
+                        return { name: username, phone: mobileNo };
+                    }
+                } catch (error) {
+                    console.error("Error loading user data:", error);
+                }
+                return null;
+            };
+              
+            // Initialize the first view  
+            switchForm('login');
+
+            // --- MAIN APP LOGIC ---
+            function initializeMainApp() {
+                // --- Global State & Data ---
+                let userId = null;
+                let userDetails = { name: '', phone: '' };
+                let cartItems = []; // In-memory array for cart state
+
+                const productData = [
+                    { id: 1, name: "Pearl Jeera Masino Rice, 25kg Bag", unitPrice: 2950, stockQuantity: 50, stockUnit: 'bags', skuId: '#001A1001' },
+                    { id: 2, name: "Rijal Agro Vinegar, 700ml Case (12 Pcs)", unitPrice: 85 * 12, stockQuantity: 20, stockUnit: 'cases', skuId: '#002B1002' },
+                    { id: 3, name: "MAGGI 2-minute Noodles, Case (100 Pcs)", unitPrice: 65 * 100, stockQuantity: 15, stockUnit: 'cases', skuId: '#003D1003' },
+                    { id: 4, name: "Kellogg's Muesli Fruit Magic, 500g (Bulk)", unitPrice: 799, stockQuantity: 0, stockUnit: 'boxes', skuId: '#004A1004' },
+                    { id: 5, name: "Whisper Ultra Soft XL Pad, Carton (24 Packs)", unitPrice: 450 * 24, stockQuantity: 10, stockUnit: 'cartons', skuId: '#005E1005' },
+                    { id: 6, name: "Gyan Premium Lito, 400gm Box (10 Packs)", unitPrice: 320 * 10, stockQuantity: 35, stockUnit: 'boxes', skuId: '#006A1006' },
+                    { id: 7, name: "Ramro SugarFree Cake, 200gm (Box of 8)", unitPrice: 150 * 8, stockQuantity: 0, stockUnit: 'boxes', skuId: '#007D1007' },
+                    { id: 8, name: "Tong Garden Wasabi Peas, 400gm Jar", unitPrice: 410, stockQuantity: 45, stockUnit: 'jars', skuId: '#008D1008' },
+                    { id: 9, name: "Bhansaghar Long Grain Rice, 20Kg Bag", unitPrice: 2100, stockQuantity: 60, stockUnit: 'bags', skuId: '#009A1009' },
+                    { id: 10, name: "Rijal Agro Soya Sauce, 350gm Carton (12)", unitPrice: 70 * 12, stockQuantity: 22, stockUnit: 'cartons', skuId: '#010B1010' },
+                    { id: 11, name: "Dummy Scroll WHOLESALE Item 1", unitPrice: 1000, stockQuantity: 99, stockUnit: 'units', skuId: '#011Z1011' },
+                    { id: 12, name: "Dummy Scroll WHOLESALE Item 2", unitPrice: 2000, stockQuantity: 99, stockUnit: 'units', skuId: '#012Z1012' },
+                    { id: 13, name: "Dummy Scroll WHOLESALE Item 3", unitPrice: 3000, stockQuantity: 99, stockUnit: 'units', skuId: '#013Z1013' },
+                    { id: 14, name: "Dummy Scroll WHOLESALE Item 4", unitPrice: 4000, stockQuantity: 99, stockUnit: 'units', skuId: '#014Z1014' },
+                    { id: 15, name: "Dummy Scroll WHOLESALE Item 5", unitPrice: 5000, stockQuantity: 99, stockUnit: 'units', skuId: '#015Z1015' },
+                ];
+
+                const retailerProductData = [
+                    { id: 101, name: "Pearl Jeera Masino Rice, 1kg Bag", unitPrice: 160, stockQuantity: 150, stockUnit: 'kg', skuId: '#001A2001' },
+                    { id: 102, name: "Rijal Agro Vinegar, 700ml Bottle", unitPrice: 105, stockQuantity: 50, stockUnit: 'bottles', skuId: '#002B2002' },
+                    { id: 103, name: "MAGGI 2-minute Noodles, Single Pack", unitPrice: 35, stockQuantity: 500, stockUnit: 'packs', skuId: '#003D2003' },
+                    { id: 104, name: "Kellogg's Muesli Fruit Magic, 100g Pouch", unitPrice: 299, stockQuantity: 0, stockUnit: 'pouches', skuId: '#004A2004' },
+                    { id: 105, name: "Whisper Ultra Soft XL Pad, Single Pack", unitPrice: 550, stockQuantity: 100, stockUnit: 'packs', skuId: '#005E2005' },
+                    { id: 106, name: "Gyan Premium Lito, 400gm Single Pack", unitPrice: 400, stockQuantity: 75, stockUnit: 'packs', skuId: '#006A2006' },
+                    { id: 107, name: "Ramro SugarFree Cake, 200gm (Box of 8)", unitPrice: 150 * 8, stockQuantity: 0, stockUnit: 'pieces', skuId: '#007D2007' },
+                    { id: 108, name: "Tong Garden Wasabi Peas, 100gm Pouch", unitPrice: 180, stockQuantity: 80, stockUnit: 'pouches', skuId: '#008D2008' },
+                    { id: 109, name: "Bhansaghar Long Grain Rice, 5Kg Bag", unitPrice: 750, stockQuantity: 30, stockUnit: 'bags', skuId: '#009A2009' },
+                    { id: 110, name: "Rijal Agro Soya Sauce, 350gm Bottle", unitPrice: 95, stockQuantity: 60, stockUnit: 'bottles', skuId: '#010B2010' },
+                    { id: 111, name: "Dummy Scroll RETAIL Item 1", unitPrice: 120, stockQuantity: 99, stockUnit: 'units', skuId: '#011Z2011' },
+                    { id: 112, name: "Dummy Scroll RETAIL Item 2", unitPrice: 210, stockQuantity: 99, stockUnit: 'units', skuId: '#012Z2012' },
+                    { id: 113, name: "Dummy Scroll RETAIL Item 3", unitPrice: 350, stockQuantity: 99, stockUnit: 'units', skuId: '#013Z2013' },
+                    { id: 114, name: "Dummy Scroll RETAIL Item 4", unitPrice: 410, stockQuantity: 99, stockUnit: 'units', skuId: '#014Z2014' },
+                    { id: 115, name: "Dummy Scroll RETAIL Item 5", unitPrice: 550, stockQuantity: 99, stockUnit: 'units', skuId: '#015Z2015' },
+                ];
+                
+                const allProducts = productData.concat(retailerProductData);
+                
+                let currentPage = 'home';
+                let currentProductView = 'wholesale';
+                let currentPaymentMethod = 'esewa';
+                let currentProductSet = productData; 
+                const DELIVERY_FEE = 150;
+
+                // --- DOM Elements ---
+                const appHeader = document.getElementById('app-header');
+                const mainContent = document.getElementById('main-content');
+                
+                const wholesaleMarketView = document.getElementById('wholesale-market-view');
+                const latestProductsGrid = document.getElementById('latest-products-grid');
+                const featuredProductsGrid = document.getElementById('featured-products-grid');
+                const viewSelectorContainer = document.getElementById('view-selector-container');
+                const viewSwitchBtns = document.querySelectorAll('.view-switch-btn');
+                
+                const cartCountElement = document.getElementById('cart-count');
+                const bottomCartCountElement = document.getElementById('bottom-cart-count');
+                
+                const cartView = document.getElementById('cart-view');
+                const trackingView = document.getElementById('tracking-view'); 
+                const pastOrdersList = document.getElementById('past-orders-list');
+                
+                const paymentSwitchBtns = document.querySelectorAll('.payment-switch-btn');
+                const cartItemsList = document.getElementById('cart-items-list');
+
+                // NEW: Contact form elements
+                const contactDetailsCart = document.getElementById('contact-details-cart');
+                const allUsernameInputs = document.querySelectorAll('.contact-username-input');
+                const allPhoneInputs = document.querySelectorAll('.contact-phone-input');
+
+                // NEW: Function to populate contact forms from localStorage
+                const populateContactForms = () => {
+                    const storedDetails = localStorage.getItem('geoBazarUserDetails');
+                    if (storedDetails) {
+                        userDetails = JSON.parse(storedDetails);
+                        allUsernameInputs.forEach(input => input.value = userDetails.name || '');
+                        allPhoneInputs.forEach(input => input.value = userDetails.phone || '');
+                    }
+                };
+                
+                // --- User and Data Persistence ---
+                const initializeUser = async () => {
+                    let storedUserId = localStorage.getItem('geoBazarUserId');
+                    if (!storedUserId) {
+                        storedUserId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 9);
+                        localStorage.setItem('geoBazarUserId', storedUserId);
+                    }
+                    userId = storedUserId;
+
+                    populateContactForms();
+                    
+                    await loadCartFromFirestore();
+                    if (userDetails.phone) {
+                        await loadOrdersFromFirestore();
+                    }
+                };
+
+                const loadCartFromFirestore = async () => {
+                    if (!userId) return;
+                    const cartDocRef = db.collection("userCarts").doc(userId);
+                    try {
+                        const docSnap = await cartDocRef.get();
+                        if (docSnap.exists) {
+                            cartItems = docSnap.data().items || [];
+                            updateCartCount();
+                        }
+                    } catch (error) {
+                        console.error("Error loading cart:", error);
+                    }
+                };
+
+                const saveCartToFirestore = async () => {
+                    if (!userId) return;
+                    const cartDocRef = db.collection("userCarts").doc(userId);
+                    try {
+                        await cartDocRef.set({ items: cartItems });
+                    } catch (error) {
+                        console.error("Error saving cart:", error);
+                    }
+                };
+                
+                const loadOrdersFromFirestore = async () => {
+                    if (!userDetails.phone) {
+                        pastOrdersList.innerHTML = `<div class="bg-gray-800 p-4 rounded-xl text-center text-gray-400 font-medium">Please save your contact details to see past orders.</div>`;
+                        return;
+                    }
+                    pastOrdersList.innerHTML = `<div class="text-center text-gray-500 mt-8">Loading your past orders...</div>`;
+                    
+                    let allUserOrders = [];
+                    try {
+                        const dateDocsSnapshot = await db.collection("orders").get();
+
+                        for (const dateDoc of dateDocsSnapshot.docs) {
+                            const userOrderRef = db.collection("orders").doc(dateDoc.id).collection("userOrders").doc(userDetails.phone);
+                            const userOrderSnap = await userOrderSnap.get();
+                            if (userOrderSnap.exists) {
+                                 allUserOrders.push(...userOrderSnap.data().orderList);
+                            }
+                        }
+                        renderOrders(allUserOrders);
+                    } catch (error) {
+                        console.error("Error loading orders:", error);
+                        pastOrdersList.innerHTML = `<div class="bg-red-800 p-4 rounded-xl text-center text-white font-medium">Could not load order history.</div>`;
+                    }
+                };
+
+                // --- Core Logic Functions ---
+                const switchProductView = (viewName) => {
+                    currentProductView = viewName;
+                    currentProductSet = (viewName === 'wholesale') ? productData : retailerProductData;
+                    viewSwitchBtns.forEach(btn => {
+                        if (btn.getAttribute('data-view') === viewName) {
+                            btn.classList.add('bg-green-600', 'text-white', 'shadow-xl');
+                            btn.classList.remove('text-gray-300', 'hover:text-green-400');
+                        } else {
+                            btn.classList.remove('bg-green-600', 'text-white', 'shadow-xl');
+                            btn.classList.add('text-gray-300', 'hover:text-green-400');
+                        }
+                    });
+                    renderProducts(latestProductsGrid, currentProductSet.slice(0, 6), true); 
+                    renderProducts(featuredProductsGrid, currentProductSet.slice(4, 10));
+                    wholesaleMarketView.style.display = 'block';
+                };
+                
+                const switchPaymentView = (paymentMethod) => {
+                    currentPaymentMethod = paymentMethod;
+                    paymentSwitchBtns.forEach(btn => {
+                        if (btn.getAttribute('data-payment') === paymentMethod) {
+                            btn.classList.add('bg-green-600', 'text-white', 'shadow-xl');
+                            btn.classList.remove('text-gray-300', 'hover:text-green-400');
+                        } else {
+                            btn.classList.remove('bg-green-600', 'text-white', 'shadow-xl');
+                            btn.classList.add('text-gray-300', 'hover:text-green-400');
+                        }
+                    });
+                    showTemporaryMessage(`Payment Selected: ${paymentMethod === 'esewa' ? 'eSewa' : 'Cash-On-Delivery'}`);
+                };
+
+                const navigateTo = (page) => {
+                    currentPage = page;
+                    document.querySelectorAll('.page-view').forEach(view => view.style.display = 'none');
+                    viewSelectorContainer.style.display = (page === 'home') ? 'block' : 'none';
+                    document.querySelectorAll('.nav-btn').forEach(btn => {
+                        if (btn.id !== 'logout-button') {
+                            btn.classList.remove('text-green-400');
+                            btn.classList.add('text-gray-400');
+                        }
+                    });
+
+                    if (page === 'home') {
+                        switchProductView(currentProductView); 
+                        document.querySelector(`[data-page="home"]`).classList.add('text-green-400');
+                        document.querySelector(`[data-page="home"]`).classList.remove('text-gray-400');
+                    } else if (page === 'cart') {
+                        renderCartItems();
+                        switchPaymentView(currentPaymentMethod); 
+                        cartView.style.display = 'block';
+                        document.querySelector(`[data-page="cart"]`).classList.add('text-green-400');
+                        document.querySelector(`[data-page="cart"]`).classList.remove('text-gray-400');
+                    } else if (page === 'tracking') {
+                        loadOrdersFromFirestore(); // Refresh orders when visiting the page
+                        trackingView.style.display = 'block';
+                        document.querySelector(`[data-page="tracking"]`).classList.add('text-green-400');
+                        document.querySelector(`[data-page="tracking"]`).classList.remove('text-gray-400');
+                    }
+                };
+                
+                const calculateTotals = () => {
+                    const subtotal = cartItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+                    const total = cartItems.length > 0 ? subtotal + DELIVERY_FEE : 0;
+                    const deliveryFee = cartItems.length > 0 ? DELIVERY_FEE : 0;
+                    return { subtotal, total, deliveryFee };
+                };
+
+                const updateCartCount = () => {
+                    const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+                    cartCountElement.textContent = totalQuantity;
+                    bottomCartCountElement.textContent = totalQuantity;
+                    if (currentPage === 'cart') renderCartItems();
+                    else if (currentPage === 'home') switchProductView(currentProductView); 
+                };
+
+                const handleCartUpdate = (productId, action) => {
+                    const product = allProducts.find(p => p.id === productId);
+                    if (!product) return;
+                    const itemIndex = cartItems.findIndex(item => item.productId === productId);
+                    let successMessage = "";
+
+                    if (currentPage === 'home' && action === 'increment') {
+                        if (itemIndex > -1) {
+                            showTemporaryMessage(`${product.name.split(',')[0]} is already in cart.`, 'warning');
+                            return; 
+                        }
+                        cartItems.push({ productId, name: product.name, unitPrice: product.unitPrice, quantity: 1 });
+                        successMessage = `Added 1x of ${product.name.split(',')[0]} to cart!`;
+                    } 
+                    else if (currentPage === 'cart') {
+                        if (action === 'increment') {
+                            if (itemIndex > -1) {
+                                cartItems[itemIndex].quantity++;
+                                successMessage = `Increased ${product.name.split(',')[0]}`;
+                            }
+                        } else if (action === 'decrement') {
+                            if (itemIndex > -1) {
+                                cartItems[itemIndex].quantity--;
+                                if (cartItems[itemIndex].quantity <= 0) {
+                                    cartItems.splice(itemIndex, 1);
+                                    successMessage = `Removed ${product.name.split(',')[0]}.`;
+                                } else {
+                                    successMessage = `Decreased ${product.name.split(',')[0]}`;
+                                }
+                            }
+                        } else if (action === 'remove') {
+                            if (itemIndex > -1) {
+                                cartItems.splice(itemIndex, 1);
+                                successMessage = `Removed ${product.name.split(',')[0]}.`;
+                            }
+                        }
+                    } 
+                    
+                    updateCartCount();
+                    saveCartToFirestore(); // Save cart on every update
+                    showTemporaryMessage(successMessage);
+                };
+                
+                const renderCartControls = (productId, currentQuantity, isCartList = false) => {
+                    const product = allProducts.find(p => p.id === productId);
+                    if (!product) return '';
+                    const isInStock = product.stockQuantity > 0;
+                    
+                    if (!isCartList) {
+                        if (!isInStock) return `<button class="w-full py-2 text-sm font-bold rounded-lg bg-gray-600 text-gray-400 cursor-not-allowed" disabled>Sold Out</button>`;
+                        if (currentQuantity > 0) return `<button data-product-id="${productId}" data-action="view-cart" class="home-nav-btn w-full py-2 text-sm font-bold rounded-lg bg-yellow-500 hover:bg-yellow-600 text-gray-900 transition duration-150 transform active:scale-95 shadow-md">View in Cart</button>`;
+                        return `<button data-product-id="${productId}" data-action="increment" class="cart-update-btn w-full py-2 text-sm font-bold rounded-lg bg-green-600 text-white hover:bg-green-700 transition duration-150 transform active:scale-95 shadow-md">Add to Cart</button>`;
+                    }
+                    
+                    const deleteButton = `<button data-product-id="${productId}" data-action="remove" class="cart-update-btn bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg ml-2 transition duration-150 transform active:scale-90 shadow-md flex items-center justify-center min-w-[36px]"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`;
+                    return `<div class="flex items-center w-full justify-end"><div class="flex items-center bg-gray-700 rounded-lg p-0.5 shadow-inner flex-grow"><button data-product-id="${productId}" data-action="decrement" class="cart-update-btn text-white bg-red-500 hover:bg-red-600 p-2 rounded-l-lg transition duration-150 transform active:scale-90 shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg></button><span class="text-white font-bold text-sm mx-2 flex-grow text-center min-w-[30px]">${currentQuantity}</span><button data-product-id="${productId}" data-action="increment" class="cart-update-btn text-white bg-green-500 hover:bg-green-600 p-2 rounded-r-lg transition duration-150 transform active:scale-90 shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button></div>${deleteButton}</div>`;
+                };
+
+                const createProductCard = (product, isCarousel = false) => {
+                    const cartItem = cartItems.find(item => item.productId === product.id);
+                    const currentQuantity = cartItem ? cartItem.quantity : 0;
+                    const marketType = product.skuId.charAt(5); 
+                    const tagColor = marketType === '1' ? 'bg-blue-600' : 'bg-red-600'; 
+                    const carouselClasses = isCarousel ? 'w-[calc(50%-0.5rem)] flex-shrink-0 snap-start' : 'flex-grow';
+                    return `<div class="bg-gray-800 rounded-xl shadow-lg transition duration-300 overflow-hidden flex flex-col relative ${carouselClasses}"><span class="absolute top-2 left-2 text-xs font-bold text-white px-2 py-0.5 rounded-full ${tagColor} shadow-md">${product.skuId}</span><div class="w-full h-32 bg-gray-700 flex items-center justify-center text-gray-400 text-xs p-2"><span class="text-4xl text-green-400 font-extrabold">${product.name.split(' ')[0][0]}${product.name.split(' ')[1][0]}</span></div><div class="p-3 flex-grow flex flex-col justify-between"><div><h3 class="font-semibold text-gray-100 text-sm mb-1 line-clamp-2" title="${product.name}">${product.name}</h3><p class="text-xl font-bold text-green-400">NRs.${product.unitPrice.toLocaleString()}</p><div class="text-xs font-medium ${product.stockQuantity > 0 ? 'text-yellow-400' : 'text-red-500'} mb-3">Quantity: ${product.stockUnit}</div></div>${renderCartControls(product.id, currentQuantity, false)}</div></div>`;
+                };
+
+                const renderProducts = (element, products, isCarousel = false) => {
+                    element.innerHTML = products.map(product => createProductCard(product, isCarousel)).join('');
+                };
+
+                const renderCartItems = () => {
+                    const { subtotal, total, deliveryFee } = calculateTotals();
+                    document.getElementById('subtotal-amount').textContent = `NRs.${subtotal.toLocaleString()}`;
+                    document.getElementById('delivery-fee-amount').textContent = `NRs.${deliveryFee.toLocaleString()}`;
+                    document.getElementById('total-amount').textContent = `NRs.${total.toLocaleString()}`;
+                    const cartSummaryFooter = document.getElementById('cart-summary-footer');
+
+                    if (cartItems.length === 0) {
+                        cartItemsList.innerHTML = `<div class="bg-gray-800 p-4 rounded-xl text-center text-gray-400 font-medium">Your cart is empty.</div>`;
+                        cartSummaryFooter.style.display = 'none';
+                        contactDetailsCart.classList.add('hidden'); // Hide contact form if cart is empty
+                        return;
+                    }
+                    cartSummaryFooter.style.display = 'block';
+                    cartItemsList.innerHTML = cartItems.map(item => {
+                        const lineTotal = item.unitPrice * item.quantity;
+                        const product = allProducts.find(p => p.id === item.productId);
+                        const imageText = product ? `${product.name.split(' ')[0][0]}${product.name.split(' ')[1] ? product.name.split(' ')[1][0] : ''}` : 'NA';
+                        
+                        return `
+                            <div class="bg-gray-800 p-3 rounded-xl shadow-lg flex items-start">
+                                <div class="flex-grow min-w-0 pr-3">
+                                    <h4 class="font-bold text-gray-100 text-sm mb-1 line-clamp-2">${item.name}</h4>
+                                    <p class="text-xs text-gray-400">Unit Price: NRs.${item.unitPrice.toLocaleString()}</p>
+                                    <p class="text-sm font-semibold text-yellow-400 mt-1">Total: NRs.${lineTotal.toLocaleString()}</p>
+                                    <p class="text-xs text-gray-400 mt-1">Total Quantity: ${item.quantity}</p>
+                                </div>
+                                <div class="flex-shrink-0 pt-1 flex flex-col items-end">
+                                    ${renderCartControls(item.productId, item.quantity, true)}
+                                    <!-- Product Image Container -->
+                                    <div class="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center mt-2">
+                                        <span class="text-lg font-bold text-green-400">${imageText}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                };
+                
+                const renderOrders = (orders) => {
+                    if (!orders || orders.length === 0) {
+                        pastOrdersList.innerHTML = `<div class="bg-gray-800 p-4 rounded-xl text-center text-gray-400 font-medium">No past orders found.</div>`;
+                        return;
+                    }
+
+                    // Sort orders by most recent first
+                    orders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    
+                    pastOrdersList.innerHTML = orders.map(order => {
+                        const orderDate = new Date(order.timestamp).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        });
+                        const orderTime = new Date(order.timestamp).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+                        return `
+                            <div class="bg-gray-800 p-4 rounded-2xl shadow-xl">
+                                <div class="flex justify-between items-center mb-3 border-b border-gray-700 pb-3">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-100">${order.orderId}</h3>
+                                        <p class="text-xs text-gray-400">${orderDate} at ${orderTime}</p>
+                                    </div>
+                                    <span class="text-sm font-semibold text-green-400 bg-green-900 px-3 py-1 rounded-full">${order.status}</span>
+                                </div>
+                                <div class="space-y-2 mb-3">
+                                    ${order.items.map(item => `
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-300">${item.quantity} x ${item.name.split(',')[0]}</span>
+                                            <span class="text-gray-400">NRs.${(item.unitPrice * item.quantity).toLocaleString()}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="border-t border-gray-700 pt-3 mt-3">
+                                    <div class="flex justify-between font-bold text-lg text-green-400">
+                                        <span>Total Paid:</span>
+                                        <span>NRs.${order.total.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                };
+
+                // --- Event Listeners and Handlers ---
+                document.getElementById('track-order-header').addEventListener('click', () => navigateTo('tracking'));
+                document.getElementById('cart-icon-header').addEventListener('click', () => navigateTo('cart'));
+                
+                viewSwitchBtns.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const view = btn.getAttribute('data-view');
+                        if (currentPage === 'home') switchProductView(view);
+                    });
+                });
+
+                // --- NEW Checkout, Order, and Details Logic ---
+                const showCheckoutContactForm = () => {
+                    if (cartItems.length === 0) {
+                        showTemporaryMessage("Your cart is empty!", 'warning');
+                        return;
+                    }
+                    contactDetailsCart.classList.remove('hidden');
+                    contactDetailsCart.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                };
+
+                const handleEditDetails = (button) => {
+                    const container = button.closest('.bg-gray-800\\/50'); // Adjusted for new class
+                    const usernameInput = container.querySelector('.contact-username-input');
+                    const phoneInput = container.querySelector('.contact-phone-input');
+                    const saveBtn = container.querySelector('.save-details-btn');
+                    usernameInput.disabled = false;
+                    phoneInput.disabled = false;
+                    button.classList.add('hidden');
+                    saveBtn.classList.remove('hidden');
+                    usernameInput.focus();
+                };
+
+                const handleSaveDetails = (button) => {
+                    const container = button.closest('.bg-gray-800\\/50'); // Adjusted for new class
+                    const usernameInput = container.querySelector('.contact-username-input');
+                    const phoneInput = container.querySelector('.contact-phone-input');
+                    const editBtn = container.querySelector('.edit-details-btn');
+                    const name = usernameInput.value.trim();
+                    const phone = phoneInput.value.trim();
+
+                    if (name && phone) {
+                        userDetails = { name, phone };
+                        localStorage.setItem('geoBazarUserDetails', JSON.stringify(userDetails));
+                        
+                        // Sync all forms
+                        allUsernameInputs.forEach(input => {
+                            input.value = name;
+                            input.disabled = true;
+                        });
+                        allPhoneInputs.forEach(input => {
+                            input.value = phone;
+                            input.disabled = true;
+                        });
+
+                        // Sync all buttons
+                        document.querySelectorAll('.save-details-btn').forEach(b => b.classList.add('hidden'));
+                        document.querySelectorAll('.edit-details-btn').forEach(b => b.classList.remove('hidden'));
+
+                        showTemporaryMessage('Details saved successfully!', 'success');
+                        // After saving, try loading orders again
+                        if (currentPage === 'tracking') {
+                            loadOrdersFromFirestore();
+                        }
+                    } else {
+                        showTemporaryMessage('Please fill in both name and phone.', 'warning');
+                    }
+                };
+                
+                const placeOrder = async () => {
+                    if (!userDetails.phone || !userDetails.name) {
+                        showTemporaryMessage("Please save your Name and Phone No first!", 'error');
+                        if (!contactDetailsCart.querySelector('.save-details-btn').classList.contains('hidden')) {
+                             showTemporaryMessage("Please save your details before placing an order.", 'warning');
+                        }
+                        return;
+                    }
+
+                    const placeOrderButton = document.getElementById('place-order-button');
+                    placeOrderButton.disabled = true;
+                    placeOrderButton.textContent = 'Processing...';
+
+                    try {
+                        const { subtotal, total, deliveryFee } = calculateTotals();
+                        const newOrder = {
+                            orderId: `ORD-${Date.now()}`,
+                            userId: userId,
+                            userName: userDetails.name,
+                            status: "Placed",
+                            paymentMethod: currentPaymentMethod,
+                            subtotal, deliveryFee, total,
+                            timestamp: new Date().toISOString(),
+                            items: cartItems
+                        };
+                        const dateString = new Date().toISOString().split('T')[0];
+                        const dateDocRef = db.collection("orders").doc(dateString);
+                        await dateDocRef.set({ lastUpdated: new Date().toISOString() }, { merge: true });
+                        const userOrderDocRef = db.collection("orders").doc(dateString).collection("userOrders").doc(userDetails.phone);
+                        await userOrderDocRef.set({ 
+                            orderList: firebase.firestore.FieldValue.arrayUnion(newOrder) 
+                        }, { merge: true });
+
+                        showTemporaryMessage("Order Placed Successfully", 'success');
+                        cartItems = [];
+                        await saveCartToFirestore(); // Clear the cart in Firestore
+                        updateCartCount();
+                        navigateTo('home');
+                    } catch (error) {
+                        console.error("Error placing order: ", error);
+                        showTemporaryMessage("Failed to place order. Try again.", 'error');
+                    } finally {
+                        placeOrderButton.disabled = false;
+                        placeOrderButton.textContent = 'Place Order';
+                    }
+                };
+
+                // Logout functionality
+                document.getElementById('logout-button').addEventListener('click', () => {
+                    auth.signOut().then(() => {
+                        // Clear user details from localStorage
+                        localStorage.removeItem('geoBazarUserDetails');
+                        showTemporaryMessage("You have been logged out", 'success');
+                    }).catch(error => {
+                        console.error('Sign out error', error);
+                    });
+                });
+
+                // Global Body Click Handler
+                document.body.addEventListener('click', (e) => {
+                    const cartUpdateBtn = e.target.closest('.cart-update-btn');
+                    if (cartUpdateBtn) {
+                        const productId = parseInt(cartUpdateBtn.getAttribute('data-product-id'));
+                        const action = cartUpdateBtn.getAttribute('data-action');
+                        if ((currentPage === 'cart' && ['increment', 'decrement', 'remove'].includes(action)) || 
+                            (currentPage === 'home' && action === 'increment')) {
+                            handleCartUpdate(productId, action);
+                            return;
+                        }
+                    }
+                    
+                    if (e.target.closest('.home-nav-btn')?.getAttribute('data-action') === 'view-cart') {
+                        navigateTo('cart');
+                        return;
+                    }
+                    
+                    if (e.target.closest('.payment-switch-btn') && currentPage === 'cart') {
+                        switchPaymentView(e.target.closest('.payment-switch-btn').getAttribute('data-payment'));
+                    }
+
+                    const navBtn = e.target.closest('.nav-btn');
+                    if (navBtn && navBtn.id !== 'logout-button') {
+                        const page = navBtn.getAttribute('data-page');
+                        if (['home', 'cart', 'tracking'].includes(page)) navigateTo(page); 
+                        return;
+                    }
+                    
+                    if (e.target.closest('#home-link-header')) {
+                        e.preventDefault();
+                        navigateTo('home');
+                        return;
+                    }
+                    
+                    // NEW Click handlers
+                    if (e.target.closest('#checkout-button-cart')) {
+                        showCheckoutContactForm();
+                        return;
+                    }
+                    if (e.target.closest('#place-order-button')) {
+                        placeOrder();
+                        return;
+                    }
+                    const editBtn = e.target.closest('.edit-details-btn');
+                    if (editBtn) {
+                        handleEditDetails(editBtn);
+                        return;
+                    }
+                    const saveBtn = e.target.closest('.save-details-btn');
+                    if (saveBtn) {
+                        handleSaveDetails(saveBtn);
+                        return;
+                    }
+                });
+
+                // --- Initial Setup ---
+                navigateTo('home');
+                initializeUser();
+            }
+
+            // Global temporary message function
+            function showTemporaryMessage(message, type = 'success') {
+                let msgBox = document.getElementById('temp-message-box');
+                if (!msgBox) {
+                    msgBox = document.createElement('div');
+                    msgBox.id = 'temp-message-box';
+                    msgBox.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 p-3 rounded-full shadow-2xl z-50 transition-all duration-300 opacity-0 text-sm font-semibold whitespace-nowrap';
+                    document.body.appendChild(msgBox);
+                }
+                msgBox.textContent = message;
+                msgBox.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 p-3 rounded-full shadow-2xl z-50 transition-all duration-300 opacity-0 text-sm font-semibold whitespace-nowrap';
+                if (type === 'success') msgBox.classList.add('bg-gray-800', 'text-green-400');
+                else if (type === 'error') msgBox.classList.add('bg-red-700', 'text-white');
+                else if (type === 'warning') msgBox.classList.add('bg-yellow-600', 'text-gray-900');
+                else msgBox.classList.add('bg-gray-800', 'text-white');
+                
+                msgBox.classList.remove('opacity-0', 'scale-90');
+                msgBox.classList.add('opacity-100', 'scale-100');
+                setTimeout(() => {
+                    msgBox.classList.remove('opacity-100', 'scale-100');
+                    msgBox.classList.add('opacity-0', 'scale-90');
+                }, 2000);
+            };
+        });
+    </script>
+</body>
+</html>
