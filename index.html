@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>StudentPlus Static Solver</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Font (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Use the Inter font family */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            
+            /* CRITICAL: Prevent the main body from scrolling at all */
+            overflow: hidden !important; 
+            
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            
+            /* Prevents elastic scrolling on iOS */
+            overscroll-behavior: none;
+            
+            /* Make body a fixed container occupying full screen */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* App wrapper - uses dynamic viewport height for mobile keyboard stability */
+        #app-wrapper {
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height (best for mobile keyboard) */
+            width: 100%;
+            position: absolute; /* Relative to fixed body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden; /* Ensures only the chat container can scroll */
+        }
+        
+        /* NOTE: The .no-scroll class has been removed to reverse the last change. */
+
+        /* Ensure input fields are still selectable/editable */
+        #video-code-input {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+
+        /* Improve KaTeX readability on mobile */
+        .katex {
+            font-size: 1.1em !important;
+            text-align: left !important;
+        }
+        .katex-display {
+            /* Allow display math to be scrollable if too wide */
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 4px;
+        }
+
+        /* --- Hide Scrollbar on Chat Container --- */
+        #chat-container {
+            /* Scroll is now always auto (default of overflow-y-auto is active) */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #chat-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Desktop responsive styles */
+        @media (min-width: 768px) {
+            #app-wrapper {
+                position: relative;
+                margin: 0 auto;
+                max-width: 600px;
+                height: 90vh;
+                max-height: 800px;
+                border-radius: 0.5rem;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg">
+
+        <!-- Header - Fixed at top -->
+        <header class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm flex items-center justify-between flex-shrink-0">
+            <!-- Title -->
+            <h1 class="text-xl font-bold flex-shrink-0 mr-4">
+                <span class="bg-yellow-300 dark:bg-yellow-400 text-black dark:text-gray-900 px-3 py-1 rounded-md">StudentPlus</span>
+            </h1>
+
+            <!-- Video Input Group (Right End) -->
+            <div class="flex items-center space-x-2 ml-auto">
+                <input 
+                    type="text" 
+                    id="video-code-input"
+                    placeholder="Code..."
+                    class="w-28 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    autocomplete="off"
+                    maxlength="6"
+                >
+                <!-- Send Icon Button -->
+                <button 
+                    type="button"
+                    id="go-button"
+                    class="bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-md shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 flex-shrink-0"
+                    aria-label="Load video"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.98.75.75 0 0 0 0-1.212A60.517 60.517 0 0 0 3.478 2.404Z" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Container - ONLY scrollable area (flex-1 overflow-y-auto) -->
+        <main id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+            <!-- Initial Welcome Message -->
+            <div class="flex">
+                <div class="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 p-3 rounded-lg">
+                    <p class="font-medium">Hello! 👋</p>
+                    <p class="mt-1" id="welcome-message">
+                        I'm your dedicated student study tool. While the AI solver is offline for maintenance, you can still use my features!
+                        <br><br>
+                        Check out the powerful KaTeX support:
+                        <br>
+                        `The quadratic formula is $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$`
+                        <br><br>
+                        Load a specific study video by typing **#56788** in the input box above and pressing the **Send icon**.
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Form (Footer) - Fixed at bottom - Ad Banner -->
+        <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2 flex-shrink-0">
+            <div class="flex items-center justify-center h-12 w-full rounded-lg bg-gray-100 dark:bg-gray-700 shadow-inner">
+                <img 
+                    src="https://placehold.co/468x60/8B5CF6/FFFFFF?text=Ad+Banner%3A+StudentPlus+Pro" 
+                    alt="Advertising banner for StudentPlus Pro subscription."
+                    class="w-full h-full object-cover rounded-lg"
+                    onerror="this.onerror=null; this.src='https://placehold.co/468x60/8B5CF6/FFFFFF?text=Upgrade+to+Pro!'"
+                >
+            </div>
+        </footer>
+
+        <!-- Error Modal (Kept for static error display) -->
+        <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 class="text-lg font-medium text-red-600 dark:text-red-400">Error</h3>
+                <p id="error-message" class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                    An internal error occurred.
+                </p>
+                <button id="close-error-modal" class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Close
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const chatContainer = document.getElementById('chat-container');
+            const errorModal = document.getElementById('error-modal');
+            const errorMessage = document.getElementById('error-message');
+            const closeErrorModal = document.getElementById('close-error-modal');
+            
+            const videoCodeInput = document.getElementById('video-code-input');
+            const goButton = document.getElementById('go-button');
+            
+            // Video Constants
+            const VIDEO_CODE = '#56788';
+            const VIDEO_ID = 'bLlJCeziBVg'; 
+            const EMBED_URL = `https://www.youtube.com/embed/${VIDEO_ID}`;
+
+            // --- Disable context menu and copy events globally ---
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('copy', (e) => e.preventDefault());
+
+            // --- Render LaTeX in a specific element ---
+            function renderKaTeX(element) {
+                if (typeof renderMathInElement === 'undefined') {
+                    console.warn("KaTeX auto-render script not loaded yet.");
+                    return;
+                }
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '$', right: '$', display: false },
+                            { left: '\\(', right: '\\)', display: false },
+                            { left: '\\[', right: '\\]', display: true },
+                            { left: "\\ce{", right: "}", display: false, mhchem: true } // For chemistry
+                        ],
+                        // This is for mhchem extension
+                        trusted: (context) => ['https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js'].includes(context.url),
+                        throwOnError: false
+                    });
+                } catch (error) {
+                    console.error("KaTeX rendering failed:", error);
+                }
+            }
+
+            // --- Add a new message to the chat UI ---
+            function addMessage(content, sender) {
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+                
+                const messageBubble = document.createElement('div');
+                messageBubble.className = `p-3 rounded-lg max-w-sm md:max-w-md ${
+                    sender === 'user' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 break-words'
+                }`;
+
+                // Simple formatting for response (preserves LaTeX)
+                if (sender === 'ai') {
+                    let htmlContent = content
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')     // Italic
+                        .replace(/\n/g, '<br>');                  // Newlines
+                    
+                    messageBubble.innerHTML = htmlContent;
+                } else {
+                    // Sanitize user input
+                    messageBubble.textContent = content;
+                }
+                
+                messageWrapper.appendChild(messageBubble);
+                chatContainer.appendChild(messageWrapper);
+                
+                // Render LaTeX *after* adding to DOM
+                if (sender === 'ai') {
+                    renderKaTeX(messageBubble);
+                }
+                
+                // Always scroll to bottom after new message
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            // --- Add Video Player directly into the chat log ---
+            function addVideoPlayerInChat() {
+                const videoWrapper = document.createElement('div');
+                // Use w-full (minus padding) inside the chat container, margin-y for spacing, rounded and shadow for aesthetics
+                videoWrapper.className = 'w-full my-4 rounded-xl overflow-hidden shadow-lg';
+                
+                const iframeHtml = `
+                    <div class="aspect-video w-full bg-gray-900">
+                        <iframe 
+                            width="100%" 
+                            height="100%" 
+                            src="${EMBED_URL}?autoplay=1" 
+                            title="YouTube video player"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen
+                            class="w-full h-full"
+                        ></iframe>
+                    </div>
+                `;
+
+                videoWrapper.innerHTML = iframeHtml;
+                chatContainer.appendChild(videoWrapper);
+                
+                // Scroll to bottom after adding
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            // --- Show/Hide Error Modal ---
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorModal.classList.remove('hidden');
+            }
+
+            closeErrorModal.addEventListener('click', () => {
+                errorModal.classList.add('hidden');
+            });
+
+            // --- Mobile Keyboard Handling (Scroll to bottom only) ---
+            videoCodeInput.addEventListener('focus', () => {
+                // Scroll to bottom after keyboard shows (for better UX)
+                setTimeout(() => {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 300);
+            });
+
+            videoCodeInput.addEventListener('blur', () => {
+                // Ensure we snap to the bottom after keyboard hides
+                setTimeout(() => {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 100);
+            });
+
+            // --- Interaction Handler (Header Button) ---
+            function handleNewInput() {
+                const question = videoCodeInput.value.trim();
+                
+                if (!question) return;
+
+                addMessage(question, 'user');
+                videoCodeInput.value = '';
+                
+                // Blur input to close keyboard after submission
+                videoCodeInput.blur();
+
+                // Video Code Detection Logic
+                if (question === VIDEO_CODE) {
+                    addVideoPlayerInChat();
+                    addMessage(`Video code **${VIDEO_CODE}** recognized. Playing "The Best Study Music: Lofi Hiphop Beats" for you now!`, 'ai');
+                    return;
+                }
+
+                // --- Static Response ---
+                const staticResponse = `Thank you for your input! The main AI solver is currently **offline for routine maintenance**, and this chat area is now dedicated primarily to **video code entry** (like **#56788**).`;
+                
+                addMessage(staticResponse, 'ai');
+            }
+            
+            // Attach event listeners to the input/button
+            goButton.addEventListener('click', handleNewInput);
+            
+            videoCodeInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleNewInput();
+                }
+            });
+
+
+            // --- Initial render for welcome message ---
+            const welcomeMessage = document.getElementById('welcome-message');
+            if (welcomeMessage) {
+                // Manually add KaTeX to a section of the welcome message for demonstration
+                welcomeMessage.innerHTML = welcomeMessage.innerHTML.replace('$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$', '`$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$`');
+                renderKaTeX(welcomeMessage);
+            }
+            
+            // --- Auto-detect dark mode ---
+            function checkDarkMode() {
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+            
+            checkDarkMode();
+
+            // Listen for changes in color scheme
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', checkDarkMode);
+        });
+    </script>
+</body>
+</html>
+
