@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>StudentPlus Static Solver</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Inter and Montserrat for the logo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Use the Inter font family as default */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            
+            /* CRITICAL: Prevent the main body from scrolling at all */
+            overflow: hidden !important; 
+            
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            
+            /* Prevents elastic scrolling on iOS */
+            overscroll-behavior: none;
+            
+            /* Make body a fixed container occupying full screen */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* App wrapper - uses dynamic viewport height for mobile keyboard stability */
+        #app-wrapper {
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height (best for mobile keyboard) */
+            width: 100%;
+            position: absolute; /* Relative to fixed body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden; /* Ensures only the chat container can scroll */
+        }
+        
+        /* Ensure input fields are still selectable/editable */
+        #video-code-input {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+        
+        /* Style for the logo font (Montserrat) */
+        .instagram-logo-font {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 1.8rem;
+        }
+
+        /* Style for the Camera/Home buttons for a better touch target */
+        .header-action-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Improve KaTeX readability on mobile */
+        .katex {
+            font-size: 1.1em !important;
+            text-align: left !important;
+        }
+        .katex-display {
+            /* Allow display math to be scrollable if too wide */
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 4px;
+        }
+
+        /* --- Hide Scrollbar on Chat Container --- */
+        #chat-container {
+            /* Scroll is now always auto (default of overflow-y-auto is active) */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #chat-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Full-width Image Container Styles */
+        .full-image-container {
+            width: 100%;
+            margin-top: 8px;
+            margin-bottom: 0; /* REMOVED bottom margin to match video player spacing */
+        }
+        
+        .full-image-item {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 8px; /* Reduced spacing between images */
+        }
+        
+        .full-image-item:last-child {
+            margin-bottom: 0; /* Remove margin from last image */
+        }
+        
+        .full-image-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        /* Desktop responsive styles */
+        @media (min-width: 768px) {
+            #app-wrapper {
+                position: relative;
+                margin: 0 auto;
+                max-width: 600px;
+                height: 90vh;
+                max-height: 800px;
+                border-radius: 0.5rem;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+        }
+        
+        /* Loading indicator styles */
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg">
+
+        <!-- Header - Fixed at top -->
+        <header class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm flex flex-col space-y-3 flex-shrink-0">
+            
+            <!-- Top Row: Logo and Action Buttons -->
+            <div class="flex items-center justify-between w-full">
+                <!-- Title (with logo font) -->
+                <h1 class="text-xl flex-shrink-0 mr-4">
+                    <span class="instagram-logo-font bg-yellow-300 dark:bg-yellow-400 text-black dark:text-gray-900 px-3 py-1 rounded-md">StudentPlus</span>
+                </h1>
+
+                <!-- Action Buttons (Right End) -->
+                <div class="flex items-center space-x-2 ml-auto">
+                    <!-- Camera Button (Icon Only, Enabled) -->
+                    <button
+                        type="button"
+                        id="camera-button"
+                        class="header-action-button p-2 bg-blue-500 hover:bg-blue-600 text-white shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                        aria-label="Capture photo for solving"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 0 1 2.25-2.25h1.372c.516 0 .966.351 1.091.852l.383 1.559A3 3 0 0 0 9.75 9.75h4.5c.972 0 1.84.582 2.246 1.472l.383-1.559a1.5 1.5 0 0 1 1.091-.852h1.372A2.25 2.25 0 0 1 22.5 6v12a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 18V6ZM3 16.03a1.5 1.5 0 0 0 .5-.195V18a.75.75 0 0 0 .75.75h14.5a.75.75 0 0 0 .75-.75v-2.165a1.5 1.5 0 0 0 .5.195V18A2.25 2.25 0 0 1 20.25 20.25H3.75A2.25 2.25 0 0 1 1.5 18V6A1.5 1.5 0 0 0 3 6.03v10Z" clip-rule="evenodd" />
+                            <path d="M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+                        </svg>
+                    </button>
+
+                    <!-- Home Button (REPLACEMENT) -->
+                    <button
+                        type="button"
+                        id="home-button"
+                        class="header-action-button p-2 bg-green-500 hover:bg-green-600 text-white shadow-md focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                        aria-label="Go to Home/Clear Chat"
+                    >
+                        <!-- Home Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l8.69 8.69a1.5 1.5 0 0 1 .43 1.069V18a2.25 2.25 0 0 1-2.25 2.25h-5.25a.75.75 0 0 1-.75-.75V15c0-.621-.504-1.125-1.125-1.125h-2.25c-.621 0-1.125.504-1.125 1.125v4.5c0 .414-.336.75-.75.75H3.75A2.25 2.25 0 0 1 1.5 18v-4.401c0-.294.118-.578.325-.785l8.69-8.69Z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Video Code Input -->
+            <div class="flex w-full space-x-2">
+                <input 
+                    type="text" 
+                    id="video-code-input"
+                    placeholder="Enter video code (e.g., #56788)..."
+                    class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    autocomplete="off"
+                >
+                <!-- Send Button for Video Code (Blue) - Now uses a simple, robust Send Icon -->
+                <button 
+                    type="button"
+                    id="go-button"
+                    class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-md shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 flex-shrink-0 flex items-center justify-center"
+                    aria-label="Load video code"
+                >
+                    <span id="go-button-text" class="flex items-center justify-center">
+                        <!-- Simplified Send Icon (Paper Plane) - FIXED PATH -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                            <path d="M2.01 21.01L23 12 2.01 3v7l15 2-15 2v7z" />
+                        </svg>
+                    </span>
+                    <div id="go-button-spinner" class="loading-spinner ml-2 hidden"></div>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Container - ONLY scrollable area (flex-1 overflow-y-auto) -->
+        <main id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6">
+            
+            <!-- Initial Image Placeholder -->
+            <div class="flex justify-center mb-4">
+                <div class="rounded-xl overflow-hidden shadow-lg w-full"> 
+                    <img 
+                        id="initial-image"
+                        src="https://i.postimg.cc/gjFfMR3x/20251023-135509-0000.png" 
+                        alt="Placeholder image for the initial screen of the StudentPlus Solver app, showing a question about math."
+                        class="w-full h-auto object-cover"
+                        onerror="this.onerror=null; this.src='https://placehold.co/400x400/CCCCCC/333333?text=Solver+Offline';"
+                    >
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Input Form (Footer) - Fixed at bottom - Ad Banner -->
+        <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2 flex-shrink-0">
+            <div class="flex items-center justify-center h-12 w-full rounded-lg bg-gray-100 dark:bg-gray-700 shadow-inner">
+                <img 
+                    src="https://placehold.co/468x60/8B5CF6/FFFFFF?text=Ad+Banner%3A+StudentPlus+Pro" 
+                    alt="Advertising banner for StudentPlus Pro subscription."
+                    class="w-full h-full object-cover rounded-lg"
+                    onerror="this.onerror=null; this.src='https://placehold.co/468x60/8B5CF6/FFFFFF?text=Upgrade+to+Pro!'"
+                >
+            </div>
+        </footer>
+
+        <!-- Error Modal (Kept for static error display) -->
+        <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 class="text-lg font-medium text-red-600 dark:text-red-400">Error</h3>
+                <p id="error-message" class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                    An internal error occurred.
+                </p>
+                <button id="close-error-modal" class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Close
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const chatContainer = document.getElementById('chat-container');
+            let initialImage = document.getElementById('initial-image');
+            
+            // Action Buttons
+            const cameraButton = document.getElementById('camera-button');
+            const homeButton = document.getElementById('home-button');
+
+            // Video Code Input
+            const videoCodeInput = document.getElementById('video-code-input'); 
+            const goButton = document.getElementById('go-button');
+            const goButtonText = document.getElementById('go-button-text');
+            const goButtonSpinner = document.getElementById('go-button-spinner');
+            
+            // Firebase Configuration (Using provided config)
+            const firebaseConfig = {
+                apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                authDomain: "geobazarr.firebaseapp.com",
+                databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                projectId: "geobazarr",
+                storageBucket: "geobazarr.firebasestorage.app",
+                messagingSenderId: "679949247383",
+                appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+            };
+
+            // Initialize Firebase
+            let db;
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                console.log("Firebase initialized successfully");
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showError("Firebase initialization failed. Please refresh the page.");
+            }
+
+            // --- Core App Functions ---
+
+            // --- Disable context menu and copy events globally ---
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('copy', (e) => e.preventDefault());
+
+            // --- Show error modal ---
+            function showError(message) {
+                const errorModal = document.getElementById('error-modal');
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = message;
+                errorModal.classList.remove('hidden');
+            }
+
+            // --- Close error modal ---
+            document.getElementById('close-error-modal').addEventListener('click', () => {
+                document.getElementById('error-modal').classList.add('hidden');
+            });
+
+            // --- Render LaTeX in a specific element ---
+            function renderKaTeX(element) {
+                if (typeof renderMathInElement === 'undefined') {
+                    console.warn("KaTeX auto-render script not loaded yet.");
+                    return;
+                }
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '$', right: '$', display: false },
+                            { left: '\\(', right: '\\)', display: false },
+                            { left: '\\[', right: '\\]', display: true },
+                            { left: "\\ce{", right: "}", display: false, mhchem: true }
+                        ],
+                        trusted: (context) => ['https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js'].includes(context.url),
+                        throwOnError: false
+                    });
+                } catch (error) {
+                    console.error("KaTeX rendering failed:", error);
+                }
+            }
+
+            // --- Add a new message to the chat UI ---
+            function addMessage(content, sender) {
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`;
+                
+                const messageBubble = document.createElement('div');
+                messageBubble.className = `p-3 rounded-lg max-w-sm md:max-w-md ${
+                    sender === 'user' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 break-words'
+                }`;
+
+                // Simple formatting for response (preserves LaTeX)
+                if (sender === 'ai') {
+                    let htmlContent = content
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')     // Italic
+                        .replace(/\n/g, '<br>');                  // Newlines
+                    
+                    messageBubble.innerHTML = htmlContent;
+                } else {
+                    // Sanitize user input
+                    messageBubble.textContent = content;
+                }
+                
+                messageWrapper.appendChild(messageBubble);
+                chatContainer.appendChild(messageWrapper);
+                
+                // Render LaTeX *after* adding to DOM
+                if (sender === 'ai') {
+                    renderKaTeX(messageBubble);
+                }
+            }
+            
+            // --- Add Video Player directly into the chat log ---
+            function addVideoPlayerInChat(videoUrl, description, imageUrls = []) {
+                // Clear previous content but keep the initial structure
+                chatContainer.innerHTML = '';
+                
+                // Extract video ID from YouTube URL
+                let videoId = '';
+                if (videoUrl.includes('youtu.be/')) {
+                    videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
+                } else if (videoUrl.includes('youtube.com/watch?v=')) {
+                    videoId = videoUrl.split('v=')[1].split('&')[0];
+                } else {
+                    // If it's already an embed URL or we can't parse it, use as-is
+                    videoId = videoUrl;
+                }
+                
+                const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                
+                const videoWrapper = document.createElement('div');
+                videoWrapper.className = 'w-full mb-4 rounded-xl overflow-hidden shadow-lg'; 
+                
+                const iframeHtml = `
+                    <div class="aspect-video w-full bg-gray-900">
+                        <iframe 
+                            width="100%" 
+                            height="100%" 
+                            src="${embedUrl}" 
+                            title="YouTube video player"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen
+                            class="w-full h-full"
+                        ></iframe>
+                    </div>
+                `;
+
+                videoWrapper.innerHTML = iframeHtml;
+                chatContainer.appendChild(videoWrapper);
+                
+                // Add description if available
+                if (description) {
+                    addMessage(description, 'ai');
+                }
+                
+                // Add image container if there are images
+                if (imageUrls && imageUrls.length > 0) {
+                    addFullWidthImageContainer(imageUrls);
+                }
+                
+                // Scroll to show the video content
+                scrollToVideoContent();
+            }
+            
+            // --- Add Full-Width Image Container ---
+            function addFullWidthImageContainer(imageUrls) {
+                const fullImageContainer = document.createElement('div');
+                fullImageContainer.className = 'full-image-container';
+                
+                imageUrls.forEach(url => {
+                    if (url) {
+                        const imageItem = document.createElement('div');
+                        imageItem.className = 'full-image-item';
+                        
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.alt = 'Related image';
+                        img.onerror = function() {
+                            this.src = 'https://placehold.co/600x400/CCCCCC/333333?text=Image+Error';
+                        };
+                        
+                        imageItem.appendChild(img);
+                        fullImageContainer.appendChild(imageItem);
+                    }
+                });
+                
+                chatContainer.appendChild(fullImageContainer);
+            }
+            
+            // --- Scroll to show video content ---
+            function scrollToVideoContent() {
+                setTimeout(() => {
+                    // Scroll to top to show the video player first
+                    chatContainer.scrollTop = 0;
+                }, 100);
+            }
+            
+            // --- Fetch video data from Firestore ---
+            async function fetchVideoData(code) {
+                if (!db) {
+                    throw new Error("Firebase not initialized");
+                }
+                
+                // Remove the '#' from the code if present
+                const codeNumber = code.replace('#', '');
+                
+                try {
+                    const docRef = db.collection('video_codes').doc(codeNumber);
+                    const doc = await docRef.get();
+                    
+                    if (doc.exists) {
+                        return doc.data();
+                    } else {
+                        // For demo purposes, if code is 56788, create it
+                        if (codeNumber === '56788') {
+                            await createDemoVideoData(codeNumber);
+                            const newDoc = await docRef.get();
+                            return newDoc.data();
+                        } else {
+                            throw new Error("Video code not found");
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error fetching video data:", error);
+                    throw error;
+                }
+            }
+            
+            // --- Create demo video data in Firestore ---
+            async function createDemoVideoData(codeNumber) {
+                if (!db) {
+                    throw new Error("Firebase not initialized");
+                }
+                
+                try {
+                    const docRef = db.collection('video_codes').doc(codeNumber);
+                    
+                    // Create multiple videos for demo with images
+                    await docRef.set({
+                        VideoURL1: "https://youtu.be/18VWC6Q-zcs?si=aUTHRzwS3OIMjSi8",
+                        Description1: "This is the first video for code **56788**. It explains the basic concepts of a topic.",
+                        ImageURL1_1: "https://i.postimg.cc/gjFfMR3x/20251023-135509-0000.png",
+                        ImageURL1_2: "https://i.postimg.cc/qq5wB1gQ/20251023-135509-0001.png",
+                        ImageURL1_3: "https://i.postimg.cc/xCq4Y2b0/20251023-135509-0002.png",
+                        VideoURL2: "https://youtu.be/dQw4w9WgXcQ",
+                        Description2: "This is the second video for code **56788**. It covers advanced practice problems.",
+                        ImageURL2_1: "https://i.postimg.cc/gjFfMR3x/20251023-135509-0000.png",
+                        ImageURL2_2: "https://i.postimg.cc/qq5wB1gQ/20251023-135509-0001.png",
+                        title: "Demo Video Collection",
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    console.log("Demo video data created successfully");
+                } catch (error) {
+                    console.error("Error creating demo video data:", error);
+                    throw error;
+                }
+            }
+            
+            // --- Fetch initial image from Firestore ---
+            async function fetchInitialImage() {
+                if (!db) {
+                    console.warn("Firebase not initialized, using default image");
+                    return;
+                }
+                
+                try {
+                    const docRef = db.collection('app_config').doc('initial_image');
+                    const doc = await docRef.get();
+                    
+                    if (doc.exists) {
+                        const data = doc.data();
+                        // FIX: Check for data.imageUrl field instead of just imageUrl
+                        if (data && data.imageUrl) {
+                            initialImage.src = data.imageUrl;
+                            console.log("Initial image updated from Firestore:", data.imageUrl);
+                        } else {
+                            console.warn("Initial image document exists but imageUrl field is missing");
+                        }
+                    } else {
+                        // Create a default initial image config if it doesn't exist
+                        await docRef.set({
+                            imageUrl: "https://i.postimg.cc/gjFfMR3x/20251023-135509-0000.png",
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("Default initial image config created");
+                    }
+                } catch (error) {
+                    console.error("Error fetching initial image:", error);
+                    // Continue with default image
+                }
+            }
+
+            // --- Reset Chat to Initial State ---
+            function resetChat() {
+                chatContainer.innerHTML = ''; // Clear existing content
+                
+                // Re-add the initial image placeholder
+                const initialContentHtml = `
+                    <!-- Image Placeholder/Initial View (Replaces Welcome Message) -->
+                    <div class="flex justify-center mb-4">
+                        <div class="rounded-xl overflow-hidden shadow-lg w-full"> 
+                            <img 
+                                id="initial-image"
+                                src="https://i.postimg.cc/gjFfMR3x/20251023-135509-0000.png" 
+                                alt="Placeholder image for the initial screen of the StudentPlus Solver app, showing a question about math."
+                                class="w-full h-auto object-cover"
+                                onerror="this.onerror=null; this.src='https://placehold.co/400x400/CCCCCC/333333?text=Solver+Offline';"
+                            >
+                        </div>
+                    </div>
+                `;
+                chatContainer.insertAdjacentHTML('beforeend', initialContentHtml);
+                
+                // Re-link the initial image reference since it was recreated in the DOM
+                initialImage = document.getElementById('initial-image');
+                
+                // Fetch the latest initial image from Firestore
+                fetchInitialImage();
+                
+                // Scroll to top to show initial image
+                chatContainer.scrollTop = 0;
+            }
+
+            // --- Input Handlers (Kept for mobile stability) ---
+            
+            function handleFocus() {
+                // Ensure chat container scrolls up when input is focused (for mobile keyboards)
+                setTimeout(() => {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 300);
+            }
+
+            function handleBlur() {
+                // Ensure chat container scrolls back down slightly after input blur
+                setTimeout(() => {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 100);
+            }
+            
+            // Listeners for Video Code Input
+            videoCodeInput.addEventListener('focus', handleFocus);
+            videoCodeInput.addEventListener('blur', handleBlur);
+
+
+            // 1. Handler for Camera Button (Enabled, Silent)
+            cameraButton.addEventListener('click', () => {
+                // Feature is enabled but designed to be silent for now, as requested.
+                console.log("Camera button clicked. Ready for image capture simulation.");
+            });
+
+            // 2. Handler for Home Button (NEW)
+            homeButton.addEventListener('click', resetChat);
+            
+            // 3. Handler for Video Code Input (Enabled)
+            async function handleVideoCodeInput() {
+                const code = videoCodeInput.value.trim();
+                
+                if (!code) return;
+
+                // Don't add user message to chat (as shown in the image)
+                videoCodeInput.value = '';
+                videoCodeInput.blur();
+                
+                // Show loading state
+                goButtonText.classList.add('hidden');
+                goButtonSpinner.classList.remove('hidden');
+                goButton.disabled = true;
+                
+                try {
+                    // Fetch video data from Firestore
+                    const videoData = await fetchVideoData(code);
+                    
+                    if (videoData) {
+                        // Process multiple videos
+                        let videoCount = 0;
+                        let foundVideos = false;
+                        
+                        // Loop through VideoURL1, VideoURL2, etc.
+                        for (let i = 1; i <= 10; i++) {
+                            const videoUrl = videoData[`VideoURL${i}`];
+                            const description = videoData[`Description${i}`];
+                            
+                            if (videoUrl) {
+                                videoCount++;
+                                // Collect all image URLs for this video
+                                const imageUrls = [];
+                                for (let j = 1; j <= 10; j++) {
+                                    const imageUrl = videoData[`ImageURL${i}_${j}`];
+                                    if (imageUrl) {
+                                        imageUrls.push(imageUrl);
+                                    } else {
+                                        break; // Stop when no more images
+                                    }
+                                }
+                                
+                                addVideoPlayerInChat(videoUrl, description, imageUrls);
+                                foundVideos = true;
+                            } else {
+                                // Stop when we don't find any more videos
+                                break;
+                            }
+                        }
+                        
+                        if (!foundVideos) {
+                            resetChat();
+                            addMessage(`The video code **${code}** was found but no video URLs are available.`, 'ai');
+                        }
+                    } else {
+                        resetChat();
+                        addMessage(`Sorry, I couldn't find a video for code **${code}**. Please check the code and try again.`, 'ai');
+                    }
+                } catch (error) {
+                    console.error("Error handling video code:", error);
+                    resetChat();
+                    addMessage(`Sorry, an error occurred while loading the video for code **${code}**. Please try again.`, 'ai');
+                } finally {
+                    // Reset button state
+                    goButtonText.classList.remove('hidden');
+                    goButtonSpinner.classList.add('hidden');
+                    goButton.disabled = false;
+                }
+            }
+
+            goButton.addEventListener('click', handleVideoCodeInput);
+            videoCodeInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleVideoCodeInput();
+                }
+            });
+            
+            // Initialize the app
+            fetchInitialImage();
+        });
+    </script>
+</body>
+</html>
+
