@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================
+    // 🔸 VIDEO CODES (Main Content)
+    // ============================
+    match /video_codes/{docId} {
+      // Only allow authenticated users with access
+      allow get: if request.auth != null
+                 && "Video_codes" in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedCollections;
+
+      // Block listing all documents
+      allow list: if false;
+
+      // Block writes
+      allow write: if false;
+    }
+
+    // =========================================
+    // 🔸 APP CONFIG (Homepage Image)
+    // =========================================
+    match /app_config/{docId} {
+      allow get: if docId == "initial_image"
+                 && request.auth != null;  // optionally require login
+      allow list, write: if false;
+    }
+
+    // =========================================
+    // 🔸 ALL OTHER COLLECTIONS
+    // =========================================
+    match /{collectionName}/{docId} {
+      // Allow read only if user is logged in and allowed for this collection
+      allow read: if request.auth != null
+                  && collectionName in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedCollections;
+
+      // Block writes
+      allow write: if false;
+    }
+
+    // Default deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
