@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================
+    // 🔸 VIDEO CODES (Restricted Access)
+    // ============================
+    match /video_codes/{docId} {
+      // Only allow authenticated users with specific access
+      allow get: if request.auth != null
+                 && "Video_codes" in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedCollections;
+
+      // Block listing all documents
+      allow list: if false;
+
+      // Block writes
+      allow write: if false;
+    }
+
+    // =========================================
+    // 🔸 APP CONFIG (Homepage Image - Public)
+    // =========================================
+    match /app_config/{docId} {
+      // Allow public read access for initial_image
+      allow get: if docId == "initial_image";
+      
+      // Block listing and writes
+      allow list, write: if false;
+    }
+
+    // =========================================
+    // 🔸 ALL OTHER COLLECTIONS (Public Read)
+    // =========================================
+    match /{collectionName}/{docId} {
+      // Allow public read access for all other collections
+      allow read: if true;
+
+      // Block writes by default
+      allow write: if false;
+    }
+
+    // Default deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
