@@ -1432,17 +1432,16 @@
                                         this.src = 'https://placehold.co/600x400/CCCCCC/333333?text=Image+Error';
                                     };
                                     mediaContainer.appendChild(img);
+                              
                                 } else if (url.match(/\.(pdf)(\?.*)?$/i)) {
     const iframe = document.createElement('iframe');
-    iframe.src = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
+    iframe.src = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}#toolbar=0`;
     iframe.className = 'content-pdf';
     iframe.allow = "fullscreen";
     iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-top-navigation-by-user-activation");
     mediaContainer.appendChild(iframe);
-}
-                                
-                                chatContainer.appendChild(mediaContainer);
-                            } else {
+        }
+                           else {
                                 // For video, keep existing behavior
                                 const urlItem = document.createElement('div');
                                 urlItem.className = 'course-url-item';
