@@ -1429,21 +1429,13 @@
                                     };
                                     mediaContainer.appendChild(img);
                                 } else if (url.match(/\.(pdf)(\?.*)?$/i)) {
-                                    // PDF
-                                    const embed = document.createElement('embed');
-                                    embed.src = url;
-                                    embed.type = 'application/pdf';
-                                    embed.className = 'content-pdf';
-                                    mediaContainer.appendChild(embed);
-                                } else {
-                                    // Unknown type - show as link
-                                    const link = document.createElement('a');
-                                    link.href = url;
-                                    link.target = '_blank';
-                                    link.textContent = `${urlKey}: ${url}`;
-                                    link.className = 'text-blue-500 underline';
-                                    mediaContainer.appendChild(link);
-                                }
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
+    iframe.className = 'content-pdf';
+    iframe.allow = "fullscreen";
+    iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-top-navigation-by-user-activation");
+    mediaContainer.appendChild(iframe);
+}
                                 
                                 chatContainer.appendChild(mediaContainer);
                             } else {
