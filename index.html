@@ -569,11 +569,15 @@
             object-fit: contain;
         }
 
-        .content-pdf {
-            width: 100%;
-            height: 80vh;
-            border: none;
-        }
+        /* PDF container - full width and auto height */
+.content-pdf {
+    display: block;
+    width: 100%;
+    min-height: 100vh;     /* ensures full view height */
+    height: auto;          /* let it expand naturally */
+    border: none;          /* no border */
+    overflow: hidden;      /* no scrollbars inside iframe */
+}
 
         /* Challenge section styles */
         .challenge-header {
