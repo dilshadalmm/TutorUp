@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>StudentPlus Challenge</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Inter and Montserrat for the logo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Use the Inter font family as default */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            
+            /* CRITICAL: Prevent the main body from scrolling at all */
+            overflow: hidden !important; 
+            
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            
+            /* Prevents elastic scrolling on iOS */
+            overscroll-behavior: none;
+            
+            /* Make body a fixed container occupying full screen */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* App wrapper - uses dynamic viewport height for mobile keyboard stability */
+        #app-wrapper {
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height (best for mobile keyboard) */
+            width: 100%;
+            position: absolute; /* Relative to fixed body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden; /* Ensures only the chat container can scroll */
+        }
+        
+        /* Ensure input fields are still selectable/editable */
+        #video-code-input, #message-input {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+        
+        /* Style for the logo font (Montserrat) */
+        .instagram-logo-font {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 1.8rem;
+        }
+
+        /* Improve KaTeX readability on mobile */
+        .katex {
+            font-size: 1.1em !important;
+            text-align: left !important;
+        }
+        .katex-display {
+            /* Allow display math to be scrollable if too wide */
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 4px;
+        }
+
+        /* --- Hide Scrollbar on Chat Container --- */
+        #chat-container {
+            /* Scroll is now always auto (default of overflow-y-auto is active) */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #chat-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Full-width Image Container Styles - MODIFIED: Remove rounded corners and side margins */
+        .full-image-container {
+            width: 100%;
+            margin: 2px 0; /* REDUCED: Only top and bottom margin, reduced to 1/4th */
+        }
+        
+        .full-image-item {
+            width: 100%;
+            border-radius: 0; /* REMOVED rounded corners */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2px; /* REDUCED spacing between images */
+        }
+        
+        .full-image-item:last-child {
+            margin-bottom: 0; /* Remove margin from last image */
+        }
+        
+        .full-image-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        /* Video Player Styles - MODIFIED: Remove rounded corners and side margins */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            margin: 0 0 4px 0; /* REDUCED: Only bottom margin, no side margins, reduced to 1/4th */
+            border-radius: 0; /* REMOVED rounded corners */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* REMOVED: Fullscreen video styles and fullscreen button styles */
+
+        /* Desktop responsive styles */
+        @media (min-width: 768px) {
+            #app-wrapper {
+                position: relative;
+                margin: 0 auto;
+                max-width: 600px;
+                height: 90vh;
+                max-height: 800px;
+                border-radius: 0.5rem;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            
+            #auth-wrapper {
+                max-width: 500px;
+                height: auto;
+                max-height: 90vh;
+                border-radius: 1rem;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            }
+        }
+        
+        /* Loading indicator styles */
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Authentication page styles */
+        #auth-wrapper {
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.3s ease;
+            display: none; /* Hidden by default */
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 1.5rem;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .auth-tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .google-signin-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.75rem;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        
+        .google-signin-btn:hover {
+            background: #f9fafb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+            color: #6b7280;
+        }
+        
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .divider span {
+            padding: 0 1rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Auth home button */
+        .auth-home-button {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            color: white;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        
+        .auth-home-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Initial message styles - MODIFIED: Remove rounded corners and side margins */
+        .initial-message {
+            text-align: center;
+            color: #374151;
+            padding: 8px 0; /* Only top and bottom padding, no side padding */
+            font-size: 0.95rem;
+            margin: 2px 0; /* REDUCED: Only top and bottom margin, reduced to 1/4th */
+            line-height: 1.5;
+            width: 100%;
+            border-radius: 0; /* REMOVED rounded corners */
+        }
+        
+        /* Update notification styles */
+        .update-notification {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #3b82f6;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 20;
+            display: none;
+        }
+        
+        .update-date {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+        
+        /* REMOVED: Message status indicator (no longer needed) */
+        
+        /* Button transition styles */
+        .button-transition {
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* Link detection styles - UPDATED for embedded media without message bubble */
+        .message-link {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+        
+        .embedded-media {
+            max-width: 100%;
+            border-radius: 0; /* REMOVED rounded corners */
+            margin-top: 2px; /* REDUCED margin */
+            margin-bottom: 2px; /* REDUCED margin */
+        }
+        
+        .embedded-image {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 0; /* REMOVED rounded corners */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .embedded-video {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 0; /* REMOVED rounded corners */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* YouTube embed in chat styles - MODIFIED: Remove rounded corners */
+        .chat-youtube-embed {
+            width: 100%;
+            margin: 2px 0; /* REDUCED: Only vertical margins, reduced to 1/4th */
+            border-radius: 0; /* REMOVED rounded corners */
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Description message bubble - MODIFIED: No rounded corners */
+        .description-message {
+            border-radius: 0 !important;
+            margin-bottom: 2px !important; /* REDUCED margin */
+        }
+        
+        /* Ensure no margin on last content element */
+        #chat-container > *:last-child {
+            margin-bottom: 0 !important;
+        }
+
+        /* --- iPhone Zoom Prevention --- */
+        input, textarea, select, button {
+            font-size: 16px !important;
+            touch-action: manipulation;
+        }
+
+        /* NEW: Thumbnail Styles */
+        .thumbnail-item {
+            width: 100%;
+            margin-bottom: 8px; /* DOUBLED: Increased from 4px to 8px */
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .thumbnail-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .thumbnail-item img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            display: block;
+        }
+
+        .thumbnail-fallback {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #374151;
+            background: white;
+            margin-bottom: 8px; /* DOUBLED: Added margin to match thumbnail items */
+        }
+
+        .thumbnail-fallback:hover {
+            background-color: #f3f4f6;
+        }
+
+        .thumbnail-fallback:active {
+            background-color: #e5e7eb;
+        }
+
+        .header-thumbnail {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .header-thumbnail img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            display: block;
+        }
+
+        .back-thumbnail {
+            width: 100%;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .back-thumbnail img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Challenge section styles - UPDATED for thumbnails */
+        .challenge-header {
+            text-align: center;
+            font-weight: 600;
+            color: #374151;
+            padding: 12px 0;
+            margin-bottom: 8px; /* REDUCED: Changed from 16px to 8px (half) */
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .challenge-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            color: #374151; /* Light mode text color */
+            margin-bottom: 8px; /* DOUBLED: Added margin */
+        }
+
+        .challenge-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .challenge-item:active {
+            background-color: #e5e7eb;
+        }
+
+        .challenge-back-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            color: #374151; /* Light mode text color */
+            margin-bottom: 8px; /* DOUBLED: Added margin */
+        }
+
+        .challenge-back-button:hover {
+            background: #e5e7eb;
+        }
+
+        .challenge-loading {
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+            margin-bottom: 8px; /* DOUBLED: Added margin */
+        }
+
+        .challenge-error {
+            text-align: center;
+            padding: 20px;
+            color: #ef4444;
+            margin-bottom: 8px; /* DOUBLED: Added margin */
+        }
+
+        /* Image and PDF container styles */
+        .content-media-container {
+            width: 100%;
+            margin: 0;
+            border-radius: 0;
+            overflow: hidden;
+            margin-bottom: 8px; /* DOUBLED: Added margin */
+        }
+
+        .content-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        .content-pdf {
+            width: 100%;
+            height: 80vh;
+            border: none;
+        }
+
+        /* Floating Action Button for Logout */
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .fab svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Dark mode support for challenge */
+        @media (prefers-color-scheme: dark) {
+            .challenge-header {
+                background: #374151;
+                color: #f9fafb; /* White text in dark mode */
+                border-bottom-color: #4b5563;
+            }
+
+            .challenge-item {
+                border-bottom-color: #4b5563;
+                color: #f9fafb; /* White text in dark mode */
+            }
+
+            .challenge-item:hover {
+                background-color: #374151;
+            }
+
+            .challenge-item:active {
+                background-color: #4b5563;
+            }
+
+            .challenge-back-button {
+                background: #374151;
+                border-bottom-color: #4b5563;
+                color: #f9fafb; /* White text in dark mode */
+            }
+
+            .challenge-back-button:hover {
+                background: #4b5563;
+            }
+
+            .thumbnail-fallback {
+                border-bottom-color: #4b5563;
+                color: #f9fafb;
+                background: #1f2937;
+            }
+
+            .thumbnail-fallback:hover {
+                background-color: #374151;
+            }
+
+            .thumbnail-fallback:active {
+                background-color: #4b5563;
+            }
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+
+    <!-- Authentication Page (Hidden by default) -->
+    <div id="auth-wrapper" class="md:rounded-lg">
+        <!-- Home Button on Auth Page -->
+        <button id="auth-home-button" class="auth-home-button" aria-label="Go back to main page">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l8.69 8.69a1.5 1.5 0 0 1 .43 1.069V18a2.25 2.25 0 0 1-2.25 2.25h-5.25a.75.75 0 0 1-.75-.75V15c0-.621-.504-1.125-1.125-1.125h-2.25c-.621 0-1.125.504-1.125 1.125v4.5c0 .414-.336.75-.75.75H3.75A2.25 2.25 0 0 1 1.5 18v-4.401c0-.294.118-.578.325-.785l8.69-8.69Z" />
+            </svg>
+        </button>
+        
+        <div class="auth-card">
+            <!-- Logo -->
+            <div class="text-center mb-6">
+                <h1 class="instagram-logo-font text-3xl inline-block bg-yellow-300 dark:bg-yellow-400 text-black dark:text-gray-900 px-4 py-2 rounded-lg">
+                    StudentPlus
+                </h1>
+                <p class="text-gray-600 mt-2">Sign in to access Challenges</p>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="auth-tabs">
+                <div class="auth-tab active" data-tab="signin">Sign In</div>
+                <div class="auth-tab" data-tab="signup">Sign Up</div>
+            </div>
+            
+            <!-- Sign In Form -->
+            <form id="signin-form" class="auth-form active">
+                <div class="space-y-4">
+                    <div>
+                        <label for="signin-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input 
+                            type="email" 
+                            id="signin-email" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="your@email.com"
+                        >
+                    </div>
+                    <div>
+                        <label for="signin-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input 
+                            type="password" 
+                            id="signin-password" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                    <button 
+                        type="submit" 
+                        id="signin-button"
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center button-transition"
+                    >
+                        <span id="signin-button-text">Sign In</span>
+                        <div id="signin-button-spinner" class="loading-spinner ml-2 hidden"></div>
+                    </button>
+                </div>
+                
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+                
+                <button 
+                    type="button" 
+                    id="google-signin-button"
+                    class="google-signin-btn button-transition"
+                >
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google
+                </button>
+            </form>
+            
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="auth-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="signup-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input 
+                            type="text" 
+                            id="signup-name" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="John Doe"
+                        >
+                    </div>
+                    <div>
+                        <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input 
+                            type="email" 
+                            id="signup-email" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="your@email.com"
+                        >
+                    </div>
+                    <div>
+                        <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input 
+                            type="password" 
+                            id="signup-password" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                    <button 
+                        type="submit" 
+                        id="signup-button"
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center button-transition"
+                    >
+                        <span id="signup-button-text">Create Account</span>
+                        <div id="signup-button-spinner" class="loading-spinner ml-2 hidden"></div>
+                    </button>
+                </div>
+                
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+                
+                <button 
+                    type="button" 
+                    id="google-signup-button"
+                    class="google-signin-btn button-transition"
+                >
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg">
+
+        <!-- Chat Container - ONLY scrollable area (flex-1 overflow-y-auto) - MODIFIED: Remove side padding -->
+        <main id="chat-container" class="flex-1 overflow-y-auto px-0 md:px-0">
+            <!-- Challenge content will be loaded here dynamically -->
+        </main>
+
+        <!-- Update Notification -->
+        <div id="update-notification" class="update-notification hidden">
+            <div id="notification-text"></div>
+            <div id="notification-date" class="update-date"></div>
+        </div>
+
+        <!-- Floating Action Button for Logout/Login -->
+        <div id="fab" class="fab">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm5.03 4.72a.75.75 0 0 1 0 1.06l-1.72 1.72h10.94a.75.75 0 0 1 0 1.5H10.81l1.72 1.72a.75.75 0 1 1-1.06 1.06l-3-3a.75.75 0 0 1 0-1.06l3-3a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+            </svg>
+        </div>
+
+        <!-- Error Modal (Kept for static error display) -->
+        <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 class="text-lg font-medium text-red-600 dark:text-red-400">Error</h3>
+                <p id="error-message" class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                    An internal error occurred.
+                </p>
+                <button id="close-error-modal" class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 button-transition">
+                    Close
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const authWrapper = document.getElementById('auth-wrapper');
+            const appWrapper = document.getElementById('app-wrapper');
+            const chatContainer = document.getElementById('chat-container');
+            const fab = document.getElementById('fab');
+            
+            // Authentication elements
+            const authTabs = document.querySelectorAll('.auth-tab');
+            const authForms = document.querySelectorAll('.auth-form');
+            const signinForm = document.getElementById('signin-form');
+            const signupForm = document.getElementById('signup-form');
+            const signinButton = document.getElementById('signin-button');
+            const signupButton = document.getElementById('signup-button');
+            const signinButtonText = document.getElementById('signin-button-text');
+            const signupButtonText = document.getElementById('signup-button-text');
+            const signinButtonSpinner = document.getElementById('signin-button-spinner');
+            const signupButtonSpinner = document.getElementById('signup-button-spinner');
+            const googleSigninButton = document.getElementById('google-signin-button');
+            const googleSignupButton = document.getElementById('google-signup-button');
+            const authHomeButton = document.getElementById('auth-home-button');
+            
+            // Update elements
+            const updateNotification = document.getElementById('update-notification');
+            const notificationText = document.getElementById('notification-text');
+            const notificationDate = document.getElementById('notification-date');
+            
+            // Track current state
+            let currentSection = 'challenge';
+            let isAdmin = false;
+            
+            // Firebase Configuration (Using provided config)
+            const firebaseConfig = {
+                apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                authDomain: "geobazarr.firebaseapp.com",
+                databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                projectId: "geobazarr",
+                storageBucket: "geobazarr.firebasestorage.app",
+                messagingSenderId: "679949247383",
+                appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+            };
+
+            // Initialize Firebase
+            let db, auth;
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                auth = firebase.auth();
+                console.log("Firebase initialized successfully");
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showError("Firebase initialization failed. Please refresh the page.");
+            }
+
+            // --- iPhone Zoom Prevention ---
+            document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+            document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+            document.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
+
+            // Prevent double-tap zoom
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', e => {
+                const now = new Date().getTime();
+                if (now - lastTouchEnd <= 300) e.preventDefault();
+                lastTouchEnd = now;
+            }, false);
+
+            // --- HELPER FUNCTIONS FOR THUMBNAILS ---
+
+            // Create thumbnail item with fallback
+            function createThumbnailItem(itemName, thumbnailUrl, clickHandler) {
+                const item = document.createElement('div');
+                item.className = 'thumbnail-item';
+
+                if (thumbnailUrl) {
+                    const img = document.createElement('img');
+                    img.src = thumbnailUrl;
+                    img.alt = itemName;
+                    img.loading = 'lazy';
+                    img.onerror = () => {
+                        // Fallback to text
+                        item.innerHTML = '';
+                        item.textContent = itemName;
+                        item.className = 'thumbnail-fallback';
+                        // Only add click handler if provided
+                        if (clickHandler) {
+                            item.addEventListener('click', clickHandler);
+                        }
+                    };
+                    item.appendChild(img);
+                    // Only add click handler if provided
+                    if (clickHandler) {
+                        item.addEventListener('click', clickHandler);
+                    }
+                } else {
+                    // If no thumbnail URL, we directly create the text fallback
+                    item.textContent = itemName;
+                    item.className = 'thumbnail-fallback';
+                    // Only add click handler if provided
+                    if (clickHandler) {
+                        item.addEventListener('click', clickHandler);
+                    }
+                }
+
+                return item;
+            }
+
+            // Get header thumbnail
+            async function getHeaderThumbnail(headerType) {
+                try {
+                    const doc = await db.collection('Header').doc(headerType).get();
+                    if (doc.exists) {
+                        return doc.data().thumbnail;
+                    }
+                } catch (error) {
+                    console.error(`Error loading header thumbnail for ${headerType}:`, error);
+                }
+                return null;
+            }
+
+            // Get back thumbnail
+            async function getBackThumbnail() {
+                try {
+                    const doc = await db.collection('Header').doc('back_item').get();
+                    if (doc.exists) {
+                        return doc.data().thumbnail;
+                    }
+                } catch (error) {
+                    console.error('Error loading back thumbnail:', error);
+                }
+                return null;
+            }
+
+            // Create header with thumbnail
+            async function createHeader(headerType, fallbackText) {
+                const header = document.createElement('div');
+                header.className = 'header-thumbnail';
+
+                const thumbnailUrl = await getHeaderThumbnail(headerType);
+                if (thumbnailUrl) {
+                    const img = document.createElement('img');
+                    img.src = thumbnailUrl;
+                    img.alt = fallbackText;
+                    img.onerror = () => {
+                        // Fallback to text header
+                        header.innerHTML = '';
+                        const textHeader = document.createElement('div');
+                        textHeader.className = 'challenge-header';
+                        textHeader.textContent = fallbackText;
+                        header.appendChild(textHeader);
+                    };
+                    header.appendChild(img);
+                } else {
+                    // Fallback to text header
+                    const textHeader = document.createElement('div');
+                    textHeader.className = 'challenge-header';
+                    textHeader.textContent = fallbackText;
+                    header.appendChild(textHeader);
+                }
+
+                return header;
+            }
+
+            // Create back button with thumbnail
+            async function createBackButton(clickHandler, fallbackText) {
+                const backButton = document.createElement('div');
+                backButton.className = 'back-thumbnail';
+
+                const backThumbnailUrl = await getBackThumbnail();
+                if (backThumbnailUrl) {
+                    const img = document.createElement('img');
+                    img.src = backThumbnailUrl;
+                    img.alt = fallbackText;
+                    img.onerror = () => {
+                        // Fallback to text back button
+                        backButton.innerHTML = `
+                            <div class="challenge-back-button">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M11.03 3.97a.75.75 0 0 1 0 1.06l-6.22 6.22H21a.75.75 0 0 1 0 1.5H4.81l6.22 6.22a.75.75 0 1 1-1.06 1.06l-7.5-7.5a.75.75 0 0 1 0-1.06l7.5-7.5a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                                </svg>
+                                ${fallbackText}
+                            </div>
+                        `;
+                        backButton.addEventListener('click', clickHandler);
+                    };
+                    backButton.appendChild(img);
+                    backButton.addEventListener('click', clickHandler);
+                } else {
+                    // Fallback to text back button
+                    backButton.innerHTML = `
+                        <div class="challenge-back-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                <path fill-rule="evenodd" d="M11.03 3.97a.75.75 0 0 1 0 1.06l-6.22 6.22H21a.75.75 0 0 1 0 1.5H4.81l6.22 6.22a.75.75 0 1 1-1.06 1.06l-7.5-7.5a.75.75 0 0 1 0-1.06l7.5-7.5a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                            </svg>
+                            ${fallbackText}
+                        </div>
+                    `;
+                    backButton.addEventListener('click', clickHandler);
+                }
+
+                return backButton;
+            }
+
+            // --- CHALLENGE SECTION FUNCTIONS ---
+
+            // Show challenge home - list exam types
+            async function showChallengeHome() {
+                chatContainer.innerHTML = '';
+                
+                // Add header with thumbnail
+                const header = await createHeader('challenge_header', 'Model Exam Sets');
+                chatContainer.appendChild(header);
+                
+                const loading = document.createElement('div');
+                loading.className = 'challenge-loading';
+                loading.textContent = 'Loading exam types...';
+                chatContainer.appendChild(loading);
+                
+                try {
+                    const challengeSnapshot = await db.collection('Challenge').get();
+                    
+                    if (challengeSnapshot.empty) {
+                        loading.textContent = 'No exam types available.';
+                        return;
+                    }
+                    
+                    chatContainer.removeChild(loading);
+                    
+                    challengeSnapshot.forEach(doc => {
+                        const examData = doc.data();
+                        const examName = doc.id;
+                        const thumbnailUrl = examData.thumbnail;
+                        
+                        // Check if this exam has any pages
+                        let hasPages = false;
+                        for (let i = 1; i <= 100; i++) {
+                            if (examData[`Page${i}`]) {
+                                hasPages = true;
+                                break;
+                            }
+                        }
+                        
+                        // Only add click handler if exam has pages
+                        const clickHandler = hasPages ? () => {
+                            showChallengePages(examName);
+                        } : null;
+                        
+                        const examItem = createThumbnailItem(examName, thumbnailUrl, clickHandler);
+                        
+                        chatContainer.appendChild(examItem);
+                    });
+                } catch (error) {
+                    console.error("Error loading exam types:", error);
+                    loading.className = 'challenge-error';
+                    loading.textContent = 'Failed to load exam types. Please try again.';
+                }
+            }
+
+            // Show pages for a challenge exam type
+            async function showChallengePages(examType) {
+                chatContainer.innerHTML = '';
+                
+                // Back button with thumbnail
+                const backButton = await createBackButton(showChallengeHome, 'Back to Exam Types');
+                chatContainer.appendChild(backButton);
+                
+                // REMOVED: Header with exam type thumbnail
+                
+                const loading = document.createElement('div');
+                loading.className = 'challenge-loading';
+                loading.textContent = 'Loading challenge pages...';
+                chatContainer.appendChild(loading);
+                
+                try {
+                    const examDoc = await db.collection('Challenge').doc(examType).get();
+                    
+                    if (!examDoc.exists) {
+                        loading.textContent = 'No challenge data available.';
+                        return;
+                    }
+                    
+                    chatContainer.removeChild(loading);
+                    
+                    const data = examDoc.data();
+                    let hasPages = false;
+                    
+                    // Display all pages (Page1, Page2, Page3, etc.)
+                    for (let i = 1; i <= 100; i++) {
+                        const pageKey = `Page${i}`;
+                        const pageUrl = data[pageKey];
+                        
+                        if (pageUrl) {
+                            hasPages = true;
+                            
+                            // Create media container
+                            const mediaContainer = document.createElement('div');
+                            mediaContainer.className = 'content-media-container';
+                            
+                            // Check if it's an image or PDF
+                            if (pageUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp)(\?.*)?$/i)) {
+                                // Image
+                                const img = document.createElement('img');
+                                img.src = pageUrl;
+                                img.alt = `${examType} - Page ${i}`;
+                                img.className = 'content-image';
+                                img.loading = 'lazy';
+                                img.onerror = function() {
+                                    this.src = 'https://placehold.co/600x400/CCCCCC/333333?text=Image+Error';
+                                };
+                                mediaContainer.appendChild(img);
+                            } else if (pageUrl.match(/\.(pdf)(\?.*)?$/i)) {
+                                // PDF
+                                const embed = document.createElement('embed');
+                                embed.src = pageUrl;
+                                embed.type = 'application/pdf';
+                                embed.className = 'content-pdf';
+                                mediaContainer.appendChild(embed);
+                            } else {
+                                // Unknown type - show as link
+                                const link = document.createElement('a');
+                                link.href = pageUrl;
+                                link.target = '_blank';
+                                link.textContent = `${pageKey}: ${pageUrl}`;
+                                link.className = 'text-blue-500 underline';
+                                mediaContainer.appendChild(link);
+                            }
+                            
+                            chatContainer.appendChild(mediaContainer);
+                        } else {
+                            // Stop when no more pages found
+                            break;
+                        }
+                    }
+                    
+                    if (!hasPages) {
+                        const noPages = document.createElement('div');
+                        noPages.className = 'challenge-loading';
+                        noPages.textContent = 'No pages found for this exam type.';
+                        chatContainer.appendChild(noPages);
+                    }
+                } catch (error) {
+                    console.error("Error loading challenge pages:", error);
+                    loading.className = 'challenge-error';
+                    loading.textContent = 'Failed to load challenge pages. Please try again.';
+                }
+            }
+
+            // --- BUG FIX: Improved admin check function ---
+            function checkIfAdmin(user) {
+                if (!user || !user.email) return false;
+                
+                // Case-insensitive email check
+                const adminEmail = user.email.toLowerCase().trim();
+                return adminEmail === 'admin@gmail.com';
+            }
+
+            // --- Authentication Functions ---
+            
+            // Switch between sign in and sign up tabs
+            authTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    authTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Show corresponding form
+                    authForms.forEach(form => {
+                        form.classList.remove('active');
+                        if (form.id === `${tabName}-form`) {
+                            form.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            // Create or update user document with allowed collections
+            async function setupUserDocument(user) {
+                if (!db) return;
+                
+                try {
+                    const userRef = db.collection('users').doc(user.uid);
+                    const userDoc = await userRef.get();
+                    
+                    if (!userDoc.exists) {
+                        // Create new user document with default permissions
+                        await userRef.set({
+                            email: user.email,
+                            displayName: user.displayName || document.getElementById('signup-name')?.value || 'User',
+                            allowedCollections: ["video_codes"], // Default access to video_codes
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("New user document created with video_codes access");
+                    } else {
+                        // Update last login for existing user
+                        await userRef.update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("User document updated with last login");
+                    }
+                } catch (error) {
+                    console.error("Error setting up user document:", error);
+                    // Don't block auth flow if user doc setup fails
+                }
+            }
+            
+            // Email/password sign in
+            signinForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('signin-email').value;
+                const password = document.getElementById('signin-password').value;
+                
+                if (!email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+                
+                // Show loading state
+                signinButtonText.classList.add('hidden');
+                signinButtonSpinner.classList.remove('hidden');
+                signinButton.disabled = true;
+                
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    // Check if admin
+                    isAdmin = checkIfAdmin(userCredential.user);
+                    console.log("User signed in as admin:", isAdmin);
+                    // Set up user document after successful sign in
+                    await setupUserDocument(userCredential.user);
+                    // Hide auth page and show app
+                    hideAuthPage();
+                } catch (error) {
+                    console.error("Sign in error:", error);
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    // Reset button state
+                    signinButtonText.classList.remove('hidden');
+                    signinButtonSpinner.classList.add('hidden');
+                    signinButton.disabled = false;
+                }
+            });
+            
+            // Email/password sign up
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                
+                if (!name || !email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showError("Password should be at least 6 characters");
+                    return;
+                }
+                
+                // Show loading state
+                signupButtonText.classList.add('hidden');
+                signupButtonSpinner.classList.remove('hidden');
+                signupButton.disabled = true;
+                
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    // Update user profile with name
+                    await userCredential.user.updateProfile({
+                        displayName: name
+                    });
+                    
+                    // Check if admin
+                    isAdmin = checkIfAdmin(userCredential.user);
+                    console.log("User signed up as admin:", isAdmin);
+                    // Set up user document with permissions
+                    await setupUserDocument(userCredential.user);
+                    // Hide auth page and show app
+                    hideAuthPage();
+                    
+                } catch (error) {
+                    console.error("Sign up error:", error);
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    // Reset button state
+                    signupButtonText.classList.remove('hidden');
+                    signupButtonSpinner.classList.add('hidden');
+                    signupButton.disabled = false;
+                }
+            });
+            
+            // Google sign in
+            const handleGoogleSignIn = async () => {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                
+                try {
+                    const userCredential = await auth.signInWithPopup(provider);
+                    // Check if admin
+                    isAdmin = checkIfAdmin(userCredential.user);
+                    console.log("User signed in with Google as admin:", isAdmin);
+                    // Set up user document after successful Google sign in
+                    await setupUserDocument(userCredential.user);
+                    // Hide auth page and show app
+                    hideAuthPage();
+                } catch (error) {
+                    console.error("Google sign in error:", error);
+                    showError(getAuthErrorMessage(error));
+                }
+            };
+            
+            googleSigninButton.addEventListener('click', handleGoogleSignIn);
+            googleSignupButton.addEventListener('click', handleGoogleSignIn);
+            
+            // FAB for authentication
+            fab.addEventListener('click', async () => {
+                const user = auth.currentUser;
+                if (user) {
+                    // User is signed in, so sign out
+                    try {
+                        await auth.signOut();
+                        isAdmin = false;
+                        // Refresh challenge section
+                        showChallengeHome();
+                    } catch (error) {
+                        console.error("Sign out error:", error);
+                        showError("Failed to sign out. Please try again.");
+                    }
+                } else {
+                    // User is not signed in, show auth page
+                    showAuthPage();
+                }
+            });
+            
+            // Home button on auth page
+            authHomeButton.addEventListener('click', () => {
+                hideAuthPage();
+            });
+            
+            // Show auth page
+            function showAuthPage() {
+                authWrapper.style.display = 'flex';
+                appWrapper.style.display = 'none';
+            }
+            
+            // Hide auth page
+            function hideAuthPage() {
+                authWrapper.style.display = 'none';
+                appWrapper.style.display = 'flex';
+                
+                // Refresh challenge section
+                showChallengeHome();
+            }
+            
+            // Update UI based on auth state
+            function updateAuthUI(user) {
+                if (user) {
+                    // User is signed in
+                    fab.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm10.72 4.72a.75.75 0 0 1 1.06 0l3 3a.75.75 0 0 1 0 1.06l-3 3a.75.75 0 1 1-1.06-1.06l1.72-1.72H9a.75.75 0 0 1 0-1.5h10.94l-1.72-1.72a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                    `;
+                    console.log("User signed in:", user.displayName || user.email);
+                } else {
+                    // User is signed out
+                    fab.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm5.03 4.72a.75.75 0 0 1 0 1.06l-1.72 1.72h10.94a.75.75 0 0 1 0 1.5H10.81l1.72 1.72a.75.75 0 1 1-1.06 1.06l-3-3a.75.75 0 0 1 0-1.06l3-3a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                        </svg>
+                    `;
+                    console.log("User signed out");
+                }
+            }
+            
+            // --- BUG FIX: Enhanced auth state observer ---
+            auth.onAuthStateChanged((user) => {
+                console.log("Auth state changed, user:", user ? user.email : "none");
+                updateAuthUI(user);
+                
+                // Check if user is admin
+                isAdmin = checkIfAdmin(user);
+                console.log("Is admin:", isAdmin);
+                
+                if (user) {
+                    hideAuthPage();
+                    
+                    // Refresh challenge section
+                    showChallengeHome();
+                } else {
+                    isAdmin = false;
+                    
+                    // Refresh challenge section
+                    showChallengeHome();
+                }
+            });
+            
+            // Helper function to get user-friendly auth error messages
+            function getAuthErrorMessage(error) {
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        return 'Invalid email address.';
+                    case 'auth/user-disabled':
+                        return 'This account has been disabled.';
+                    case 'auth/user-not-found':
+                        return 'No account found with this email.';
+                    case 'auth/wrong-password':
+                        return 'Incorrect password.';
+                    case 'auth/email-already-in-use':
+                        return 'An account with this email already exists.';
+                    case 'auth/weak-password':
+                        return 'Password is too weak.';
+                    case 'auth/network-request-failed':
+                        return 'Network error. Please check your connection.';
+                    default:
+                        return error.message || 'Authentication failed. Please try again.';
+                }
+            }
+
+            // --- Core App Functions ---
+
+            // --- Disable context menu and copy events globally ---
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('copy', (e) => e.preventDefault());
+
+            // --- Show error modal ---
+            function showError(message) {
+                const errorModal = document.getElementById('error-modal');
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = message;
+                errorModal.classList.remove('hidden');
+            }
+
+            // --- Close error modal ---
+            document.getElementById('close-error-modal').addEventListener('click', () => {
+                document.getElementById('error-modal').classList.add('hidden');
+            });
+
+            // --- Initialize App ---
+            function initializeApp() {
+                // Start with challenge section as default
+                showChallengeHome();
+                
+                // Check for service worker for PWA capabilities
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(registration => console.log('SW registered'))
+                        .catch(err => console.log('SW registration failed'));
+                }
+                
+                console.log("App initialized successfully");
+            }
+            
+            // Start the app
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
