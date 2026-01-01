@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>ConceptsBlitz - Learning Platform</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #app-wrapper {
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation Bar */
+        .top-nav {
+            background: white;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid #e4e6eb;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .nav-button {
+            padding: 8px;
+            border-radius: 50%;
+            background: #f0f2f5;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .nav-button:hover {
+            background: #e4e6eb;
+        }
+
+        /* Main Content Area */
+        #content-container {
+            flex: 1;
+            overflow-y: auto;
+            background: #f0f2f5;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Header Banner */
+        .header-banner {
+            width: 100%;
+            background: white;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .banner-image {
+            width: 100%;
+            height: auto;
+            max-height: 240px;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Content Feed */
+        .content-feed {
+            padding: 0 16px;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        /* Content Card */
+        .content-card {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .content-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Video Container */
+        .video-container {
+            width: 100%;
+            background: #000;
+            position: relative;
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .play-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            border-radius: 50%;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .play-button:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .play-button svg {
+            color: white;
+            width: 32px;
+            height: 32px;
+            margin-left: 4px;
+        }
+
+        /* Image Container */
+        .image-container {
+            width: 100%;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Text Content */
+        .text-content {
+            padding: 16px;
+            background: white;
+        }
+
+        /* Content Title */
+        .content-title {
+            padding: 12px 16px;
+            background: white;
+        }
+
+        .content-title h3 {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+            color: #050505;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .content-title .description {
+            font-size: 13px;
+            color: #65676b;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        /* Loading State */
+        .loading-container {
+            padding: 40px 20px;
+            text-align: center;
+            background: white;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1877f2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #050505;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: #65676b;
+            font-size: 14px;
+        }
+
+        /* Auth Page */
+        #auth-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 2000;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #050505;
+            margin-bottom: 8px;
+        }
+
+        .auth-header p {
+            color: #65676b;
+            font-size: 15px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid #e4e6eb;
+            margin-bottom: 20px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            color: #65676b;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .auth-tab.active {
+            color: #1877f2;
+            border-bottom-color: #1877f2;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #050505;
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            font-size: 15px;
+            color: #050505;
+            background: #f5f6f7;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #1877f2;
+            background: white;
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 12px;
+            background: #1877f2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .auth-button:hover {
+            background: #166fe5;
+        }
+
+        .auth-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .google-auth-button {
+            width: 100%;
+            padding: 12px;
+            background: white;
+            color: #050505;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+            margin-top: 16px;
+        }
+
+        .google-auth-button:hover {
+            background: #f5f6f7;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e4e6eb;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 16px;
+            color: #65676b;
+            font-size: 14px;
+            position: relative;
+        }
+
+        /* Error Modal */
+        .error-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 3000;
+        }
+
+        .error-content {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .error-content h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #d32f2f;
+            margin-bottom: 12px;
+        }
+
+        .error-content p {
+            color: #050505;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .error-button {
+            width: 100%;
+            padding: 12px;
+            background: #1877f2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Video Player Modal */
+        .video-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 4000;
+        }
+
+        .video-modal-content {
+            width: 100%;
+            max-width: 800px;
+            background: black;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .video-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .video-modal-title {
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-modal-player {
+            width: 100%;
+            aspect-ratio: 16/9;
+        }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .content-feed {
+                padding: 0 24px;
+            }
+            
+            .top-nav {
+                padding: 0 24px;
+            }
+            
+            .auth-card {
+                padding: 32px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .content-feed {
+                max-width: 680px;
+            }
+        }
+    </style>
+</head>
+
+<body class="h-full">
+    <!-- Main App Container -->
+    <div id="app-wrapper" class="hidden">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="logo-container">
+                <div class="logo-text">ConceptsBlitz</div>
+            </div>
+            
+            <div class="nav-actions">
+                <button id="home-button" class="nav-button" aria-label="Home">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l8.69 8.69a1.5 1.5 0 0 1 .43 1.069V18a2.25 2.25 0 0 1-2.25 2.25h-5.25a.75.75 0 0 1-.75-.75V15c0-.621-.504-1.125-1.125-1.125h-2.25c-.621 0-1.125.504-1.125 1.125v4.5c0 .414-.336.75-.75.75H3.75A2.25 2.25 0 0 1 1.5 18v-4.401c0-.294.118-.578.325-.785l8.69-8.69Z" />
+                    </svg>
+                </button>
+                
+                <button id="auth-toggle-button" class="nav-button" aria-label="Account">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0 0 21.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 0 0 3.065 7.097A9.716 9.716 0 0 0 12 21.75a9.716 9.716 0 0 0 6.685-2.653Zm-12.54-1.285A7.486 7.486 0 0 1 12 15a7.486 7.486 0 0 1 5.855 2.812A8.224 8.224 0 0 1 12 20.25a8.224 8.224 0 0 1-5.855-2.438ZM15.75 9a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="content-container">
+            <!-- Content will be dynamically loaded here -->
+        </main>
+    </div>
+
+    <!-- Authentication Page -->
+    <div id="auth-wrapper" class="hidden">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2>ConceptsBlitz</h2>
+                <p>Sign in to continue learning</p>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="auth-tabs">
+                <div class="auth-tab active" data-tab="signin">Sign In</div>
+                <div class="auth-tab" data-tab="signup">Sign Up</div>
+            </div>
+            
+            <!-- Sign In Form -->
+            <form id="signin-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="signin-email">Email</label>
+                    <input 
+                        type="email" 
+                        id="signin-email" 
+                        required
+                        placeholder="Enter your email"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="signin-password">Password</label>
+                    <input 
+                        type="password" 
+                        id="signin-password" 
+                        required
+                        placeholder="Enter your password"
+                    >
+                </div>
+                
+                <button type="submit" id="signin-button" class="auth-button">
+                    Sign In
+                </button>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <button type="button" id="google-signin-button" class="google-auth-button">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </form>
+            
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="auth-form">
+                <div class="form-group">
+                    <label for="signup-name">Full Name</label>
+                    <input 
+                        type="text" 
+                        id="signup-name" 
+                        required
+                        placeholder="Enter your full name"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input 
+                        type="email" 
+                        id="signup-email" 
+                        required
+                        placeholder="Enter your email"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input 
+                        type="password" 
+                        id="signup-password" 
+                        required
+                        placeholder="Create a password (min. 6 characters)"
+                    >
+                </div>
+                
+                <button type="submit" id="signup-button" class="auth-button">
+                    Create Account
+                </button>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <button type="button" id="google-signup-button" class="google-auth-button">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="error-modal hidden">
+        <div class="error-content">
+            <h3>Error</h3>
+            <p id="error-message">An error occurred.</p>
+            <button id="close-error-modal" class="error-button">Close</button>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div id="video-modal" class="video-modal hidden">
+        <div class="video-modal-content">
+            <div class="video-modal-header">
+                <div class="video-modal-title" id="video-modal-title"></div>
+                <button id="close-video-modal" class="close-button">×</button>
+            </div>
+            <div class="video-modal-player" id="video-modal-player"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+            authDomain: "geobazarr.firebaseapp.com",
+            databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+            projectId: "geobazarr",
+            storageBucket: "geobazarr.firebasestorage.app",
+            messagingSenderId: "679949247383",
+            appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+        };
+
+        // Initialize Firebase app
+        let app;
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+        } catch (error) {
+            console.log("Firebase already initialized:", error);
+        }
+
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // DOM Elements
+        const appWrapper = document.getElementById('app-wrapper');
+        const authWrapper = document.getElementById('auth-wrapper');
+        const contentContainer = document.getElementById('content-container');
+        const authToggleButton = document.getElementById('auth-toggle-button');
+        const homeButton = document.getElementById('home-button');
+        const videoModal = document.getElementById('video-modal');
+        const videoModalTitle = document.getElementById('video-modal-title');
+        const videoModalPlayer = document.getElementById('video-modal-player');
+        const closeVideoModal = document.getElementById('close-video-modal');
+
+        // State
+        let currentUser = null;
+        let deviceID = localStorage.getItem("deviceID") || crypto.randomUUID();
+        localStorage.setItem("deviceID", deviceID);
+
+        // Initialize App
+        function initApp() {
+            // Check auth state
+            auth.onAuthStateChanged((user) => {
+                currentUser = user;
+                updateAuthUI(user);
+                
+                if (user) {
+                    // User is signed in
+                    hideAuth();
+                    showMainApp();
+                    loadHomeContent();
+                    
+                    // Setup device session
+                    setupUserDeviceSession(user);
+                } else {
+                    // User is signed out
+                    showAuth();
+                }
+            });
+
+            // Setup event listeners
+            setupEventListeners();
+        }
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Auth toggle
+            authToggleButton.addEventListener('click', () => {
+                if (currentUser) {
+                    // Sign out
+                    auth.signOut().catch(showError);
+                } else {
+                    // Show auth
+                    showAuth();
+                }
+            });
+
+            // Home button
+            homeButton.addEventListener('click', () => {
+                loadHomeContent();
+            });
+
+            // Video modal close
+            closeVideoModal.addEventListener('click', () => {
+                videoModal.classList.add('hidden');
+                videoModalPlayer.innerHTML = '';
+            });
+
+            // Close video modal on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
+                    videoModal.classList.add('hidden');
+                    videoModalPlayer.innerHTML = '';
+                }
+            });
+
+            // Auth forms
+            setupAuthForms();
+        }
+
+        // Setup Auth Forms
+        function setupAuthForms() {
+            // Tab switching
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    
+                    // Update active tab
+                    document.querySelectorAll('.auth-tab').forEach(t => {
+                        t.classList.remove('active');
+                    });
+                    tab.classList.add('active');
+                    
+                    // Show correct form
+                    document.querySelectorAll('.auth-form').forEach(form => {
+                        form.classList.remove('active');
+                    });
+                    document.getElementById(`${tabName}-form`).classList.add('active');
+                });
+            });
+
+            // Sign in form
+            document.getElementById('signin-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('signin-email').value;
+                const password = document.getElementById('signin-password').value;
+                const button = document.getElementById('signin-button');
+                
+                if (!email || !password) {
+                    showError('Please fill in all fields');
+                    return;
+                }
+                
+                button.disabled = true;
+                button.textContent = 'Signing in...';
+                
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    // Success - auth state listener will handle the rest
+                } catch (error) {
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Sign In';
+                }
+            });
+
+            // Sign up form
+            document.getElementById('signup-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const button = document.getElementById('signup-button');
+                
+                if (!name || !email || !password) {
+                    showError('Please fill in all fields');
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showError('Password must be at least 6 characters');
+                    return;
+                }
+                
+                button.disabled = true;
+                button.textContent = 'Creating account...';
+                
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    await userCredential.user.updateProfile({
+                        displayName: name
+                    });
+                    await setupUserDocument(userCredential.user);
+                } catch (error) {
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Create Account';
+                }
+            });
+
+            // Google auth
+            document.getElementById('google-signin-button').addEventListener('click', handleGoogleAuth);
+            document.getElementById('google-signup-button').addEventListener('click', handleGoogleAuth);
+
+            // Error modal close
+            document.getElementById('close-error-modal').addEventListener('click', () => {
+                document.getElementById('error-modal').classList.add('hidden');
+            });
+        }
+
+        // Google Authentication
+        async function handleGoogleAuth() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            try {
+                const userCredential = await auth.signInWithPopup(provider);
+                await setupUserDocument(userCredential.user);
+            } catch (error) {
+                showError(getAuthErrorMessage(error));
+            }
+        }
+
+        // Setup User Document
+        async function setupUserDocument(user) {
+            if (!db) return;
+            
+            try {
+                const userRef = db.collection('users').doc(user.uid);
+                const userDoc = await userRef.get();
+                
+                if (!userDoc.exists) {
+                    await userRef.set({
+                        email: user.email,
+                        displayName: user.displayName,
+                        allowedCollections: ["video_codes", "chapters"],
+                        activeDeviceID: deviceID,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    await userRef.update({
+                        lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+                        activeDeviceID: deviceID
+                    });
+                }
+            } catch (error) {
+                console.error("Error setting up user document:", error);
+            }
+        }
+
+        // Setup Device Session Monitoring
+        function setupUserDeviceSession(user) {
+            if (!db) return;
+            
+            // Update Firestore with current device ID
+            db.collection('users').doc(user.uid).update({
+                activeDeviceID: deviceID,
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(console.error);
+        }
+
+        // Update Auth UI
+        function updateAuthUI(user) {
+            if (user) {
+                authToggleButton.setAttribute('aria-label', 'Sign out');
+            } else {
+                authToggleButton.setAttribute('aria-label', 'Sign in');
+            }
+        }
+
+        // Show/Hide Auth
+        function showAuth() {
+            authWrapper.classList.remove('hidden');
+            appWrapper.classList.add('hidden');
+        }
+
+        function hideAuth() {
+            authWrapper.classList.add('hidden');
+        }
+
+        // Show/Hide Main App
+        function showMainApp() {
+            appWrapper.classList.remove('hidden');
+            authWrapper.classList.add('hidden');
+        }
+
+        // Load Home Content
+        async function loadHomeContent() {
+            contentContainer.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>Loading content...</p>
+                </div>
+            `;
+            
+            try {
+                // Try to fetch banner data from video_codes collection
+                let bannerData = null;
+                try {
+                    const bannerDoc = await db.collection('video_codes').doc('12300').get();
+                    if (bannerDoc.exists) {
+                        bannerData = bannerDoc.data();
+                        console.log("Banner data loaded:", bannerData);
+                    }
+                } catch (bannerError) {
+                    console.log("No banner data found or error loading banner:", bannerError.message);
+                    // Continue without banner
+                }
+                
+                // Fetch all chapters for content feed
+                const chaptersSnapshot = await db.collection('chapters').get();
+                console.log("Chapters loaded:", chaptersSnapshot.size);
+                
+                // Render content
+                renderContent(bannerData, chaptersSnapshot);
+            } catch (error) {
+                console.error("Error loading content:", error);
+                
+                // Check if it's a permission error
+                if (error.code === 'permission-denied') {
+                    showError("You don't have permission to access this content. Please contact support.");
+                } else if (error.code === 'not-found') {
+                    showError("Content not found. The database might be empty.");
+                } else {
+                    showError("Failed to load content. Please try again.");
+                }
+            }
+        }
+
+        // Render Content
+        function renderContent(bannerData, chaptersSnapshot) {
+            contentContainer.innerHTML = '';
+            
+            // Create content feed container
+            const contentFeed = document.createElement('div');
+            contentFeed.className = 'content-feed';
+            
+            // Add header banner if available
+            if (bannerData && bannerData.ImageURL1_1) {
+                const headerBanner = document.createElement('div');
+                headerBanner.className = 'header-banner';
+                
+                const bannerImg = document.createElement('img');
+                bannerImg.className = 'banner-image';
+                bannerImg.src = bannerData.ImageURL1_1;
+                bannerImg.alt = 'Header banner';
+                bannerImg.onerror = function() {
+                    this.src = 'https://placehold.co/1200x240/3B82F6/FFFFFF?text=ConceptsBlitz+Learning+Platform';
+                };
+                
+                headerBanner.appendChild(bannerImg);
+                contentFeed.appendChild(headerBanner);
+            }
+            
+            // Check if we have chapters
+            if (!chaptersSnapshot || chaptersSnapshot.empty) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.innerHTML = `
+                    <h3>No Content Available</h3>
+                    <p>Check back later for new learning materials.</p>
+                `;
+                contentFeed.appendChild(emptyState);
+            } else {
+                // Add each chapter as a content card
+                chaptersSnapshot.forEach(doc => {
+                    const chapter = doc.data();
+                    const chapterId = doc.id;
+                    
+                    // Create content card
+                    const contentCard = createChapterCard(chapter, chapterId);
+                    contentFeed.appendChild(contentCard);
+                });
+            }
+            
+            contentContainer.appendChild(contentFeed);
+        }
+
+        // Create Chapter Card
+        function createChapterCard(chapter, chapterId) {
+            const contentCard = document.createElement('div');
+            contentCard.className = 'content-card';
+            contentCard.dataset.chapterId = chapterId;
+            
+            // Add image or video thumbnail
+            if (chapter.imageUrl) {
+                const imageContainer = document.createElement('div');
+                imageContainer.className = 'image-container';
+                
+                const img = document.createElement('img');
+                img.src = chapter.imageUrl;
+                img.alt = chapter.title;
+                img.loading = 'lazy';
+                img.onerror = function() {
+                    this.src = 'https://placehold.co/600x340/6B7280/FFFFFF?text=' + encodeURIComponent(chapter.title);
+                };
+                
+                imageContainer.appendChild(img);
+                contentCard.appendChild(imageContainer);
+            }
+            
+            // Add title
+            const titleContainer = document.createElement('div');
+            titleContainer.className = 'content-title';
+            
+            const title = document.createElement('h3');
+            title.textContent = chapter.title;
+            
+            // Add description if available
+            if (chapter.description) {
+                const description = document.createElement('div');
+                description.className = 'description';
+                description.textContent = chapter.description;
+                titleContainer.appendChild(description);
+            }
+            
+            titleContainer.prepend(title);
+            contentCard.appendChild(titleContainer);
+            
+            // Add click event to load chapter lectures
+            contentCard.addEventListener('click', () => {
+                loadChapterLectures(chapterId, chapter.title);
+            });
+            
+            return contentCard;
+        }
+
+        // Load Chapter Lectures
+        async function loadChapterLectures(chapterId, chapterTitle) {
+            contentContainer.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>Loading lectures...</p>
+                </div>
+            `;
+            
+            try {
+                const lecturesSnapshot = await db.collection('chapters').doc(chapterId)
+                    .collection('lectures')
+                    .orderBy('order')
+                    .get();
+                
+                renderChapterLectures(chapterTitle, lecturesSnapshot);
+            } catch (error) {
+                console.error("Error loading lectures:", error);
+                showError("Failed to load lectures. Please try again.");
+            }
+        }
+
+        // Render Chapter Lectures
+        function renderChapterLectures(chapterTitle, lecturesSnapshot) {
+            contentContainer.innerHTML = '';
+            
+            const contentFeed = document.createElement('div');
+            contentFeed.className = 'content-feed';
+            
+            // Add back button
+            const backButton = document.createElement('button');
+            backButton.textContent = '← Back to All Chapters';
+            backButton.style.width = '100%';
+            backButton.style.padding = '12px';
+            backButton.style.marginBottom = '16px';
+            backButton.style.background = 'white';
+            backButton.style.border = '1px solid #e4e6eb';
+            backButton.style.borderRadius = '8px';
+            backButton.style.fontSize = '14px';
+            backButton.style.fontWeight = '600';
+            backButton.style.color = '#1877f2';
+            backButton.style.cursor = 'pointer';
+            backButton.addEventListener('click', loadHomeContent);
+            
+            contentFeed.appendChild(backButton);
+            
+            // Add chapter title as header
+            const chapterHeader = document.createElement('div');
+            chapterHeader.className = 'header-banner';
+            chapterHeader.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            chapterHeader.style.padding = '24px 16px';
+            chapterHeader.style.color = 'white';
+            chapterHeader.style.marginBottom = '16px';
+            chapterHeader.innerHTML = `
+                <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px;">${chapterTitle}</h2>
+                <p style="font-size: 14px; opacity: 0.9;">${lecturesSnapshot.size} lectures available</p>
+            `;
+            contentFeed.appendChild(chapterHeader);
+            
+            if (lecturesSnapshot.empty) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.innerHTML = `
+                    <h3>No Lectures Available</h3>
+                    <p>This chapter doesn't have any lectures yet.</p>
+                `;
+                contentFeed.appendChild(emptyState);
+            } else {
+                lecturesSnapshot.forEach(doc => {
+                    const lecture = doc.data();
+                    const lectureId = doc.id;
+                    
+                    const lectureCard = createLectureCard(lecture, lectureId);
+                    contentFeed.appendChild(lectureCard);
+                });
+            }
+            
+            contentContainer.appendChild(contentFeed);
+        }
+
+        // Create Lecture Card
+        function createLectureCard(lecture, lectureId) {
+            const contentCard = document.createElement('div');
+            contentCard.className = 'content-card';
+            contentCard.dataset.lectureId = lectureId;
+            
+            // Create video thumbnail container
+            if (lecture.videoUrl) {
+                const videoContainer = document.createElement('div');
+                videoContainer.className = 'video-container';
+                
+                // Extract YouTube video ID
+                let videoId = '';
+                if (lecture.videoUrl.includes('youtu.be/')) {
+                    videoId = lecture.videoUrl.split('youtu.be/')[1].split('?')[0];
+                } else if (lecture.videoUrl.includes('youtube.com/watch?v=')) {
+                    videoId = lecture.videoUrl.split('v=')[1].split('&')[0];
+                }
+                
+                if (videoId) {
+                    const thumbnail = document.createElement('img');
+                    thumbnail.className = 'video-thumbnail';
+                    thumbnail.src = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+                    thumbnail.alt = lecture.title;
+                    thumbnail.onerror = function() {
+                        this.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                        this.onerror = function() {
+                            this.src = 'https://placehold.co/600x340/3B82F6/FFFFFF?text=Video+Thumbnail';
+                        };
+                    };
+                    
+                    const playButton = document.createElement('button');
+                    playButton.className = 'play-button';
+                    playButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+                        </svg>
+                    `;
+                    
+                    videoContainer.appendChild(thumbnail);
+                    videoContainer.appendChild(playButton);
+                    
+                    // Click to play video
+                    videoContainer.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        playVideo(lecture.videoUrl, lecture.title);
+                    });
+                    
+                    contentCard.appendChild(videoContainer);
+                }
+            }
+            
+            // Add title
+            const titleContainer = document.createElement('div');
+            titleContainer.className = 'content-title';
+            
+            const title = document.createElement('h3');
+            title.textContent = lecture.title;
+            
+            // Add order badge
+            if (lecture.order) {
+                const orderBadge = document.createElement('span');
+                orderBadge.style.fontSize = '12px';
+                orderBadge.style.background = '#e4e6eb';
+                orderBadge.style.padding = '2px 8px';
+                orderBadge.style.borderRadius = '12px';
+                orderBadge.style.marginRight = '8px';
+                orderBadge.textContent = `Lecture ${lecture.order}`;
+                title.prepend(orderBadge);
+            }
+            
+            // Add description if available
+            if (lecture.description) {
+                const description = document.createElement('div');
+                description.className = 'description';
+                description.textContent = lecture.description;
+                titleContainer.appendChild(description);
+            }
+            
+            titleContainer.prepend(title);
+            contentCard.appendChild(titleContainer);
+            
+            return contentCard;
+        }
+
+        // Play Video in Modal
+        function playVideo(videoUrl, title) {
+            let embedUrl = videoUrl;
+            
+            // Convert YouTube URL to embed URL
+            if (videoUrl.includes('youtu.be/')) {
+                const videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            } else if (videoUrl.includes('youtube.com/watch?v=')) {
+                const videoId = videoUrl.split('v=')[1].split('&')[0];
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            }
+            
+            // Set modal title
+            videoModalTitle.textContent = title;
+            
+            // Create iframe
+            const iframe = document.createElement('iframe');
+            iframe.src = embedUrl;
+            iframe.title = title;
+            iframe.frameBorder = '0';
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+            iframe.allowFullscreen = true;
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            
+            // Clear previous content and add new iframe
+            videoModalPlayer.innerHTML = '';
+            videoModalPlayer.appendChild(iframe);
+            
+            // Show modal
+            videoModal.classList.remove('hidden');
+        }
+
+        // Error Handling
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-modal').classList.remove('hidden');
+        }
+
+        function getAuthErrorMessage(error) {
+            switch (error.code) {
+                case 'auth/invalid-email':
+                    return 'Invalid email address.';
+                case 'auth/user-disabled':
+                    return 'This account has been disabled.';
+                case 'auth/user-not-found':
+                    return 'No account found with this email.';
+                case 'auth/wrong-password':
+                    return 'Incorrect password.';
+                case 'auth/email-already-in-use':
+                    return 'An account with this email already exists.';
+                case 'auth/weak-password':
+                    return 'Password is too weak.';
+                case 'auth/network-request-failed':
+                    return 'Network error. Please check your connection.';
+                default:
+                    return error.message || 'An error occurred. Please try again.';
+            }
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            appWrapper.classList.remove('hidden');
+            initApp();
+        });
+    </script>
+</body>
+</html>
