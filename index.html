@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>ConceptsBlitz - Chapter Based Learning</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Inter and Anton for the logo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Anton&family=Impact&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow: hidden !important; 
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            overscroll-behavior: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #app-wrapper {
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+        
+        .concepts-blitz-logo {
+            font-family: 'Anton', 'Impact', sans-serif;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        
+        .concepts-text {
+            color: white;
+        }
+        
+        .dark .concepts-text {
+            color: black;
+        }
+        
+        .blitz-text {
+            color: #CC9900;
+        }
+
+        .header-action-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        #chat-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        #chat-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 16px;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .video-wrapper.chat-video-fullscreen {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) rotate(90deg) !important;
+            transform-origin: center !important;
+            width: 100vh !important;
+            height: 100vw !important;
+            max-width: none !important;
+            max-height: none !important;
+            z-index: 1000 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        .fullscreen-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 0;
+            padding: 8px;
+            cursor: pointer;
+            z-index: 10;
+            transition: background 0.2s;
+        }
+
+        .fullscreen-button:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        .subject-card {
+            background: white;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .subject-thumbnail {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+        
+        .subject-content {
+            padding: 1rem;
+        }
+        
+        .subject-card-title {
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            font-size: 1.125rem;
+        }
+        
+        .subject-card-description {
+            color: #6b7280;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .subject-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .subject-button {
+            padding: 0.5rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0;
+            font-weight: 500;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: center;
+        }
+        
+        .subject-button:hover {
+            background: #2563eb;
+        }
+        
+        .subject-button.notes {
+            background: #10b981;
+        }
+        
+        .subject-button.notes:hover {
+            background: #059669;
+        }
+        
+        .subject-button.practice {
+            background: #f59e0b;
+        }
+        
+        .subject-button.practice:hover {
+            background: #d97706;
+        }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 0;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .back-button:hover {
+            background: #4b5563;
+        }
+
+        .lecture-title-container {
+            padding: 1.5rem 1rem 1rem 1rem;
+            text-align: center;
+            background: linear-gradient(to right, #3b82f6, #1d4ed8);
+            margin: 0;
+            border-bottom: 2px solid #1d4ed8;
+        }
+
+        .lecture-title-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (min-width: 768px) {
+            #app-wrapper {
+                position: relative;
+                margin: 0 auto;
+                max-width: 600px;
+                height: 90vh;
+                max-height: 800px;
+                border-radius: 0;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+        }
+        
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #auth-wrapper {
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9998;
+        }
+        
+        #auth-wrapper.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 0;
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 1.5rem;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .auth-tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .google-signin-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.75rem;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0;
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        
+        .google-signin-btn:hover {
+            background: #f9fafb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+            color: #6b7280;
+        }
+        
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .divider span {
+            padding: 0 1rem;
+            font-size: 0.875rem;
+        }
+
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #splash-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #splash-screen.hidden {
+            display: none;
+        }
+
+        .splash-logo {
+            max-width: 90%;
+            max-height: 90%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .header-image {
+            width: 100%;
+            height: auto;
+            max-height: 200px;
+            object-fit: cover;
+        }
+        
+        .selection-container {
+            padding: 1.5rem 1rem;
+        }
+        
+        .selection-button {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 0;
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .selection-button:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+        
+        .selection-button.selected {
+            border-color: #3b82f6;
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .proceed-button {
+            width: 100%;
+            padding: 1rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+        
+        .proceed-button:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        
+        .proceed-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .subject-details-header {
+            padding: 1.5rem 1rem;
+            background: linear-gradient(to right, #3b82f6, #1d4ed8);
+            color: white;
+            text-align: center;
+        }
+        
+        .subject-details-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subject-grid {
+            padding: 1rem;
+        }
+        
+        .content-header {
+            width: 100%;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .content-subject-card {
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .content-subject-thumbnail {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            margin-bottom: 1rem;
+            border-radius: 0;
+        }
+        
+        .content-subject-title {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .content-subject-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .content-section-title {
+            padding: 1rem;
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+            font-size: 1.125rem;
+        }
+        
+        .chapters-list {
+            padding: 1rem;
+        }
+        
+        .content-image-container {
+            padding: 1rem;
+        }
+        
+        .content-full-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .continue-learning-item {
+            padding: 0.75rem;
+            background: #f9fafb;
+            border-radius: 0;
+            margin-bottom: 0.5rem;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .continue-learning-item:hover {
+            background: #f0f9ff;
+            border-color: #3b82f6;
+        }
+        
+        .continue-learning-icon {
+            font-size: 1.25rem;
+            margin-right: 0.75rem;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 0;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+        
+        .modal-body {
+            padding: 1rem;
+        }
+        
+        .modal-option {
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .modal-option:hover {
+            background: #f0f9ff;
+            border-color: #3b82f6;
+        }
+        
+        .modal-option.selected {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+        
+        .modal-footer {
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .lecture-item {
+            background: white;
+            border-radius: 0;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .lecture-item:hover {
+            background: #f9fafb;
+            border-color: #3b82f6;
+        }
+
+        .lecture-order {
+            background: #3b82f6;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        .lecture-info {
+            flex: 1;
+        }
+
+        .lecture-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img 
+            src="https://i.postimg.cc/bw2vK1BT/Blue-Minimalist-Podcast-Youtube-Banner-20251225-022046-0001.png" 
+            alt="ConceptsBlitz Logo" 
+            class="splash-logo"
+            onerror="this.onerror=null; this.src='https://placehold.co/600x300/3B82F6/FFFFFF?text=ConceptsBlitz';"
+        >
+    </div>
+
+    <!-- Authentication Page -->
+    <div id="auth-wrapper" class="md:rounded-lg">
+        <!-- Home Button on Auth Page -->
+        <button id="auth-home-button" class="auth-home-button" aria-label="Go back to main page">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l8.69 8.69a1.5 1.5 0 0 1 .43 1.069V18a2.25 2.25 0 0 1-2.25 2.25h-5.25a.75.75 0 0 1-.75-.75V15c0-.621-.504-1.125-1.125-1.125h-2.25c-.621 0-1.125.504-1.125 1.125v4.5c0 .414-.336.75-.75.75H3.75A2.25 2.25 0 0 1 1.5 18v-4.401c0-.294.118-.578.325-.785l8.69-8.69Z" />
+            </svg>
+        </button>
+        
+        <div class="auth-card">
+            <!-- Logo -->
+            <div class="text-center mb-6">
+                <h1 class="concepts-blitz-logo text-4xl inline-block px-4 py-2">
+                    <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                </h1>
+                <p class="text-gray-600 mt-2">Sign in to access the Chapters</p>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="auth-tabs">
+                <div class="auth-tab active" data-tab="signin">Sign In</div>
+                <div class="auth-tab" data-tab="signup">Sign Up</div>
+            </div>
+            
+            <!-- Sign In Form -->
+            <form id="signin-form" class="auth-form active">
+                <div class="space-y-4">
+                    <div>
+                        <label for="signin-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input 
+                            type="email" 
+                            id="signin-email" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="your@email.com"
+                        >
+                    </div>
+                    <div>
+                        <label for="signin-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input 
+                            type="password" 
+                            id="signin-password" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                    <button 
+                        type="submit" 
+                        id="signin-button"
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+                    >
+                        <span id="signin-button-text">Sign In</span>
+                        <div id="signin-button-spinner" class="loading-spinner ml-2 hidden"></div>
+                    </button>
+                </div>
+                
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+                
+                <button 
+                    type="button" 
+                    id="google-signin-button"
+                    class="google-signin-btn"
+                >
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google
+                </button>
+            </form>
+            
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="auth-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="signup-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input 
+                            type="text" 
+                            id="signup-name" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="John Doe"
+                        >
+                    </div>
+                    <div>
+                        <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input 
+                            type="email" 
+                            id="signup-email" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="your@email.com"
+                        >
+                    </div>
+                    <div>
+                        <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input 
+                            type="password" 
+                            id="signup-password" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                    <button 
+                        type="submit" 
+                        id="signup-button"
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+                    >
+                        <span id="signup-button-text">Create Account</span>
+                        <div id="signup-button-spinner" class="loading-spinner ml-2 hidden"></div>
+                    </button>
+                </div>
+                
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+                
+                <button 
+                    type="button" 
+                    id="google-signup-button"
+                    class="google-signin-btn"
+                >
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg hidden">
+
+        <!-- Header - Fixed at top -->
+        <header class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm flex flex-col space-y-3 flex-shrink-0">
+            
+            <!-- Top Row: Logo, Back Button and Action Buttons -->
+            <div class="flex items-center justify-between w-full">
+                <!-- Back Button (Hidden by default) -->
+                <button
+                    type="button"
+                    id="back-button"
+                    class="back-button hidden flex-shrink-0 mr-2"
+                    aria-label="Go back"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                </button>
+
+                <!-- Title (with new logo) -->
+                <h1 id="header-title" class="text-xl flex-shrink-0 mr-4 mx-auto">
+                    <span class="concepts-blitz-logo text-2xl">
+                        <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                    </span>
+                </h1>
+
+                <!-- Action Buttons (Right End) -->
+                <div class="flex items-center space-x-2 ml-auto">
+                    <!-- Home Button -->
+                    <button
+                        type="button"
+                        id="home-button"
+                        class="header-action-button p-2 bg-green-500 hover:bg-green-600 text-white shadow-md focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                        aria-label="Go to Home"
+                    >
+                        <!-- Home Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l8.69 8.69a1.5 1.5 0 0 1 .43 1.069V18a2.25 2.25 0 0 1-2.25 2.25h-5.25a.75.75 0 0 1-.75-.75V15c0-.621-.504-1.125-1.125-1.125h-2.25c-.621 0-1.125.504-1.125 1.125v4.5c0 .414-.336.75-.75.75H3.75A2.25 2.25 0 0 1 1.5 18v-4.401c0-.294.118-.578.325-.785l8.69-8.69Z" />
+                        </svg>
+                    </button>
+                    
+                    <!-- Login/Sign Out Button (Conditional) -->
+                    <button
+                        type="button"
+                        id="auth-toggle-button"
+                        class="header-action-button p-2 bg-blue-500 hover:bg-blue-600 text-white shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                        aria-label="Sign in or out"
+                    >
+                        <!-- Default login icon (will be updated based on auth state) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm5.03 4.72a.75.75 0 0 1 0 1.06l-1.72 1.72h10.94a.75.75 0 0 1 0 1.5H10.81l1.72 1.72a.75.75 0 1 1-1.06 1.06l-3-3a.75.75 0 0 1 0-1.06l3-3a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Chat Container - ONLY scrollable area (flex-1 overflow-y-auto) -->
+        <main id="chat-container" class="flex-1 overflow-y-auto">
+            <!-- Pages will be loaded here dynamically -->
+        </main>
+
+        <!-- Error Modal -->
+        <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 class="text-lg font-medium text-red-600 dark:text-red-400">Error</h3>
+                <p id="error-message" class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                    An internal error occurred.
+                </p>
+                <button id="close-error-modal" class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Close
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ===== SPLASH SCREEN =====
+        function hideSplashScreen() {
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) {
+                splashScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    const appWrapper = document.getElementById('app-wrapper');
+                    if (appWrapper) {
+                        appWrapper.classList.remove('hidden');
+                    }
+                    initializeApp();
+                }, 500);
+            } else {
+                initializeApp();
+            }
+        }
+
+        // ===== MAIN APP =====
+        function initializeApp() {
+            // DOM Elements
+            const authWrapper = document.getElementById('auth-wrapper');
+            const appWrapper = document.getElementById('app-wrapper');
+            const chatContainer = document.getElementById('chat-container');
+            const authTabs = document.querySelectorAll('.auth-tab');
+            const authForms = document.querySelectorAll('.auth-form');
+            const signinForm = document.getElementById('signin-form');
+            const signupForm = document.getElementById('signup-form');
+            const authToggleButton = document.getElementById('auth-toggle-button');
+            const authHomeButton = document.getElementById('auth-home-button');
+            const homeButton = document.getElementById('home-button');
+            const backButton = document.getElementById('back-button');
+            const headerTitle = document.getElementById('header-title');
+            
+            // App State
+            let currentView = 'page1';
+            let currentCourseId = null;
+            let currentSubjectId = null;
+            let currentChapterType = null;
+            let currentSubjectData = null;
+            let currentCourseData = null;
+            let db = null;
+            let auth = null;
+            let activeModal = null;
+            
+            // Firebase Config
+            const firebaseConfig = {
+                apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                authDomain: "geobazarr.firebaseapp.com",
+                databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                projectId: "geobazarr",
+                storageBucket: "geobazarr.firebasestorage.app",
+                messagingSenderId: "679949247383",
+                appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+            };
+
+            // Initialize Firebase
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                auth = firebase.auth();
+                console.log("Firebase initialized");
+            } catch (error) {
+                console.error("Firebase error:", error);
+                showError("Failed to initialize app. Please refresh.");
+            }
+
+            // ===== UTILITY FUNCTIONS =====
+            function showError(message) {
+                const errorModal = document.getElementById('error-modal');
+                const errorMessage = document.getElementById('error-message');
+                if (errorModal && errorMessage) {
+                    errorMessage.textContent = message;
+                    errorModal.classList.remove('hidden');
+                } else {
+                    alert(message);
+                }
+            }
+
+            document.getElementById('close-error-modal')?.addEventListener('click', () => {
+                document.getElementById('error-modal').classList.add('hidden');
+            });
+
+            function showAuthPage() {
+                if (authWrapper) {
+                    authWrapper.classList.add('visible');
+                }
+            }
+
+            function hideAuthPage() {
+                if (authWrapper) {
+                    authWrapper.classList.remove('visible');
+                }
+            }
+
+            function updateAuthUI(user) {
+                if (authToggleButton) {
+                    if (user) {
+                        authToggleButton.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                                <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm10.72 4.72a.75.75 0 0 1 1.06 0l3 3a.75.75 0 0 1 0 1.06l-3 3a.75.75 0 1 1-1.06-1.06l1.72-1.72H9a.75.75 0 0 1 0-1.5h10.94l-1.72-1.72a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                            </svg>
+                        `;
+                        authToggleButton.setAttribute('aria-label', 'Sign out');
+                    } else {
+                        authToggleButton.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                                <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm5.03 4.72a.75.75 0 0 1 0 1.06l-1.72 1.72h10.94a.75.75 0 0 1 0 1.5H10.81l1.72 1.72a.75.75 0 1 1-1.06 1.06l-3-3a.75.75 0 0 1 0-1.06l3-3a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                            </svg>
+                        `;
+                        authToggleButton.setAttribute('aria-label', 'Sign in');
+                    }
+                }
+            }
+
+            function showModal(title, options, onSelect) {
+                // Remove existing modal
+                if (activeModal) {
+                    document.body.removeChild(activeModal);
+                }
+
+                const modalHtml = `
+                    <div class="modal-overlay">
+                        <div class="modal-content">
+                            <div class="modal-header">${title}</div>
+                            <div class="modal-body">
+                                ${options.map(option => `
+                                    <div class="modal-option" data-value="${option.id}">
+                                        <div class="font-medium">${option.title}</div>
+                                        ${option.description ? `<div class="text-sm text-gray-600 mt-1">${option.description}</div>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="modal-footer">
+                                <button id="close-modal" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const modalContainer = document.createElement('div');
+                modalContainer.innerHTML = modalHtml;
+                document.body.appendChild(modalContainer);
+                activeModal = modalContainer;
+
+                // Add event listeners
+                modalContainer.querySelectorAll('.modal-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        const value = option.getAttribute('data-value');
+                        const selectedOption = options.find(opt => opt.id === value);
+                        if (onSelect && selectedOption) {
+                            onSelect(selectedOption);
+                        }
+                        document.body.removeChild(modalContainer);
+                        activeModal = null;
+                    });
+                });
+
+                modalContainer.querySelector('#close-modal').addEventListener('click', () => {
+                    document.body.removeChild(modalContainer);
+                    activeModal = null;
+                });
+
+                modalContainer.querySelector('.modal-overlay').addEventListener('click', (e) => {
+                    if (e.target.classList.contains('modal-overlay')) {
+                        document.body.removeChild(modalContainer);
+                        activeModal = null;
+                    }
+                });
+            }
+
+            // ===== AUTHENTICATION FUNCTIONS =====
+            authTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    authTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    authForms.forEach(form => {
+                        form.classList.remove('active');
+                        if (form.id === `${tabName}-form`) {
+                            form.classList.add('active');
+                        }
+                    });
+                });
+            });
+
+            async function handleSignIn(email, password) {
+                if (!email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    await setupUserDocument(userCredential.user);
+                    hideAuthPage();
+                    if (currentCourseId && currentSubjectId) {
+                        await checkAndNavigateToPage2(currentCourseId, currentSubjectId);
+                    } else {
+                        showPage1();
+                    }
+                } catch (error) {
+                    console.error("Sign in error:", error);
+                    showError("Invalid email or password");
+                }
+            }
+
+            async function handleSignUp(name, email, password) {
+                if (!name || !email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showError("Password must be at least 6 characters");
+                    return;
+                }
+
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    await userCredential.user.updateProfile({ displayName: name });
+                    await setupUserDocument(userCredential.user);
+                    hideAuthPage();
+                    if (currentCourseId && currentSubjectId) {
+                        await checkAndNavigateToPage2(currentCourseId, currentSubjectId);
+                    } else {
+                        showPage1();
+                    }
+                } catch (error) {
+                    console.error("Sign up error:", error);
+                    showError("Failed to create account");
+                }
+            }
+
+            async function setupUserDocument(user) {
+                if (!db) return;
+                try {
+                    const userRef = db.collection('users').doc(user.uid);
+                    const userDoc = await userRef.get();
+                    
+                    if (!userDoc.exists) {
+                        await userRef.set({
+                            email: user.email,
+                            displayName: user.displayName || 'User',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } else {
+                        await userRef.update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error setting up user:", error);
+                }
+            }
+
+            signinForm?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('signin-email').value;
+                const password = document.getElementById('signin-password').value;
+                handleSignIn(email, password);
+            });
+
+            signupForm?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                handleSignUp(name, email, password);
+            });
+
+            authToggleButton?.addEventListener('click', async () => {
+                const user = auth.currentUser;
+                if (user) {
+                    try {
+                        await auth.signOut();
+                        showPage1();
+                    } catch (error) {
+                        showError("Failed to sign out");
+                    }
+                } else {
+                    showAuthPage();
+                }
+            });
+
+            authHomeButton?.addEventListener('click', () => {
+                hideAuthPage();
+                showPage1();
+            });
+
+            // ===== PERMISSION FUNCTIONS =====
+            async function checkSubjectPermission(courseId, subjectId) {
+                if (!db || !auth.currentUser) return false;
+                try {
+                    const permissionDoc = await db.collection('courses').doc(courseId)
+                        .collection('subjects').doc(subjectId)
+                        .collection('permissions').doc(auth.currentUser.uid)
+                        .get();
+                    return permissionDoc.exists && permissionDoc.data().approved === true;
+                } catch (error) {
+                    console.error("Permission check error:", error);
+                    return false;
+                }
+            }
+
+            async function trackRecentActivity(type, courseId, subjectId, chapterId, itemId, title) {
+                if (!db || !auth.currentUser) return;
+                try {
+                    const recentActivityRef = db.collection('users').doc(auth.currentUser.uid)
+                        .collection('recentActivity').doc(`${type}_${itemId}`);
+                    
+                    await recentActivityRef.set({
+                        type: type,
+                        courseId: courseId,
+                        subjectId: subjectId,
+                        chapterId: chapterId,
+                        itemId: itemId,
+                        title: title,
+                        accessedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                } catch (error) {
+                    console.error("Error tracking activity:", error);
+                }
+            }
+
+            async function getRecentActivity() {
+                if (!db || !auth.currentUser) return [];
+                try {
+                    const snapshot = await db.collection('users').doc(auth.currentUser.uid)
+                        .collection('recentActivity')
+                        .orderBy('accessedAt', 'desc')
+                        .limit(5)
+                        .get();
+                    
+                    const activities = [];
+                    snapshot.forEach(doc => {
+                        activities.push({ id: doc.id, ...doc.data() });
+                    });
+                    return activities;
+                } catch (error) {
+                    console.error("Error getting recent activity:", error);
+                    return [];
+                }
+            }
+
+            // ===== NAVIGATION FUNCTIONS =====
+            async function showPage1() {
+                currentView = 'page1';
+                backButton.classList.add('hidden');
+                headerTitle.innerHTML = `<span class="concepts-blitz-logo text-2xl">
+                    <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                </span>`;
+                
+                await renderPage1();
+            }
+
+            async function checkAndNavigateToPage2(courseId, subjectId) {
+                const user = auth.currentUser;
+                if (!user) {
+                    currentCourseId = courseId;
+                    currentSubjectId = subjectId;
+                    showAuthPage();
+                    return;
+                }
+
+                const hasPermission = await checkSubjectPermission(courseId, subjectId);
+                if (!hasPermission) {
+                    showError("You don't have permission to access this subject");
+                    return;
+                }
+
+                await showPage2(courseId, subjectId);
+            }
+
+            async function showPage2(courseId, subjectId) {
+                currentView = 'page2';
+                currentCourseId = courseId;
+                currentSubjectId = subjectId;
+                
+                backButton.classList.remove('hidden');
+                backButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                `;
+                
+                await renderPage2(courseId, subjectId);
+            }
+
+            async function checkAndNavigateToPage3(subjectData, chapterType) {
+                const user = auth.currentUser;
+                if (!user) {
+                    currentSubjectData = subjectData;
+                    currentChapterType = chapterType;
+                    showAuthPage();
+                    return;
+                }
+
+                const hasPermission = await checkSubjectPermission(subjectData.courseId, subjectData.subjectId);
+                if (!hasPermission) {
+                    showError("You don't have permission to access this content");
+                    return;
+                }
+
+                await showPage3(subjectData, chapterType);
+            }
+
+            async function showPage3(subjectData, chapterType) {
+                currentView = 'page3';
+                currentChapterType = chapterType;
+                currentSubjectData = subjectData;
+                
+                backButton.classList.remove('hidden');
+                backButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                `;
+                
+                headerTitle.innerHTML = `<span class="concepts-blitz-logo text-xl">
+                    <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                </span>`;
+                
+                await renderPage3(subjectData, chapterType);
+            }
+
+            backButton?.addEventListener('click', () => {
+                if (currentView === 'page3') {
+                    showPage2(currentCourseId, currentSubjectId);
+                } else if (currentView === 'page2') {
+                    showPage1();
+                }
+            });
+
+            homeButton?.addEventListener('click', () => {
+                showPage1();
+            });
+
+            // ===== PAGE RENDERING FUNCTIONS =====
+            async function renderPage1() {
+                const user = auth.currentUser;
+                
+                chatContainer.innerHTML = `
+                    <div class="p-0">
+                        <div id="header-image-container" class="w-full">
+                            <img id="header-image" src="https://i.postimg.cc/bw2vK1BT/Blue_Minimalist.png" alt="Header Image" class="header-image" onerror="this.src='https://placehold.co/600x200/3B82F6/FFFFFF?text=ConceptsBlitz'">
+                        </div>
+                        
+                        <div class="selection-container">
+                            <button id="course-select-button" class="selection-button">
+                                ${currentCourseData ? currentCourseData.title : 'Select Course'}
+                            </button>
+                            
+                            <button id="subject-select-button" class="selection-button" ${!currentCourseId ? 'disabled' : ''}>
+                                ${currentSubjectData ? currentSubjectData.title : (currentCourseId ? 'Select Subject' : 'Select Course First')}
+                            </button>
+                            
+                            <button id="proceed-button" class="proceed-button" ${!currentCourseId || !currentSubjectId ? 'disabled' : ''}>
+                                Proceed to Subjects
+                            </button>
+                        </div>
+                        
+                        ${user ? '<div id="continue-learning-section" class="px-4"></div>' : ''}
+                    </div>
+                `;
+
+                await setupPage1EventListeners();
+                
+                if (user) {
+                    await loadContinueLearning();
+                }
+
+                updatePage1Buttons();
+            }
+
+            function updatePage1Buttons() {
+                const courseBtn = document.getElementById('course-select-button');
+                const subjectBtn = document.getElementById('subject-select-button');
+                const proceedBtn = document.getElementById('proceed-button');
+
+                if (courseBtn && currentCourseData) {
+                    courseBtn.innerHTML = currentCourseData.title;
+                    courseBtn.classList.add('selected');
+                }
+
+                if (subjectBtn && currentSubjectData) {
+                    subjectBtn.innerHTML = currentSubjectData.title;
+                    subjectBtn.classList.add('selected');
+                }
+
+                if (proceedBtn && currentCourseId && currentSubjectId) {
+                    proceedBtn.disabled = false;
+                }
+            }
+
+            async function setupPage1EventListeners() {
+                const courseBtn = document.getElementById('course-select-button');
+                const subjectBtn = document.getElementById('subject-select-button');
+                const proceedBtn = document.getElementById('proceed-button');
+
+                if (courseBtn) {
+                    courseBtn.onclick = async () => {
+                        if (!db) return;
+                        try {
+                            const snapshot = await db.collection('courses').get();
+                            const courses = [];
+                            snapshot.forEach(doc => {
+                                courses.push({ id: doc.id, ...doc.data() });
+                            });
+
+                            showModal('Select Course', courses.map(course => ({
+                                id: course.id,
+                                title: course.title || 'Untitled Course',
+                                description: course.description
+                            })), (selectedCourse) => {
+                                currentCourseId = selectedCourse.id;
+                                currentCourseData = selectedCourse;
+                                currentSubjectId = null;
+                                currentSubjectData = null;
+                                
+                                // Update subject button
+                                if (subjectBtn) {
+                                    subjectBtn.disabled = false;
+                                    subjectBtn.innerHTML = 'Select Subject';
+                                    subjectBtn.classList.remove('selected');
+                                }
+                                
+                                // Update proceed button
+                                if (proceedBtn) {
+                                    proceedBtn.disabled = true;
+                                }
+                                
+                                // Update course button
+                                courseBtn.innerHTML = selectedCourse.title;
+                                courseBtn.classList.add('selected');
+                            });
+                        } catch (error) {
+                            console.error("Error loading courses:", error);
+                            showError("Failed to load courses");
+                        }
+                    };
+                }
+
+                if (subjectBtn && !subjectBtn.disabled) {
+                    subjectBtn.onclick = async () => {
+                        if (!currentCourseId || !db) return;
+                        try {
+                            const snapshot = await db.collection('courses').doc(currentCourseId)
+                                .collection('subjects').get();
+                            
+                            const subjects = [];
+                            snapshot.forEach(doc => {
+                                subjects.push({ id: doc.id, ...doc.data() });
+                            });
+
+                            if (subjects.length === 0) {
+                                showError("No subjects available for this course");
+                                return;
+                            }
+
+                            showModal('Select Subject', subjects.map(subject => ({
+                                id: subject.id,
+                                title: subject.title || 'Untitled Subject',
+                                description: subject.description
+                            })), (selectedSubject) => {
+                                currentSubjectId = selectedSubject.id;
+                                currentSubjectData = selectedSubject;
+                                
+                                // Update subject button
+                                subjectBtn.innerHTML = selectedSubject.title;
+                                subjectBtn.classList.add('selected');
+                                
+                                // Enable proceed button
+                                if (proceedBtn) {
+                                    proceedBtn.disabled = false;
+                                }
+                            });
+                        } catch (error) {
+                            console.error("Error loading subjects:", error);
+                            showError("Failed to load subjects");
+                        }
+                    };
+                }
+
+                if (proceedBtn && !proceedBtn.disabled) {
+                    proceedBtn.onclick = () => {
+                        checkAndNavigateToPage2(currentCourseId, currentSubjectId);
+                    };
+                }
+            }
+
+            async function loadContinueLearning() {
+                const user = auth.currentUser;
+                if (!user) return;
+
+                const activities = await getRecentActivity();
+                if (activities.length === 0) return;
+
+                const section = document.getElementById('continue-learning-section');
+                if (!section) return;
+
+                let html = `
+                    <div class="mt-2">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Continue Learning</h3>
+                        <div class="space-y-2">
+                `;
+
+                for (const activity of activities) {
+                    // Check permission for each activity
+                    const hasPermission = await checkSubjectPermission(activity.courseId, activity.subjectId);
+                    if (!hasPermission) continue; // Skip if no permission
+
+                    const icon = activity.type === 'lecture' ? '🎬' : 
+                                 activity.type === 'notes' ? '📝' : '💪';
+                    
+                    html += `
+                        <div class="continue-learning-item" data-activity='${JSON.stringify(activity)}'>
+                            <div class="flex items-center">
+                                <span class="continue-learning-icon">${icon}</span>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900 dark:text-white">${activity.title || 'Untitled'}</div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-400 capitalize">${activity.type}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+
+                section.innerHTML = html;
+
+                // Add click listeners
+                section.querySelectorAll('.continue-learning-item').forEach(item => {
+                    item.addEventListener('click', async () => {
+                        const activity = JSON.parse(item.getAttribute('data-activity'));
+                        await navigateToRecentActivity(activity);
+                    });
+                });
+            }
+
+            async function navigateToRecentActivity(activity) {
+                const user = auth.currentUser;
+                if (!user) {
+                    showAuthPage();
+                    return;
+                }
+
+                // Double-check permission
+                const hasPermission = await checkSubjectPermission(activity.courseId, activity.subjectId);
+                if (!hasPermission) {
+                    showError("You don't have permission to access this content");
+                    return;
+                }
+
+                // Set current course and subject
+                currentCourseId = activity.courseId;
+                currentSubjectId = activity.subjectId;
+
+                if (activity.type === 'lecture') {
+                    await displayLectureVideo(activity.chapterId, activity.itemId, activity.title);
+                } else if (activity.type === 'notes') {
+                    const subjectData = {
+                        id: activity.chapterId,
+                        title: activity.title || 'Notes',
+                        description: '',
+                        thumbnail: null,
+                        courseId: activity.courseId,
+                        subjectId: activity.subjectId
+                    };
+                    await showPage3(subjectData, 'notes');
+                } else if (activity.type === 'practice') {
+                    const subjectData = {
+                        id: activity.chapterId,
+                        title: activity.title || 'Practice Questions',
+                        description: '',
+                        thumbnail: null,
+                        courseId: activity.courseId,
+                        subjectId: activity.subjectId
+                    };
+                    await showPage3(subjectData, 'practice');
+                }
+            }
+
+            async function renderPage2(courseId, subjectId) {
+                if (!db) return;
+
+                const user = auth.currentUser;
+                if (!user) {
+                    showError("Please log in to access this content");
+                    showPage1();
+                    return;
+                }
+
+                // Check permission
+                const hasPermission = await checkSubjectPermission(courseId, subjectId);
+                if (!hasPermission) {
+                    showError("You don't have permission to access this subject");
+                    showPage1();
+                    return;
+                }
+
+                chatContainer.innerHTML = `
+                    <div class="p-4 text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading subject details...</p>
+                    </div>
+                `;
+
+                try {
+                    const [courseDoc, subjectDoc] = await Promise.all([
+                        db.collection('courses').doc(courseId).get(),
+                        db.collection('courses').doc(courseId).collection('subjects').doc(subjectId).get()
+                    ]);
+
+                    if (!courseDoc.exists || !subjectDoc.exists) {
+                        showError("Course or subject not found");
+                        showPage1();
+                        return;
+                    }
+
+                    const course = courseDoc.data();
+                    const subject = subjectDoc.data();
+
+                    headerTitle.innerHTML = `<span class="text-lg font-semibold text-gray-900 dark:text-white">${subject.title} || ${course.title}</span>`;
+
+                    await loadChapters(courseId, subjectId, course, subject);
+                } catch (error) {
+                    console.error("Error loading page 2:", error);
+                    showError("Failed to load subject details");
+                }
+            }
+
+            async function loadChapters(courseId, subjectId, courseData, subjectData) {
+                if (!db) return;
+
+                try {
+                    const snapshot = await db.collection('courses').doc(courseId)
+                        .collection('subjects').doc(subjectId)
+                        .collection('chapters')
+                        .orderBy('order')
+                        .get();
+
+                    if (snapshot.empty) {
+                        chatContainer.innerHTML = `
+                            <div class="subject-details-header">
+                                <div class="subject-details-title">${subjectData.title} || ${courseData.title}</div>
+                            </div>
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No chapters available for this subject.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    let html = `
+                        <div class="subject-details-header">
+                            <div class="subject-details-title">${subjectData.title} || ${courseData.title}</div>
+                        </div>
+                        <div class="subject-grid">
+                    `;
+
+                    snapshot.forEach(doc => {
+                        const chapter = doc.data();
+                        html += `
+                            <div class="subject-card" data-chapter-id="${doc.id}">
+                                ${subjectData.thumbnail ? `
+                                    <img src="${subjectData.thumbnail}" alt="${subjectData.title}" class="subject-thumbnail" onerror="this.src='https://placehold.co/600x400/3B82F6/FFFFFF?text=Subject'">
+                                ` : ''}
+                                <div class="subject-content">
+                                    <div class="subject-card-title">${chapter.title || 'Untitled Chapter'}</div>
+                                    <div class="subject-card-description">${subjectData.description || 'No description available'}</div>
+                                    <div class="subject-buttons">
+                                        <button class="subject-button lecture" data-chapter-id="${doc.id}">Lectures</button>
+                                        <button class="subject-button notes" data-chapter-id="${doc.id}">Notes</button>
+                                        <button class="subject-button practice" data-chapter-id="${doc.id}">Practice</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                    chatContainer.innerHTML = html;
+
+                    // Add event listeners
+                    chatContainer.querySelectorAll('.subject-button.lecture').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const chapterId = e.target.getAttribute('data-chapter-id');
+                            const card = e.target.closest('.subject-card');
+                            const title = card.querySelector('.subject-card-title').textContent;
+                            const subjectData = {
+                                id: chapterId,
+                                title: title,
+                                description: '',
+                                thumbnail: null,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            checkAndNavigateToPage3(subjectData, 'lecture');
+                        });
+                    });
+
+                    chatContainer.querySelectorAll('.subject-button.notes').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const chapterId = e.target.getAttribute('data-chapter-id');
+                            const card = e.target.closest('.subject-card');
+                            const title = card.querySelector('.subject-card-title').textContent;
+                            const subjectData = {
+                                id: chapterId,
+                                title: title,
+                                description: '',
+                                thumbnail: null,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            checkAndNavigateToPage3(subjectData, 'notes');
+                        });
+                    });
+
+                    chatContainer.querySelectorAll('.subject-button.practice').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const chapterId = e.target.getAttribute('data-chapter-id');
+                            const card = e.target.closest('.subject-card');
+                            const title = card.querySelector('.subject-card-title').textContent;
+                            const subjectData = {
+                                id: chapterId,
+                                title: title,
+                                description: '',
+                                thumbnail: null,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            checkAndNavigateToPage3(subjectData, 'practice');
+                        });
+                    });
+
+                } catch (error) {
+                    console.error("Error loading chapters:", error);
+                    showError("Failed to load chapters");
+                }
+            }
+
+            async function renderPage3(subjectData, chapterType) {
+                const user = auth.currentUser;
+                if (!user) {
+                    showError("Please log in to access this content");
+                    showPage1();
+                    return;
+                }
+
+                // Check permission
+                const hasPermission = await checkSubjectPermission(subjectData.courseId, subjectData.subjectId);
+                if (!hasPermission) {
+                    showError("You don't have permission to access this content");
+                    showPage2(subjectData.courseId, subjectData.subjectId);
+                    return;
+                }
+
+                chatContainer.innerHTML = `
+                    <div class="content-header">
+                        <div class="content-subject-card">
+                            ${subjectData.thumbnail ? `
+                                <img src="${subjectData.thumbnail}" alt="${subjectData.title}" class="content-subject-thumbnail" onerror="this.src='https://placehold.co/600x400/3B82F6/FFFFFF?text=Subject'">
+                            ` : ''}
+                            <div class="content-subject-title">${subjectData.title}</div>
+                            <div class="content-subject-description">${subjectData.description}</div>
+                        </div>
+                        
+                        <div class="content-section-title">
+                            ${chapterType === 'lecture' ? 'Lecture Room' : 
+                              chapterType === 'notes' ? 'Notes Page' : 
+                              'Practice Page'}
+                        </div>
+                    </div>
+                    
+                    <div id="content-area" class="p-4 text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading content...</p>
+                    </div>
+                `;
+
+                if (chapterType === 'lecture') {
+                    await loadLectures(subjectData.id);
+                } else if (chapterType === 'notes') {
+                    await loadNotes(subjectData.id);
+                } else if (chapterType === 'practice') {
+                    await loadPractice(subjectData.id);
+                }
+            }
+
+            async function loadLectures(chapterId) {
+                if (!db) return;
+
+                try {
+                    const snapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('lectures')
+                        .orderBy('order')
+                        .get();
+
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (snapshot.empty) {
+                        contentArea.innerHTML = `<p class="text-gray-600">No lectures available</p>`;
+                        return;
+                    }
+
+                    let html = '<div class="lecture-list">';
+                    snapshot.forEach(doc => {
+                        const lecture = doc.data();
+                        html += `
+                            <div class="lecture-item" data-lecture-id="${doc.id}">
+                                <div class="lecture-order">${lecture.order || '?'}</div>
+                                <div class="lecture-info">
+                                    <div class="lecture-title">${lecture.title || 'Untitled Lecture'}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    contentArea.innerHTML = html;
+
+                    contentArea.querySelectorAll('.lecture-item').forEach(item => {
+                        item.addEventListener('click', async () => {
+                            const lectureId = item.getAttribute('data-lecture-id');
+                            const lectureTitle = item.querySelector('.lecture-title').textContent;
+                            await displayLectureVideo(chapterId, lectureId, lectureTitle);
+                            await trackRecentActivity('lecture', currentCourseId, currentSubjectId, chapterId, lectureId, lectureTitle);
+                        });
+                    });
+                } catch (error) {
+                    console.error("Error loading lectures:", error);
+                    document.getElementById('content-area').innerHTML = `<p class="text-red-600">Failed to load lectures</p>`;
+                }
+            }
+
+            async function loadNotes(chapterId) {
+                if (!db) return;
+
+                try {
+                    const snapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('notes')
+                        .get();
+
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (snapshot.empty) {
+                        contentArea.innerHTML = `<p class="text-gray-600">No notes available</p>`;
+                        return;
+                    }
+
+                    let html = '<div class="content-image-container">';
+                    snapshot.forEach(doc => {
+                        const note = doc.data();
+                        if (note.imageUrl) {
+                            html += `<img src="${note.imageUrl}" alt="Notes" class="content-full-image">`;
+                            trackRecentActivity('notes', currentCourseId, currentSubjectId, chapterId, doc.id, 'Notes');
+                        }
+                    });
+                    html += '</div>';
+                    contentArea.innerHTML = html;
+                } catch (error) {
+                    console.error("Error loading notes:", error);
+                    document.getElementById('content-area').innerHTML = `<p class="text-red-600">Failed to load notes</p>`;
+                }
+            }
+
+            async function loadPractice(chapterId) {
+                if (!db) return;
+
+                try {
+                    const snapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('practice')
+                        .get();
+
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (snapshot.empty) {
+                        contentArea.innerHTML = `<p class="text-gray-600">No practice questions available</p>`;
+                        return;
+                    }
+
+                    let html = '<div class="content-image-container">';
+                    snapshot.forEach(doc => {
+                        const practice = doc.data();
+                        if (practice.imageUrl) {
+                            html += `<img src="${practice.imageUrl}" alt="Practice Questions" class="content-full-image">`;
+                            trackRecentActivity('practice', currentCourseId, currentSubjectId, chapterId, doc.id, 'Practice Questions');
+                        }
+                    });
+                    html += '</div>';
+                    contentArea.innerHTML = html;
+                } catch (error) {
+                    console.error("Error loading practice:", error);
+                    document.getElementById('content-area').innerHTML = `<p class="text-red-600">Failed to load practice questions</p>`;
+                }
+            }
+
+            async function displayLectureVideo(chapterId, lectureId, lectureTitle = 'Lecture') {
+                if (!db) return;
+
+                try {
+                    const lectureDoc = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('lectures').doc(lectureId)
+                        .get();
+
+                    if (!lectureDoc.exists) {
+                        showError("Lecture not found");
+                        return;
+                    }
+
+                    const lecture = lectureDoc.data();
+                    chatContainer.innerHTML = '';
+
+                    const titleContainer = document.createElement('div');
+                    titleContainer.className = 'lecture-title-container';
+                    titleContainer.innerHTML = `<div class="lecture-title-text">${lecture.title || lectureTitle}</div>`;
+                    chatContainer.appendChild(titleContainer);
+
+                    addVideoPlayer(lecture.videoEmbedCode);
+                } catch (error) {
+                    console.error("Error loading lecture:", error);
+                    showError("Failed to load lecture");
+                }
+            }
+
+            function addVideoPlayer(videoEmbedCode) {
+                const embedUrl = videoEmbedCode.includes('http') ? videoEmbedCode : `https://www.youtube.com/embed/${videoEmbedCode}`;
+                
+                const videoWrapper = document.createElement('div');
+                videoWrapper.className = 'video-wrapper';
+                videoWrapper.innerHTML = `
+                    <div class="aspect-video w-full bg-gray-900">
+                        <iframe 
+                            width="100%" 
+                            height="100%" 
+                            src="${embedUrl}" 
+                            title="Video player"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen
+                            class="w-full h-full"
+                            loading="lazy"
+                        ></iframe>
+                    </div>
+                    <button class="fullscreen-button" aria-label="Toggle fullscreen">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M15 3.75a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0V5.56l-3.97 3.97a.75.75 0 1 1-1.06-1.06l3.97-3.97h-2.69a.75.75 0 0 1-.75-.75Zm-12 0A.75.75 0 0 1 3.75 3h4.5a.75.75 0 0 1 0 1.5H5.56l3.97 3.97a.75.75 0 0 1-1.06 1.06L4.5 5.56v2.69a.75.75 0 0 1-1.5 0v-4.5Zm11.47 11.78a.75.75 0 1 1 1.06-1.06l3.97 3.97v-2.69a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75h-4.5a.75.75 0 0 1 0-1.5h2.69l-3.97-3.97Zm-4.94-1.06a.75.75 0 0 1 0 1.06L5.56 19.5h2.69a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 1 1.5 0v2.69l3.97-3.97a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+
+                chatContainer.appendChild(videoWrapper);
+
+                const fullscreenButton = videoWrapper.querySelector('.fullscreen-button');
+                fullscreenButton.addEventListener('click', () => {
+                    videoWrapper.classList.toggle('chat-video-fullscreen');
+                });
+            }
+
+            // ===== AUTH STATE LISTENER =====
+            auth.onAuthStateChanged((user) => {
+                updateAuthUI(user);
+                if (user) {
+                    hideAuthPage();
+                    if (currentView === 'page1') {
+                        loadContinueLearning();
+                    }
+                } else {
+                    hideAuthPage();
+                }
+            });
+
+            // ===== INITIALIZE APP =====
+            showPage1();
+        }
+
+        // ===== START APP =====
+        window.addEventListener('load', () => {
+            setTimeout(hideSplashScreen, 3000);
+            
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) {
+                splashScreen.addEventListener('click', hideSplashScreen);
+            }
+        });
+    </script>
+</body>
+</html>
