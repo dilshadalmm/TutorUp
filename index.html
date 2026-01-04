@@ -2567,13 +2567,12 @@
                                 ${subjectData.thumbnail ? `
                                     <img src="${subjectData.thumbnail}" alt="${subjectData.title}" class="subject-thumbnail" onerror="this.src='https://placehold.co/600x400/3B82F6/FFFFFF?text=Subject'">
                                 ` : `
-                                    <div class="subject-thumbnail bg-gray-200 flex items-center justify-center">
-                                        <span class="text-gray-500">No Image</span>
+                                
                                     </div>
                                 `}
                                 <div class="subject-content">
                                     <div class="subject-card-title">${chapter.title || 'Untitled Chapter'}</div>
-                                    <div class="subject-card-description">${subjectData.description || 'No description available'}</div>
+
                                     <div class="subject-buttons">
                                         <button class="subject-button lecture" data-chapter-id="${chapterId}">See Lectures</button>
                                         <button class="subject-button notes" data-chapter-id="${chapterId}">See Notes</button>
