@@ -1,0 +1,2420 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>ConceptsBlitz - Chapter Based Learning</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Inter and Anton for the logo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Anton&family=Impact&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Use the Inter font family as default */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            
+            /* CRITICAL: Prevent the main body from scrolling at all */
+            overflow: hidden !important; 
+            
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            
+            /* Prevents elastic scrolling on iOS */
+            overscroll-behavior: none;
+            
+            /* Make body a fixed container occupying full screen */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* App wrapper - uses dynamic viewport height for mobile keyboard stability */
+        #app-wrapper {
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height (best for mobile keyboard) */
+            width: 100%;
+            position: absolute; /* Relative to fixed body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden; /* Ensures only the chat container can scroll */
+        }
+        
+        /* Ensure input fields are still selectable/editable */
+        #video-code-input {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+        
+        /* Style for the ConceptsBlitz logo font */
+        .concepts-blitz-logo {
+            font-family: 'Anton', 'Impact', sans-serif;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        
+        .concepts-text {
+            color: white;
+        }
+        
+        .dark .concepts-text {
+            color: black;
+        }
+        
+        .blitz-text {
+            color: #CC9900; /* Dark yellow */
+        }
+
+        /* Style for the Camera/Home buttons for a better touch target */
+        .header-action-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Improve KaTeX readability on mobile */
+        .katex {
+            font-size: 1.1em !important;
+            text-align: left !important;
+        }
+        .katex-display {
+            /* Allow display math to be scrollable if too wide */
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 4px;
+        }
+
+        /* --- Hide Scrollbar on Chat Container --- */
+        #chat-container {
+            /* Scroll is now always auto (default of overflow-y-auto is active) */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #chat-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Full-width Image Container Styles */
+        .full-image-container {
+            width: 100%;
+            margin-top: 8px;
+            margin-bottom: 0;
+        }
+        
+        .full-image-item {
+            width: 100%;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 8px;
+        }
+        
+        .full-image-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .full-image-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        /* Video Player Styles - SQUARE CORNERS */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 16px;
+            border-radius: 0; /* SQUARE CORNERS */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .video-wrapper.chat-video-fullscreen {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) rotate(90deg) !important;
+            transform-origin: center !important;
+            width: 100vh !important;
+            height: 100vw !important;
+            max-width: none !important;
+            max-height: none !important;
+            z-index: 1000 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        .video-wrapper.chat-video-fullscreen .aspect-video {
+            height: 100% !important;
+            width: 100% !important;
+        }
+
+        .video-wrapper.chat-video-fullscreen iframe {
+            height: 100% !important;
+            width: 100% !important;
+        }
+
+        .fullscreen-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 8px;
+            cursor: pointer;
+            z-index: 10;
+            transition: background 0.2s;
+        }
+
+        .fullscreen-button:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        /* Chapter Grid Styles */
+        .chapter-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .chapter-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .chapter-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .chapter-card {
+            background: white;
+            border-radius: 0; /* SQUARE CORNERS */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+        }
+
+        .chapter-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .chapter-card:active {
+            transform: translateY(-2px);
+        }
+
+        .chapter-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .chapter-title {
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Lecture List Styles */
+        .lecture-list {
+            padding: 1rem;
+        }
+
+        .lecture-item {
+            background: white;
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .lecture-item:hover {
+            background: #f9fafb;
+            border-color: #3b82f6;
+        }
+
+        .lecture-item:active {
+            transform: scale(0.98);
+        }
+
+        .lecture-order {
+            background: #3b82f6;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 0; /* SQUARE CORNERS */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        .lecture-info {
+            flex: 1;
+        }
+
+        .lecture-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Back Button Styles */
+        .back-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .back-button:hover {
+            background: #4b5563;
+        }
+
+        /* Lecture Title Container - Between Header and Video */
+        .lecture-title-container {
+            padding: 1.5rem 1rem 1rem 1rem;
+            text-align: center;
+            background: linear-gradient(to right, #3b82f6, #1d4ed8);
+            margin: 0;
+            border-bottom: 2px solid #1d4ed8;
+        }
+
+        .lecture-title-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Desktop responsive styles */
+        @media (min-width: 768px) {
+            #app-wrapper {
+                position: relative;
+                margin: 0 auto;
+                max-width: 600px;
+                height: 90vh;
+                max-height: 800px;
+                border-radius: 0; /* SQUARE CORNERS */
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            
+            #auth-wrapper {
+                max-width: 500px;
+                height: auto;
+                max-height: 90vh;
+                border-radius: 0; /* SQUARE CORNERS */
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            }
+            
+            .lecture-title-container {
+                padding: 1.5rem 2rem 1rem 2rem;
+            }
+            
+            .lecture-title-text {
+                font-size: 1.75rem;
+            }
+        }
+        
+        /* Loading indicator styles */
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* New Styles for Page 1 (Home) */
+        .header-image {
+            width: 100%;
+            height: auto;
+            max-height: 200px;
+            object-fit: cover;
+        }
+        
+        .selection-container {
+            padding: 1.5rem 1rem;
+        }
+        
+        .auth-input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        .auth-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .auth-input.error {
+            border-color: #ef4444;
+        }
+        
+        .selection-button {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 0; /* SQUARE CORNERS */
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .selection-button:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+        
+        .selection-button.selected {
+            border-color: #3b82f6;
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .proceed-button {
+            width: 100%;
+            padding: 1rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0; /* SQUARE CORNERS */
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+        
+        .proceed-button:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        
+        .proceed-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        /* New Styles for Page 2 (Subject Details) */
+        .subject-details-header {
+            padding: 1.5rem 1rem;
+            background: linear-gradient(to right, #3b82f6, #1d4ed8);
+            color: white;
+            text-align: center;
+        }
+        
+        .subject-details-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subject-grid {
+            padding: 1rem;
+        }
+        
+        .subject-card {
+            background: white;
+            border-radius: 0; /* SQUARE CORNERS */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .subject-thumbnail {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+        
+        .subject-content {
+            padding: 1rem;
+        }
+        
+        .subject-card-title {
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            font-size: 1.125rem;
+        }
+        
+        .subject-card-description {
+            color: #6b7280;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .subject-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .subject-button {
+            padding: 0.5rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0; /* SQUARE CORNERS */
+            font-weight: 500;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: center;
+        }
+        
+        .subject-button:hover {
+            background: #2563eb;
+        }
+        
+        .subject-button.notes {
+            background: #10b981;
+        }
+        
+        .subject-button.notes:hover {
+            background: #059669;
+        }
+        
+        .subject-button.practice {
+            background: #f59e0b;
+        }
+        
+        .subject-button.practice:hover {
+            background: #d97706;
+        }
+        
+        /* New Styles for Page 3 (Content Page) */
+        .content-header {
+            width: 100%;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .content-subject-card {
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .content-subject-thumbnail {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            margin-bottom: 1rem;
+            border-radius: 0; /* SQUARE CORNERS */
+        }
+        
+        .content-subject-title {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .content-subject-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .section-title {
+            padding: 1rem;
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+        }
+        
+        .content-section-title {
+            padding: 1rem;
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+            font-size: 1.125rem;
+        }
+        
+        .chapters-list {
+            padding: 1rem;
+        }
+        
+        .content-image-container {
+            padding: 1rem;
+        }
+        
+        .content-full-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 0; /* SQUARE CORNERS */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Permission message styles */
+        .permission-message {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 0;
+            padding: 1.5rem;
+            text-align: center;
+            margin: 1rem;
+        }
+        
+        .permission-message h3 {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .permission-message p {
+            color: #92400e;
+            margin-bottom: 1rem;
+        }
+        
+        /* Bottom Navigation Styles */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 0.5rem;
+            display: flex;
+            justify-content: center;
+            z-index: 50;
+        }
+        
+        .home-nav-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .home-nav-button:hover {
+            background: #2563eb;
+        }
+        
+        /* Error message styles */
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: -0.5rem;
+            margin-bottom: 0.5rem;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        /* Auth status indicator */
+        .auth-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: #f3f4f6;
+            border-radius: 0;
+        }
+        
+        .auth-status-text {
+            font-size: 0.875rem;
+            color: #374151;
+        }
+        
+        .auth-status-logged-in {
+            color: #059669;
+        }
+        
+        .auth-status-logged-out {
+            color: #dc2626;
+        }
+
+        /* ===== SPLASH SCREEN STYLES ===== */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #splash-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #splash-screen.hidden {
+            display: none;
+        }
+
+        .splash-logo {
+            max-width: 90%;
+            max-height: 90%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img 
+            src="https://i.postimg.cc/bw2vK1BT/Blue-Minimalist-Podcast-Youtube-Banner-20251225-022046-0001.png" 
+            alt="ConceptsBlitz Logo" 
+            class="splash-logo"
+            onerror="this.onerror=null; this.src='https://placehold.co/600x300/3B82F6/FFFFFF?text=ConceptsBlitz';"
+        >
+    </div>
+
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg hidden">
+
+        <!-- Header - Fixed at top -->
+        <header class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm flex flex-col space-y-3 flex-shrink-0">
+            
+            <!-- Top Row: Logo, Back Button and Action Buttons -->
+            <div class="flex items-center justify-between w-full">
+                <!-- Back Button (Hidden by default) -->
+                <button
+                    type="button"
+                    id="back-button"
+                    class="back-button hidden flex-shrink-0 mr-2"
+                    aria-label="Go back"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                </button>
+
+                <!-- Title (with new logo) -->
+                <h1 id="header-title" class="text-xl flex-shrink-0 mr-4 mx-auto">
+                    <span class="concepts-blitz-logo text-2xl">
+                        <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                    </span>
+                </h1>
+
+                <!-- Register/Logout Button -->
+                <button
+                    type="button"
+                    id="register-logout-button"
+                    class="header-action-button px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                    aria-label="Register or Logout"
+                >
+                    <span id="register-logout-text">Register</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Container - ONLY scrollable area (flex-1 overflow-y-auto) -->
+        <main id="chat-container" class="flex-1 overflow-y-auto">
+            <!-- Pages will be loaded here dynamically -->
+        </main>
+
+        <!-- Bottom Navigation - Only shown on page 2 -->
+        <div id="bottom-nav" class="bottom-nav hidden">
+            <button id="home-nav-button" class="home-nav-button">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2">
+                    <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l8.69 8.69a1.5 1.5 0 0 1 .43 1.069V18a2.25 2.25 0 0 1-2.25 2.25h-5.25a.75.75 0 0 1-.75-.75V15c0-.621-.504-1.125-1.125-1.125h-2.25c-.621 0-1.125.504-1.125 1.125v4.5c0 .414-.336.75-.75.75H3.75A2.25 2.25 0 0 1 1.5 18v-4.401c0-.294.118-.578.325-.785l8.69-8.69Z" />
+                </svg>
+                Home
+            </button>
+        </div>
+
+        <!-- Error Modal (Kept for static error display) -->
+        <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 class="text-lg font-medium text-red-600 dark:text-red-400">Error</h3>
+                <p id="error-message" class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                    An internal error occurred.
+                </p>
+                <button id="close-error-modal" class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Close
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ===== SPLASH SCREEN FUNCTIONALITY =====
+        function hideSplashScreen() {
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) {
+                // Add fade-out animation class
+                splashScreen.classList.add('fade-out');
+                
+                // Hide splash screen after animation completes
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    
+                    // Show the main app wrapper
+                    const appWrapper = document.getElementById('app-wrapper');
+                    if (appWrapper) {
+                        appWrapper.classList.remove('hidden');
+                    }
+                }, 500); // Match this with CSS transition duration
+            }
+        }
+
+        // ===== MAIN APP INITIALIZATION =====
+        function initializeApp() {
+            const appWrapper = document.getElementById('app-wrapper');
+            const chatContainer = document.getElementById('chat-container');
+            const bottomNav = document.getElementById('bottom-nav');
+            const homeNavButton = document.getElementById('home-nav-button');
+            
+            // Authentication elements
+            const registerLogoutButton = document.getElementById('register-logout-button');
+            const registerLogoutText = document.getElementById('register-logout-text');
+            
+            // Navigation Elements
+            const backButton = document.getElementById('back-button');
+            const headerTitle = document.getElementById('header-title');
+            
+            // App State Management
+            let currentView = 'page1'; // 'page1', 'page2'
+            let currentCourseId = null;
+            let currentSubjectId = null;
+            let currentChapterType = null; // 'lecture', 'notes', 'practice'
+            let currentSubjectData = null;
+            let currentCourseData = null;
+            
+            // Firebase Configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                authDomain: "geobazarr.firebaseapp.com",
+                databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                projectId: "geobazarr",
+                storageBucket: "geobazarr.firebasestorage.app",
+                messagingSenderId: "679949247383",
+                appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+            };
+
+            // Initialize Firebase
+            let db, auth;
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                auth = firebase.auth();
+                console.log("Firebase initialized successfully");
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showError("Firebase initialization failed. Please refresh the page.");
+            }
+
+            // --- Local Storage Functions ---
+            function saveUserSelection(email, courseId, subjectId) {
+                if (!email) return;
+                
+                const userSelection = {
+                    email: email,
+                    courseId: courseId,
+                    subjectId: subjectId,
+                    timestamp: Date.now()
+                };
+                
+                localStorage.setItem('conceptsBlitz_userSelection', JSON.stringify(userSelection));
+            }
+            
+            function getUserSelection() {
+                const saved = localStorage.getItem('conceptsBlitz_userSelection');
+                return saved ? JSON.parse(saved) : null;
+            }
+            
+            function clearUserSelection() {
+                localStorage.removeItem('conceptsBlitz_userSelection');
+            }
+            
+            function saveUserCredentials(email, password) {
+                // Note: In production, you should NEVER store passwords in localStorage
+                // This is just for the demo - use proper authentication persistence
+                const credentials = {
+                    email: email,
+                    // In real app, use Firebase auth persistence instead
+                    timestamp: Date.now()
+                };
+                
+                localStorage.setItem('conceptsBlitz_userCredentials', JSON.stringify(credentials));
+            }
+            
+            function getUserCredentials() {
+                const saved = localStorage.getItem('conceptsBlitz_userCredentials');
+                return saved ? JSON.parse(saved) : null;
+            }
+            
+            function clearUserCredentials() {
+                localStorage.removeItem('conceptsBlitz_userCredentials');
+            }
+
+            // --- Authentication Functions ---
+            
+            async function registerUser(email, password, name) {
+                if (!email || !password || !name) {
+                    showError("Please fill in all fields");
+                    return false;
+                }
+                
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    await userCredential.user.updateProfile({
+                        displayName: name
+                    });
+                    
+                    await setupUserDocument(userCredential.user);
+                    
+                    // Save credentials (email only, not password)
+                    saveUserCredentials(email, password);
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Registration error:", error);
+                    showError(getAuthErrorMessage(error));
+                    return false;
+                }
+            }
+            
+            async function loginUser(email, password) {
+                if (!email || !password) {
+                    showError("Please fill in all fields");
+                    return false;
+                }
+                
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    
+                    // Save credentials (email only, not password)
+                    saveUserCredentials(email, password);
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Login error:", error);
+                    showError(getAuthErrorMessage(error));
+                    return false;
+                }
+            }
+            
+            async function logoutUser() {
+                try {
+                    await auth.signOut();
+                    clearUserSelection();
+                    clearUserCredentials();
+                    return true;
+                } catch (error) {
+                    console.error("Logout error:", error);
+                    showError("Failed to log out");
+                    return false;
+                }
+            }
+            
+            async function setupUserDocument(user) {
+                if (!db) return;
+                
+                try {
+                    const userRef = db.collection('users').doc(user.uid);
+                    const userDoc = await userRef.get();
+                    
+                    if (!userDoc.exists) {
+                        await userRef.set({
+                            email: user.email,
+                            displayName: user.displayName || 'User',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("New user document created");
+                    } else {
+                        await userRef.update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("User document updated with last login");
+                    }
+                    
+                } catch (error) {
+                    console.error("Error setting up user document:", error);
+                }
+            }
+            
+            registerLogoutButton.addEventListener('click', async () => {
+                const user = auth.currentUser;
+                
+                if (user) {
+                    // User is logged in, show logout confirmation
+                    if (confirm("Are you sure you want to log out?")) {
+                        await logoutUser();
+                        showPage1();
+                    }
+                } else {
+                    // User is not logged in, show registration modal
+                    showRegistrationModal();
+                }
+            });
+            
+            function showRegistrationModal() {
+                const modalHtml = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Register New Account</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                                    <input 
+                                        type="text" 
+                                        id="register-name" 
+                                        required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                                        placeholder="John Doe"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                    <input 
+                                        type="email" 
+                                        id="register-email" 
+                                        required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                                        placeholder="your@email.com"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                                    <input 
+                                        type="password" 
+                                        id="register-password" 
+                                        required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                                        placeholder="••••••••"
+                                    >
+                                </div>
+                            </div>
+                            <div class="mt-6 flex space-x-3">
+                                <button id="confirm-register" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                                    Register
+                                </button>
+                                <button id="cancel-register" class="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-2 px-4 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                const modalContainer = document.createElement('div');
+                modalContainer.innerHTML = modalHtml;
+                document.body.appendChild(modalContainer);
+                
+                // Add event listeners
+                const confirmButton = modalContainer.querySelector('#confirm-register');
+                const cancelButton = modalContainer.querySelector('#cancel-register');
+                
+                confirmButton.addEventListener('click', async () => {
+                    const name = document.getElementById('register-name').value;
+                    const email = document.getElementById('register-email').value;
+                    const password = document.getElementById('register-password').value;
+                    
+                    const success = await registerUser(email, password, name);
+                    if (success) {
+                        document.body.removeChild(modalContainer);
+                        updateAuthUI(auth.currentUser);
+                    }
+                });
+                
+                cancelButton.addEventListener('click', () => {
+                    document.body.removeChild(modalContainer);
+                });
+                
+                // Close modal on outside click
+                modalContainer.addEventListener('click', (e) => {
+                    if (e.target === modalContainer) {
+                        document.body.removeChild(modalContainer);
+                    }
+                });
+            }
+            
+            function updateAuthUI(user) {
+                if (user) {
+                    registerLogoutText.textContent = 'Logout';
+                    registerLogoutButton.setAttribute('aria-label', 'Logout');
+                    
+                    // Update email field if it exists
+                    const emailInput = document.getElementById('email-input');
+                    if (emailInput) {
+                        emailInput.value = user.email;
+                        emailInput.disabled = true;
+                    }
+                } else {
+                    registerLogoutText.textContent = 'Register';
+                    registerLogoutButton.setAttribute('aria-label', 'Register');
+                    
+                    // Enable email field if it exists
+                    const emailInput = document.getElementById('email-input');
+                    if (emailInput) {
+                        emailInput.disabled = false;
+                    }
+                }
+            }
+            
+            // --- Permission Check Functions ---
+            
+            async function checkSubjectPermission(courseId, subjectId, userId) {
+                if (!db || !userId) return false;
+                
+                try {
+                    const permissionDoc = await db.collection('courses').doc(courseId)
+                        .collection('subjects').doc(subjectId)
+                        .collection('permissions').doc(userId)
+                        .get();
+                    
+                    return permissionDoc.exists && permissionDoc.data().approved === true;
+                } catch (error) {
+                    console.error("Error checking permission:", error);
+                    return false;
+                }
+            }
+            
+            // --- Auth State Change Handler ---
+            
+            auth.onAuthStateChanged(async (user) => {
+                updateAuthUI(user);
+                
+                // If user is logged in and we have saved selection, check if we should auto-redirect
+                if (user) {
+                    const savedSelection = getUserSelection();
+                    if (savedSelection && savedSelection.email === user.email) {
+                        // Check if we're already on page 2
+                        if (currentView !== 'page2') {
+                            // Check permission
+                            const hasPermission = await checkSubjectPermission(
+                                savedSelection.courseId, 
+                                savedSelection.subjectId, 
+                                user.uid
+                            );
+                            
+                            if (hasPermission) {
+                                // Auto-redirect to page 2
+                                currentCourseId = savedSelection.courseId;
+                                currentSubjectId = savedSelection.subjectId;
+                                await showPage2(savedSelection.courseId, savedSelection.subjectId, true);
+                            } else {
+                                // Permission denied, clear saved selection
+                                clearUserSelection();
+                            }
+                        }
+                    }
+                } else {
+                    // User logged out, hide bottom nav
+                    bottomNav.classList.add('hidden');
+                }
+            });
+
+            // --- Core App Functions ---
+
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('copy', (e) => e.preventDefault());
+
+            function showError(message) {
+                const errorModal = document.getElementById('error-modal');
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = message;
+                errorModal.classList.remove('hidden');
+            }
+
+            document.getElementById('close-error-modal').addEventListener('click', () => {
+                document.getElementById('error-modal').classList.add('hidden');
+            });
+
+            function renderKaTeX(element) {
+                if (typeof renderMathInElement === 'undefined') {
+                    console.warn("KaTeX auto-render script not loaded yet.");
+                    return;
+                }
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '$', right: '$', display: false },
+                            { left: '\\(', right: '\\)', display: false },
+                            { left: '\\[', right: '\\]', display: true },
+                            { left: "\\ce{", right: "}", display: false, mhchem: true }
+                        ],
+                        trusted: (context) => ['https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js'].includes(context.url),
+                        throwOnError: false
+                    });
+                } catch (error) {
+                    console.error("KaTeX rendering failed:", error);
+                }
+            }
+            
+            // --- Navigation Functions ---
+            
+            async function showPage1() {
+                currentView = 'page1';
+                currentCourseId = null;
+                currentSubjectId = null;
+                currentChapterType = null;
+                currentSubjectData = null;
+                currentCourseData = null;
+                
+                backButton.classList.add('hidden');
+                bottomNav.classList.add('hidden');
+                headerTitle.innerHTML = `<span class="concepts-blitz-logo text-2xl">
+                    <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                </span>`;
+                
+                await renderPage1();
+            }
+            
+            async function showPage2(courseId, subjectId, autoRedirect = false) {
+                currentView = 'page2';
+                currentCourseId = courseId;
+                currentSubjectId = subjectId;
+                
+                backButton.classList.remove('hidden');
+                backButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                `;
+                
+                // Show bottom navigation
+                bottomNav.classList.remove('hidden');
+                
+                if (!autoRedirect) {
+                    await renderPage2(courseId, subjectId);
+                } else {
+                    // For auto-redirect, we need to render immediately
+                    chatContainer.innerHTML = `
+                        <div class="p-4 text-center">
+                            <div class="loading-spinner mx-auto"></div>
+                            <p class="mt-2 text-gray-600">Loading your subject...</p>
+                        </div>
+                    `;
+                    
+                    // Then load the actual content
+                    setTimeout(() => {
+                        renderPage2(courseId, subjectId);
+                    }, 100);
+                }
+            }
+            
+            async function showPage3(subjectData, chapterType) {
+                currentView = 'page3';
+                currentChapterType = chapterType;
+                currentSubjectData = subjectData;
+                
+                backButton.classList.remove('hidden');
+                backButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                `;
+                
+                headerTitle.innerHTML = `<span class="concepts-blitz-logo text-xl">
+                    <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                </span>`;
+                
+                // Show bottom navigation
+                bottomNav.classList.remove('hidden');
+                
+                await renderPage3(subjectData, chapterType);
+            }
+            
+            // --- Back Button Handler ---
+            backButton.addEventListener('click', () => {
+                if (currentView === 'page3') {
+                    // Go back to page 2
+                    showPage2(currentCourseId, currentSubjectId);
+                } else if (currentView === 'page2') {
+                    // Go back to page 1
+                    showPage1();
+                }
+            });
+            
+            // --- Home Nav Button Handler ---
+            homeNavButton.addEventListener('click', () => {
+                showPage1();
+            });
+            
+            // --- Page 1: Home Page Functions ---
+            
+            async function renderPage1() {
+                const user = auth.currentUser;
+                const savedCredentials = getUserCredentials();
+                
+                chatContainer.innerHTML = `
+                    <div class="p-0">
+                        <!-- Header Image -->
+                        <div id="header-image-container" class="w-full">
+                            <img id="header-image" src="https://i.postimg.cc/bw2vK1BT/Blue_Minimalist.png" alt="Header Image" class="header-image">
+                        </div>
+                        
+                        <!-- Authentication and Selection -->
+                        <div class="selection-container">
+                            <!-- Auth Status -->
+                            <div class="auth-status">
+                                <span class="auth-status-text">
+                                    Status: <span id="auth-status-indicator" class="${user ? 'auth-status-logged-in' : 'auth-status-logged-out'}">
+                                        ${user ? 'Logged In' : 'Not Logged In'}
+                                    </span>
+                                </span>
+                                ${user ? `
+                                    <span class="text-sm text-gray-600">${user.email}</span>
+                                ` : ''}
+                            </div>
+                            
+                            <!-- Email Input -->
+                            <div class="mb-4">
+                                <label for="email-input" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <input 
+                                    type="email" 
+                                    id="email-input" 
+                                    class="auth-input"
+                                    placeholder="your@email.com"
+                                    value="${user ? user.email : (savedCredentials ? savedCredentials.email : '')}"
+                                    ${user ? 'disabled' : ''}
+                                >
+                                <div id="email-error" class="error-message"></div>
+                            </div>
+                            
+                            <!-- Password Input -->
+                            <div class="mb-4">
+                                <label for="password-input" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                <input 
+                                    type="password" 
+                                    id="password-input" 
+                                    class="auth-input"
+                                    placeholder="••••••••"
+                                >
+                                <div id="password-error" class="error-message"></div>
+                            </div>
+                            
+                            <!-- Login Button (only shown when not logged in) -->
+                            ${!user ? `
+                                <button id="login-button" class="selection-button bg-green-500 hover:bg-green-600 text-white border-green-500">
+                                    Login
+                                </button>
+                            ` : ''}
+                            
+                            <!-- Course and Subject Selection -->
+                            <button id="course-select-button" class="selection-button">
+                                Select Course
+                            </button>
+                            
+                            <button id="subject-select-button" class="selection-button" disabled>
+                                Select Subject
+                            </button>
+                            
+                            <button id="proceed-button" class="proceed-button" disabled>
+                                Proceed to Subjects
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Setup event listeners
+                setupPage1EventListeners();
+                
+                // Fetch courses for selection
+                await fetchCoursesForSelection();
+                
+                // If user is logged in and has saved selection, pre-select
+                if (user) {
+                    const savedSelection = getUserSelection();
+                    if (savedSelection && savedSelection.email === user.email) {
+                        await preSelectSavedChoices(savedSelection.courseId, savedSelection.subjectId);
+                    }
+                }
+            }
+            
+            async function preSelectSavedChoices(courseId, subjectId) {
+                if (!db) return;
+                
+                try {
+                    // Pre-select course
+                    const courseDoc = await db.collection('courses').doc(courseId).get();
+                    if (courseDoc.exists) {
+                        const course = courseDoc.data();
+                        const courseSelectButton = document.getElementById('course-select-button');
+                        courseSelectButton.innerHTML = course.title;
+                        courseSelectButton.classList.add('selected');
+                        currentCourseId = courseId;
+                        currentCourseData = course;
+                        
+                        // Enable subject selection
+                        const subjectSelectButton = document.getElementById('subject-select-button');
+                        subjectSelectButton.disabled = false;
+                        
+                        // Pre-select subject
+                        const subjectDoc = await db.collection('courses').doc(courseId).collection('subjects').doc(subjectId).get();
+                        if (subjectDoc.exists) {
+                            const subject = subjectDoc.data();
+                            subjectSelectButton.innerHTML = subject.title;
+                            subjectSelectButton.classList.add('selected');
+                            currentSubjectId = subjectId;
+                            currentSubjectData = subject;
+                            
+                            // Enable proceed button
+                            const proceedButton = document.getElementById('proceed-button');
+                            proceedButton.disabled = false;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error pre-selecting saved choices:", error);
+                }
+            }
+            
+            async function fetchCoursesForSelection() {
+                if (!db) return;
+                
+                try {
+                    const coursesSnapshot = await db.collection('courses').get();
+                    const courseSelectButton = document.getElementById('course-select-button');
+                    
+                    if (coursesSnapshot.empty) {
+                        courseSelectButton.innerHTML = 'No courses available';
+                        courseSelectButton.disabled = true;
+                        return;
+                    }
+                    
+                    // Store courses in memory for selection
+                    window.coursesList = [];
+                    coursesSnapshot.forEach(doc => {
+                        window.coursesList.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    courseSelectButton.addEventListener('click', () => {
+                        showCourseSelectionModal();
+                    });
+                    
+                } catch (error) {
+                    console.error("Error fetching courses:", error);
+                    showError("Failed to load courses");
+                }
+            }
+            
+            function showCourseSelectionModal() {
+                const modalHtml = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full max-h-96 overflow-y-auto">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Select Course</h3>
+                            <div class="space-y-2">
+                                ${window.coursesList.map(course => `
+                                    <button 
+                                        class="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 course-option ${currentCourseId === course.id ? 'bg-blue-50 dark:bg-blue-900 border-blue-300' : ''}"
+                                        data-course-id="${course.id}"
+                                    >
+                                        <div class="font-medium">${course.title || 'Untitled Course'}</div>
+                                        ${course.description ? `<div class="text-sm text-gray-600 dark:text-gray-400 mt-1">${course.description}</div>` : ''}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <button id="close-course-modal" class="mt-4 w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-2 px-4 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                const modalContainer = document.createElement('div');
+                modalContainer.innerHTML = modalHtml;
+                document.body.appendChild(modalContainer);
+                
+                // Add event listeners
+                modalContainer.querySelectorAll('.course-option').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const courseId = button.getAttribute('data-course-id');
+                        const course = window.coursesList.find(c => c.id === courseId);
+                        
+                        // Update UI
+                        const courseSelectButton = document.getElementById('course-select-button');
+                        courseSelectButton.innerHTML = course.title;
+                        courseSelectButton.classList.add('selected');
+                        
+                        // Set current course
+                        currentCourseId = courseId;
+                        currentCourseData = course;
+                        
+                        // Enable subject selection
+                        const subjectSelectButton = document.getElementById('subject-select-button');
+                        subjectSelectButton.disabled = false;
+                        subjectSelectButton.addEventListener('click', () => {
+                            showSubjectSelectionModal(courseId);
+                        });
+                        
+                        // Remove modal
+                        document.body.removeChild(modalContainer);
+                    });
+                });
+                
+                modalContainer.querySelector('#close-course-modal').addEventListener('click', () => {
+                    document.body.removeChild(modalContainer);
+                });
+            }
+            
+            async function showSubjectSelectionModal(courseId) {
+                if (!db) return;
+                
+                try {
+                    const subjectsSnapshot = await db.collection('courses').doc(courseId).collection('subjects').get();
+                    
+                    if (subjectsSnapshot.empty) {
+                        showError("No subjects available for this course");
+                        return;
+                    }
+                    
+                    const subjectsList = [];
+                    subjectsSnapshot.forEach(doc => {
+                        subjectsList.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    const modalHtml = `
+                        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full max-h-96 overflow-y-auto">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Select Subject</h3>
+                                <div class="space-y-2">
+                                    ${subjectsList.map(subject => `
+                                        <button 
+                                            class="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 subject-option ${currentSubjectId === subject.id ? 'bg-blue-50 dark:bg-blue-900 border-blue-300' : ''}"
+                                            data-subject-id="${subject.id}"
+                                        >
+                                            <div class="font-medium">${subject.title || 'Untitled Subject'}</div>
+                                            ${subject.description ? `<div class="text-sm text-gray-600 dark:text-gray-400 mt-1">${subject.description}</div>` : ''}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                <button id="close-subject-modal" class="mt-4 w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-2 px-4 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const modalContainer = document.createElement('div');
+                    modalContainer.innerHTML = modalHtml;
+                    document.body.appendChild(modalContainer);
+                    
+                    // Add event listeners
+                    modalContainer.querySelectorAll('.subject-option').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const subjectId = button.getAttribute('data-subject-id');
+                            const subject = subjectsList.find(s => s.id === subjectId);
+                            
+                            // Update UI
+                            const subjectSelectButton = document.getElementById('subject-select-button');
+                            subjectSelectButton.innerHTML = subject.title;
+                            subjectSelectButton.classList.add('selected');
+                            
+                            // Set current subject
+                            currentSubjectId = subjectId;
+                            currentSubjectData = subject;
+                            
+                            // Enable proceed button
+                            const proceedButton = document.getElementById('proceed-button');
+                            proceedButton.disabled = false;
+                            proceedButton.addEventListener('click', async () => {
+                                await handleProceedToSubjects();
+                            });
+                            
+                            // Remove modal
+                            document.body.removeChild(modalContainer);
+                        });
+                    });
+                    
+                    modalContainer.querySelector('#close-subject-modal').addEventListener('click', () => {
+                        document.body.removeChild(modalContainer);
+                    });
+                    
+                } catch (error) {
+                    console.error("Error fetching subjects:", error);
+                    showError("Failed to load subjects");
+                }
+            }
+            
+            async function handleProceedToSubjects() {
+                const emailInput = document.getElementById('email-input');
+                const passwordInput = document.getElementById('password-input');
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+                
+                // Validate inputs
+                if (!email) {
+                    showInlineError('email-error', 'Please enter your email address');
+                    return;
+                }
+                
+                if (!password) {
+                    showInlineError('password-error', 'Please enter your password');
+                    return;
+                }
+                
+                // Check if user is logged in
+                const user = auth.currentUser;
+                
+                if (!user) {
+                    // Try to login
+                    const loginSuccess = await loginUser(email, password);
+                    if (!loginSuccess) {
+                        return;
+                    }
+                } else if (user.email !== email) {
+                    // User is logged in with different email
+                    if (confirm("You're logged in with a different email. Log out and login with this email?")) {
+                        await logoutUser();
+                        const loginSuccess = await loginUser(email, password);
+                        if (!loginSuccess) {
+                            return;
+                        }
+                    } else {
+                        return;
+                    }
+                }
+                
+                // Now user should be logged in
+                const currentUser = auth.currentUser;
+                if (!currentUser) {
+                    showError("Authentication failed. Please try again.");
+                    return;
+                }
+                
+                // Check permission
+                const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, currentUser.uid);
+                
+                if (hasPermission) {
+                    // Save user selection
+                    saveUserSelection(email, currentCourseId, currentSubjectId);
+                    
+                    // Redirect to page 2
+                    showPage2(currentCourseId, currentSubjectId);
+                } else {
+                    showPermissionDeniedMessage();
+                }
+            }
+            
+            function showInlineError(elementId, message) {
+                const errorElement = document.getElementById(elementId);
+                errorElement.textContent = message;
+                errorElement.classList.add('show');
+                
+                // Clear error after 3 seconds
+                setTimeout(() => {
+                    errorElement.classList.remove('show');
+                }, 3000);
+            }
+            
+            function showPermissionDeniedMessage() {
+                chatContainer.innerHTML = `
+                    <div class="permission-message">
+                        <h3>Access Restricted</h3>
+                        <p>You don't have permission to access this subject. Please contact your administrator to request access.</p>
+                        <button id="back-to-home" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Back to Home
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('back-to-home').addEventListener('click', () => {
+                    showPage1();
+                });
+            }
+            
+            function setupPage1EventListeners() {
+                // Login button
+                const loginButton = document.getElementById('login-button');
+                if (loginButton) {
+                    loginButton.addEventListener('click', async () => {
+                        const emailInput = document.getElementById('email-input');
+                        const passwordInput = document.getElementById('password-input');
+                        const email = emailInput.value.trim();
+                        const password = passwordInput.value;
+                        
+                        if (!email) {
+                            showInlineError('email-error', 'Please enter your email address');
+                            return;
+                        }
+                        
+                        if (!password) {
+                            showInlineError('password-error', 'Please enter your password');
+                            return;
+                        }
+                        
+                        const success = await loginUser(email, password);
+                        if (success) {
+                            // Update UI
+                            updateAuthUI(auth.currentUser);
+                            
+                            // Check if we have saved selection for this email
+                            const savedSelection = getUserSelection();
+                            if (savedSelection && savedSelection.email === email) {
+                                await preSelectSavedChoices(savedSelection.courseId, savedSelection.subjectId);
+                            }
+                        }
+                    });
+                }
+                
+                // Clear inline errors when typing
+                const emailInput = document.getElementById('email-input');
+                const passwordInput = document.getElementById('password-input');
+                
+                if (emailInput) {
+                    emailInput.addEventListener('input', () => {
+                        document.getElementById('email-error').classList.remove('show');
+                    });
+                }
+                
+                if (passwordInput) {
+                    passwordInput.addEventListener('input', () => {
+                        document.getElementById('password-error').classList.remove('show');
+                    });
+                }
+            }
+            
+            // --- Page 2: Subject Details Page Functions ---
+            
+            async function renderPage2(courseId, subjectId) {
+                if (!db) return;
+                
+                chatContainer.innerHTML = `
+                    <div class="p-4 text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading subject details...</p>
+                    </div>
+                `;
+                
+                try {
+                    // Check permission first
+                    const user = auth.currentUser;
+                    if (!user) {
+                        showPage1();
+                        return;
+                    }
+                    
+                    const hasPermission = await checkSubjectPermission(courseId, subjectId, user.uid);
+                    if (!hasPermission) {
+                        showPermissionDeniedMessage();
+                        return;
+                    }
+                    
+                    // Fetch course and subject data
+                    const [courseDoc, subjectDoc] = await Promise.all([
+                        db.collection('courses').doc(courseId).get(),
+                        db.collection('courses').doc(courseId).collection('subjects').doc(subjectId).get()
+                    ]);
+                    
+                    if (!courseDoc.exists || !subjectDoc.exists) {
+                        showError("Course or subject not found");
+                        showPage1();
+                        return;
+                    }
+                    
+                    const course = courseDoc.data();
+                    const subject = subjectDoc.data();
+                    
+                    // Update header title
+                    headerTitle.innerHTML = `<span class="text-lg font-semibold text-gray-900 dark:text-white">${subject.title} || ${course.title}</span>`;
+                    
+                    // Now fetch chapters for this subject
+                    await fetchChaptersForPage2(courseId, subjectId, course, subject);
+                    
+                } catch (error) {
+                    console.error("Error loading page 2:", error);
+                    showError("Failed to load subject details");
+                }
+            }
+            
+            async function fetchChaptersForPage2(courseId, subjectId, courseData, subjectData) {
+                if (!db) return;
+                
+                try {
+                    const chaptersSnapshot = await db.collection('courses').doc(courseId)
+                        .collection('subjects').doc(subjectId)
+                        .collection('chapters')
+                        .orderBy('order')
+                        .get();
+                    
+                    if (chaptersSnapshot.empty) {
+                        chatContainer.innerHTML = `
+                            <div class="subject-details-header">
+                                <div class="subject-details-title">${subjectData.title} || ${courseData.title}</div>
+                            </div>
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No chapters available for this subject.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Create subject cards list
+                    let subjectCardsHtml = `
+                        <div class="subject-details-header">
+                            <div class="subject-details-title">${subjectData.title} || ${courseData.title}</div>
+                        </div>
+                        <div class="subject-grid">
+                    `;
+                    
+                    chaptersSnapshot.forEach(doc => {
+                        const chapter = doc.data();
+                        const chapterId = doc.id;
+                        
+                        subjectCardsHtml += `
+                            <div class="subject-card" data-chapter-id="${chapterId}">
+                                ${subjectData.thumbnail ? `
+                                    <img src="${subjectData.thumbnail}" alt="${subjectData.title}" class="subject-thumbnail" onerror="this.src='https://placehold.co/600x400/3B82F6/FFFFFF?text=Subject'">
+                                ` : `
+                                    <div class="subject-thumbnail bg-gray-200 flex items-center justify-center">
+                                        <span class="text-gray-500">No Image</span>
+                                    </div>
+                                `}
+                                <div class="subject-content">
+                                    <div class="subject-card-title">${chapter.title || 'Untitled Chapter'}</div>
+                                    <div class="subject-card-description">${subjectData.description || 'No description available'}</div>
+                                    <div class="subject-buttons">
+                                        <button class="subject-button lecture" data-chapter-id="${chapterId}">See Lectures</button>
+                                        <button class="subject-button notes" data-chapter-id="${chapterId}">See Notes</button>
+                                        <button class="subject-button practice" data-chapter-id="${chapterId}">Practice Questions</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    subjectCardsHtml += `</div>`;
+                    
+                    chatContainer.innerHTML = subjectCardsHtml;
+                    
+                    // Add event listeners to buttons
+                    document.querySelectorAll('.subject-button.lecture').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const chapterId = button.getAttribute('data-chapter-id');
+                            const user = auth.currentUser;
+                            
+                            if (!user) {
+                                showPage1();
+                                return;
+                            }
+                            
+                            const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, user.uid);
+                            if (!hasPermission) {
+                                showPermissionDeniedMessage();
+                                return;
+                            }
+                            
+                            // Get chapter data
+                            const chapterCard = button.closest('.subject-card');
+                            const chapterTitle = chapterCard.querySelector('.subject-card-title').textContent;
+                            const chapterDescription = chapterCard.querySelector('.subject-card-description').textContent;
+                            const subjectThumbnail = chapterCard.querySelector('img') ? chapterCard.querySelector('img').src : null;
+                            
+                            const subjectData = {
+                                id: chapterId,
+                                title: chapterTitle,
+                                description: chapterDescription,
+                                thumbnail: subjectThumbnail,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            
+                            showPage3(subjectData, 'lecture');
+                        });
+                    });
+                    
+                    document.querySelectorAll('.subject-button.notes').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const chapterId = button.getAttribute('data-chapter-id');
+                            const user = auth.currentUser;
+                            
+                            if (!user) {
+                                showPage1();
+                                return;
+                            }
+                            
+                            const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, user.uid);
+                            if (!hasPermission) {
+                                showPermissionDeniedMessage();
+                                return;
+                            }
+                            
+                            const chapterCard = button.closest('.subject-card');
+                            const chapterTitle = chapterCard.querySelector('.subject-card-title').textContent;
+                            const chapterDescription = chapterCard.querySelector('.subject-card-description').textContent;
+                            const subjectThumbnail = chapterCard.querySelector('img') ? chapterCard.querySelector('img').src : null;
+                            
+                            const subjectData = {
+                                id: chapterId,
+                                title: chapterTitle,
+                                description: chapterDescription,
+                                thumbnail: subjectThumbnail,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            
+                            showPage3(subjectData, 'notes');
+                        });
+                    });
+                    
+                    document.querySelectorAll('.subject-button.practice').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const chapterId = button.getAttribute('data-chapter-id');
+                            const user = auth.currentUser;
+                            
+                            if (!user) {
+                                showPage1();
+                                return;
+                            }
+                            
+                            const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, user.uid);
+                            if (!hasPermission) {
+                                showPermissionDeniedMessage();
+                                return;
+                            }
+                            
+                            const chapterCard = button.closest('.subject-card');
+                            const chapterTitle = chapterCard.querySelector('.subject-card-title').textContent;
+                            const chapterDescription = chapterCard.querySelector('.subject-card-description').textContent;
+                            const subjectThumbnail = chapterCard.querySelector('img') ? chapterCard.querySelector('img').src : null;
+                            
+                            const subjectData = {
+                                id: chapterId,
+                                title: chapterTitle,
+                                description: chapterDescription,
+                                thumbnail: subjectThumbnail,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            
+                            showPage3(subjectData, 'practice');
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error("Error fetching chapters:", error);
+                    showError("Failed to load chapters");
+                }
+            }
+            
+            // --- Page 3: Content Page Functions ---
+            
+            async function renderPage3(subjectData, chapterType) {
+                chatContainer.innerHTML = `
+                    <div class="content-header">
+                        <div class="content-subject-card">
+                            ${subjectData.thumbnail ? `
+                                <img src="${subjectData.thumbnail}" alt="${subjectData.title}" class="content-subject-thumbnail" onerror="this.src='https://placehold.co/600x400/3B82F6/FFFFFF?text=Subject'">
+                            ` : ''}
+                            <div class="content-subject-title">${subjectData.title}</div>
+                            <div class="content-subject-description">${subjectData.description}</div>
+                        </div>
+                        
+                        <div class="content-section-title">
+                            ${chapterType === 'lecture' ? 'Lecture Room' : 
+                              chapterType === 'notes' ? 'Notes Page' : 
+                              'Practice Page'}
+                        </div>
+                    </div>
+                    
+                    <div id="content-area" class="p-4 text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading content...</p>
+                    </div>
+                `;
+                
+                if (chapterType === 'lecture') {
+                    await loadLecturesForChapter(subjectData.id);
+                } else if (chapterType === 'notes') {
+                    await loadNotesForChapter(subjectData.id);
+                } else if (chapterType === 'practice') {
+                    await loadPracticeForChapter(subjectData.id);
+                }
+            }
+            
+            async function loadLecturesForChapter(chapterId) {
+                if (!db) return;
+                
+                try {
+                    const lecturesSnapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('lectures')
+                        .orderBy('order')
+                        .get();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (lecturesSnapshot.empty) {
+                        contentArea.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No lectures available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let lecturesHtml = '<div class="lecture-list">';
+                    
+                    lecturesSnapshot.forEach(doc => {
+                        const lecture = doc.data();
+                        const lectureId = doc.id;
+                        
+                        lecturesHtml += `
+                            <div class="lecture-item" data-lecture-id="${lectureId}">
+                                <div class="lecture-order">${lecture.order || '?'}</div>
+                                <div class="lecture-info">
+                                    <div class="lecture-title">${lecture.title || 'Untitled Lecture'}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    lecturesHtml += '</div>';
+                    contentArea.innerHTML = lecturesHtml;
+                    
+                    // Add event listeners to lecture items
+                    document.querySelectorAll('.lecture-item').forEach(item => {
+                        item.addEventListener('click', async () => {
+                            const lectureId = item.getAttribute('data-lecture-id');
+                            await displayLectureVideo(chapterId, lectureId);
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error("Error loading lectures:", error);
+                    document.getElementById('content-area').innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load lectures.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            async function loadNotesForChapter(chapterId) {
+                if (!db) return;
+                
+                try {
+                    const notesSnapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('notes')
+                        .get();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (notesSnapshot.empty) {
+                        contentArea.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No notes available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let notesHtml = '<div class="content-image-container">';
+                    
+                    notesSnapshot.forEach(doc => {
+                        const note = doc.data();
+                        if (note.imageUrl) {
+                            notesHtml += `
+                                <img src="${note.imageUrl}" alt="Notes" class="content-full-image" onerror="this.src='https://placehold.co/600x800/10B981/FFFFFF?text=Notes+Image'">
+                            `;
+                        }
+                    });
+                    
+                    notesHtml += '</div>';
+                    contentArea.innerHTML = notesHtml;
+                    
+                } catch (error) {
+                    console.error("Error loading notes:", error);
+                    document.getElementById('content-area').innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load notes.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            async function loadPracticeForChapter(chapterId) {
+                if (!db) return;
+                
+                try {
+                    const practiceSnapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('practice')
+                        .get();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (practiceSnapshot.empty) {
+                        contentArea.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No practice questions available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let practiceHtml = '<div class="content-image-container">';
+                    
+                    practiceSnapshot.forEach(doc => {
+                        const practice = doc.data();
+                        if (practice.imageUrl) {
+                            practiceHtml += `
+                                <img src="${practice.imageUrl}" alt="Practice Questions" class="content-full-image" onerror="this.src='https://placehold.co/600x800/F59E0B/FFFFFF?text=Practice+Questions'">
+                            `;
+                        }
+                    });
+                    
+                    practiceHtml += '</div>';
+                    contentArea.innerHTML = practiceHtml;
+                    
+                } catch (error) {
+                    console.error("Error loading practice:", error);
+                    document.getElementById('content-area').innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load practice questions.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            async function displayLectureVideo(chapterId, lectureId) {
+                if (!db) return;
+                
+                try {
+                    const lectureDoc = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('lectures').doc(lectureId)
+                        .get();
+                    
+                    if (!lectureDoc.exists) {
+                        showError("Lecture not found");
+                        return;
+                    }
+                    
+                    const lecture = lectureDoc.data();
+                    
+                    // Clear and show video
+                    chatContainer.innerHTML = '';
+                    
+                    // Add lecture title container
+                    const lectureTitleContainer = document.createElement('div');
+                    lectureTitleContainer.className = 'lecture-title-container';
+                    lectureTitleContainer.innerHTML = `<div class="lecture-title-text">${lecture.title}</div>`;
+                    chatContainer.appendChild(lectureTitleContainer);
+                    
+                    // Add video player
+                    addLectureVideoPlayer(lecture.videoEmbedCode);
+                    
+                } catch (error) {
+                    console.error("Error loading lecture video:", error);
+                    showError("Failed to load lecture video");
+                }
+            }
+            
+            function addLectureVideoPlayer(videoEmbedCode) {
+                // Use the embed code directly or construct URL if needed
+                const embedUrl = videoEmbedCode.includes('http') ? videoEmbedCode : `https://www.youtube.com/embed/${videoEmbedCode}`;
+                
+                const videoWrapper = document.createElement('div');
+                videoWrapper.className = 'video-wrapper';
+                
+                const iframeHtml = `
+                    <div class="aspect-video w-full bg-gray-900">
+                        <iframe 
+                            width="100%" 
+                            height="100%" 
+                            src="${embedUrl}" 
+                            title="Video player"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen
+                            class="w-full h-full"
+                            loading="lazy"
+                        ></iframe>
+                    </div>
+                    <button class="fullscreen-button" aria-label="Toggle fullscreen">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M15 3.75a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0V5.56l-3.97 3.97a.75.75 0 1 1-1.06-1.06l3.97-3.97h-2.69a.75.75 0 0 1-.75-.75Zm-12 0A.75.75 0 0 1 3.75 3h4.5a.75.75 0 0 1 0 1.5H5.56l3.97 3.97a.75.75 0 0 1-1.06 1.06L4.5 5.56v2.69a.75.75 0 0 1-1.5 0v-4.5Zm11.47 11.78a.75.75 0 1 1 1.06-1.06l3.97 3.97v-2.69a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75h-4.5a.75.75 0 0 1 0-1.5h2.69l-3.97-3.97Zm-4.94-1.06a.75.75 0 0 1 0 1.06L5.56 19.5h2.69a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 1 1.5 0v2.69l3.97-3.97a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+
+                videoWrapper.innerHTML = iframeHtml;
+                chatContainer.appendChild(videoWrapper);
+                
+                // Add fullscreen toggle functionality
+                const fullscreenButton = videoWrapper.querySelector('.fullscreen-button');
+                fullscreenButton.addEventListener('click', () => {
+                    toggleVideoFullscreen(videoWrapper);
+                });
+            }
+            
+            function toggleVideoFullscreen(videoWrapper) {
+                const isFullscreen = videoWrapper.classList.contains('chat-video-fullscreen');
+                
+                if (isFullscreen) {
+                    videoWrapper.classList.remove('chat-video-fullscreen');
+                    const allChildren = Array.from(chatContainer.children);
+                    allChildren.forEach(child => {
+                        child.style.display = '';
+                    });
+                } else {
+                    videoWrapper.classList.add('chat-video-fullscreen');
+                    const allChildren = Array.from(chatContainer.children);
+                    allChildren.forEach(child => {
+                        if (child !== videoWrapper) {
+                            child.style.display = 'none';
+                        }
+                    });
+                }
+            }
+
+            function getAuthErrorMessage(error) {
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        return 'Invalid email address.';
+                    case 'auth/user-disabled':
+                        return 'This account has been disabled.';
+                    case 'auth/user-not-found':
+                        return 'No account found with this email.';
+                    case 'auth/wrong-password':
+                        return 'Incorrect password.';
+                    case 'auth/email-already-in-use':
+                        return 'An account with this email already exists.';
+                    case 'auth/weak-password':
+                        return 'Password is too weak.';
+                    case 'auth/network-request-failed':
+                        return 'Network error. Please check your connection.';
+                    default:
+                        return error.message || 'Authentication failed. Please try again.';
+                }
+            }
+
+            // Initialize the app with page 1
+            showPage1();
+        }
+
+        // ===== START SPLASH SCREEN WITH BACKGROUND LOADING =====
+        let appInitialized = false;
+        
+        function initializeAppInBackground() {
+            if (appInitialized) return;
+            
+            try {
+                // Initialize Firebase early
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                    authDomain: "geobazarr.firebaseapp.com",
+                    databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                    projectId: "geobazarr",
+                    storageBucket: "geobazarr.firebasestorage.app",
+                    messagingSenderId: "679949247383",
+                    appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+                };
+                
+                firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+                
+                // Check auth state immediately
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        // User is logged in, check for saved selection
+                        const savedSelection = JSON.parse(localStorage.getItem('conceptsBlitz_userSelection') || 'null');
+                        if (savedSelection && savedSelection.email === user.email) {
+                            // Check permission in background
+                            try {
+                                const permissionDoc = await db.collection('courses').doc(savedSelection.courseId)
+                                    .collection('subjects').doc(savedSelection.subjectId)
+                                    .collection('permissions').doc(user.uid)
+                                    .get();
+                                
+                                if (permissionDoc.exists && permissionDoc.data().approved === true) {
+                                    // Permission granted, we'll auto-redirect after splash
+                                    window.hasAutoRedirectPermission = true;
+                                    window.autoRedirectCourseId = savedSelection.courseId;
+                                    window.autoRedirectSubjectId = savedSelection.subjectId;
+                                }
+                            } catch (error) {
+                                console.error("Background permission check failed:", error);
+                            }
+                        }
+                    }
+                    
+                    // Mark app as initialized
+                    appInitialized = true;
+                });
+            } catch (error) {
+                console.error("Background initialization failed:", error);
+                appInitialized = true;
+            }
+        }
+        
+        window.addEventListener('load', () => {
+            // Start background initialization immediately
+            initializeAppInBackground();
+            
+            // Set splash screen timeout
+            setTimeout(() => {
+                hideSplashScreen();
+                
+                // Initialize main app after splash
+                setTimeout(() => {
+                    initializeApp();
+                    
+                    // Check for auto-redirect
+                    if (window.hasAutoRedirectPermission) {
+                        // Trigger auto-redirect to page 2
+                        const event = new CustomEvent('authStateChanged', {
+                            detail: {
+                                user: firebase.auth().currentUser,
+                                autoRedirect: true,
+                                courseId: window.autoRedirectCourseId,
+                                subjectId: window.autoRedirectSubjectId
+                            }
+                        });
+                        window.dispatchEvent(event);
+                    }
+                }, 100);
+            }, 3000); // 3 second splash screen
+            
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) {
+                splashScreen.addEventListener('click', () => {
+                    hideSplashScreen();
+                    
+                    // Initialize main app after splash
+                    setTimeout(() => {
+                        initializeApp();
+                    }, 100);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
