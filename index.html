@@ -1,0 +1,2701 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>ConceptsBlitz - Chapter Based Learning</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Inter and Anton for the logo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Anton&family=Impact&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Use the Inter font family as default */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            
+            /* CRITICAL: Prevent the main body from scrolling at all */
+            overflow: hidden !important; 
+            
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            
+            /* Prevents elastic scrolling on iOS */
+            overscroll-behavior: none;
+            
+            /* Make body a fixed container occupying full screen */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* App wrapper - uses dynamic viewport height for mobile keyboard stability */
+        #app-wrapper {
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height (best for mobile keyboard) */
+            width: 100%;
+            position: absolute; /* Relative to fixed body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden; /* Ensures only the chat container can scroll */
+        }
+        
+        /* Ensure input fields are still selectable/editable */
+        #video-code-input {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+        
+        /* Style for the ConceptsBlitz logo font */
+        .concepts-blitz-logo {
+            font-family: 'Anton', 'Impact', sans-serif;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        
+        .concepts-text {
+            color: white;
+        }
+        
+        .dark .concepts-text {
+            color: black;
+        }
+        
+        .blitz-text {
+            color: #CC9900; /* Dark yellow */
+        }
+
+        /* Style for the Camera/Home buttons for a better touch target */
+        .header-action-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Improve KaTeX readability on mobile */
+        .katex {
+            font-size: 1.1em !important;
+            text-align: left !important;
+        }
+        .katex-display {
+            /* Allow display math to be scrollable if too wide */
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 4px;
+        }
+
+        /* --- Hide Scrollbar on Chat Container --- */
+        #chat-container {
+            /* Scroll is now always auto (default of overflow-y-auto is active) */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #chat-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Full-width Image Container Styles */
+        .full-image-container {
+            width: 100%;
+            margin-top: 8px;
+            margin-bottom: 0;
+        }
+        
+        .full-image-item {
+            width: 100%;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 8px;
+        }
+        
+        .full-image-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .full-image-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        /* Video Player Styles - SQUARE CORNERS */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 16px;
+            border-radius: 0; /* SQUARE CORNERS */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .video-wrapper.chat-video-fullscreen {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) rotate(90deg) !important;
+            transform-origin: center !important;
+            width: 100vh !important;
+            height: 100vw !important;
+            max-width: none !important;
+            max-height: none !important;
+            z-index: 1000 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        .video-wrapper.chat-video-fullscreen .aspect-video {
+            height: 100% !important;
+            width: 100% !important;
+        }
+
+        .video-wrapper.chat-video-fullscreen iframe {
+            height: 100% !important;
+            width: 100% !important;
+        }
+
+        .fullscreen-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 8px;
+            cursor: pointer;
+            z-index: 10;
+            transition: background 0.2s;
+        }
+
+        .fullscreen-button:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        /* Chapter Grid Styles */
+        .chapter-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .chapter-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .chapter-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .chapter-card {
+            background: white;
+            border-radius: 0; /* SQUARE CORNERS */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+        }
+
+        .chapter-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .chapter-card:active {
+            transform: translateY(-2px);
+        }
+
+        .chapter-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .chapter-title {
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Lecture List Styles */
+        .lecture-list {
+            padding: 1rem;
+        }
+
+        .lecture-item {
+            background: white;
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .lecture-item:hover {
+            background: #f9fafb;
+            border-color: #3b82f6;
+        }
+
+        .lecture-item:active {
+            transform: scale(0.98);
+        }
+
+        .lecture-order {
+            background: #3b82f6;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 0; /* SQUARE CORNERS */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        .lecture-info {
+            flex: 1;
+        }
+
+        .lecture-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Back Button Styles */
+        .back-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .back-button:hover {
+            background: #4b5563;
+        }
+
+        /* Lecture Title Container - Between Header and Video */
+        .lecture-title-container {
+            padding: 1.5rem 1rem 1rem 1rem;
+            text-align: center;
+            background: linear-gradient(to right, #3b82f6, #1d4ed8);
+            margin: 0;
+            border-bottom: 2px solid #1d4ed8;
+        }
+
+        .lecture-title-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Desktop responsive styles */
+        @media (min-width: 768px) {
+            #app-wrapper {
+                position: relative;
+                margin: 0 auto;
+                max-width: 600px;
+                height: 90vh;
+                max-height: 800px;
+                border-radius: 0; /* SQUARE CORNERS */
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            
+            #auth-wrapper {
+                max-width: 500px;
+                height: auto;
+                max-height: 90vh;
+                border-radius: 0; /* SQUARE CORNERS */
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            }
+            
+            .lecture-title-container {
+                padding: 1.5rem 2rem 1rem 2rem;
+            }
+            
+            .lecture-title-text {
+                font-size: 1.75rem;
+            }
+        }
+        
+        /* Loading indicator styles */
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Authentication page styles */
+        #auth-wrapper {
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        #auth-wrapper.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 1.5rem;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .auth-tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .google-signin-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.75rem;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0; /* SQUARE CORNERS */
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+        
+        .google-signin-btn:hover {
+            background: #f9fafb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+            color: #6b7280;
+        }
+        
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .divider span {
+            padding: 0 1rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Auth home button */
+        .auth-home-button {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 0.5rem;
+            color: white;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        
+        .auth-home-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Initial message styles */
+        .initial-message {
+            text-align: center;
+            color: #374151;
+            padding: 8px 12px;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        /* ===== SPLASH SCREEN STYLES ===== */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #splash-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #splash-screen.hidden {
+            display: none;
+        }
+
+        .splash-logo {
+            max-width: 90%;
+            max-height: 90%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* New Styles for Page 1 (Home) */
+        .header-image {
+            width: 100%;
+            height: auto;
+            max-height: 200px;
+            object-fit: cover;
+        }
+        
+        .selection-container {
+            padding: 1.5rem 1rem;
+        }
+        
+        .selection-button {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 0; /* SQUARE CORNERS */
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .selection-button:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+        
+        .selection-button.selected {
+            border-color: #3b82f6;
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .proceed-button {
+            width: 100%;
+            padding: 1rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0; /* SQUARE CORNERS */
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+        
+        .proceed-button:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        
+        .proceed-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        /* New Styles for Page 2 (Subject Details) */
+        .subject-details-header {
+            padding: 1.5rem 1rem;
+            background: linear-gradient(to right, #3b82f6, #1d4ed8);
+            color: white;
+            text-align: center;
+        }
+        
+        .subject-details-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subject-grid {
+            padding: 1rem;
+        }
+        
+        .subject-card {
+            background: white;
+            border-radius: 0; /* SQUARE CORNERS */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .subject-thumbnail {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+        
+        .subject-content {
+            padding: 1rem;
+        }
+        
+        .subject-card-title {
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            font-size: 1.125rem;
+        }
+        
+        .subject-card-description {
+            color: #6b7280;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .subject-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .subject-button {
+            padding: 0.5rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0; /* SQUARE CORNERS */
+            font-weight: 500;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: center;
+        }
+        
+        .subject-button:hover {
+            background: #2563eb;
+        }
+        
+        .subject-button.notes {
+            background: #10b981;
+        }
+        
+        .subject-button.notes:hover {
+            background: #059669;
+        }
+        
+        .subject-button.practice {
+            background: #f59e0b;
+        }
+        
+        .subject-button.practice:hover {
+            background: #d97706;
+        }
+        
+        /* New Styles for Page 3 (Content Page) */
+        .content-header {
+            width: 100%;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .content-subject-card {
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .content-subject-thumbnail {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            margin-bottom: 1rem;
+            border-radius: 0; /* SQUARE CORNERS */
+        }
+        
+        .content-subject-title {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .content-subject-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .section-title {
+            padding: 1rem;
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+        }
+        
+        .content-section-title {
+            padding: 1rem;
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+            font-size: 1.125rem;
+        }
+        
+        .chapters-list {
+            padding: 1rem;
+        }
+        
+        .content-image-container {
+            padding: 1rem;
+        }
+        
+        .content-full-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 0; /* SQUARE CORNERS */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Permission message styles */
+        .permission-message {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 0;
+            padding: 1.5rem;
+            text-align: center;
+            margin: 1rem;
+        }
+        
+        .permission-message h3 {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .permission-message p {
+            color: #92400e;
+            margin-bottom: 1rem;
+        }
+
+        /* ===== MESSAGE INTERFACE STYLES ===== */
+        .message-interface-container {
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+            border-top: 1px solid #e5e7eb;
+            background: white;
+        }
+        
+        .message-interface-title {
+            padding: 1rem;
+            background: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+            font-size: 1rem;
+        }
+        
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f9fafb;
+        }
+        
+        .message-wrapper {
+            margin-bottom: 1rem;
+        }
+        
+        .message-sender {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+        
+        .message-bubble {
+            padding: 0.75rem;
+            border-radius: 0; /* SQUARE CORNERS */
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        
+        .message-user .message-bubble {
+            background: #3b82f6;
+            color: white;
+            margin-left: auto;
+        }
+        
+        .message-other .message-bubble {
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            margin-right: auto;
+        }
+        
+        .message-form-container {
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            background: white;
+        }
+        
+        .message-form {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .message-input {
+            flex: 1;
+            border: 1px solid #d1d5db;
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 0.75rem 1rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+        }
+        
+        .message-send-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0; /* SQUARE CORNERS */
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .message-send-button:hover {
+            background: #2563eb;
+        }
+        
+        .message-send-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        /* Dark mode adjustments for message interface */
+        .dark .message-interface-container {
+            background: #1f2937;
+            border-top-color: #374151;
+        }
+        
+        .dark .message-interface-title {
+            background: #111827;
+            border-bottom-color: #374151;
+            color: #f9fafb;
+        }
+        
+        .dark .messages-container {
+            background: #1f2937;
+        }
+        
+        .dark .message-sender {
+            color: #9ca3af;
+        }
+        
+        .dark .message-other .message-bubble {
+            background: #374151;
+            color: #f9fafb;
+            border-color: #4b5563;
+        }
+        
+        .dark .message-form-container {
+            background: #1f2937;
+            border-top-color: #374151;
+        }
+        
+        .dark .message-input {
+            background: #374151;
+            border-color: #4b5563;
+            color: #f9fafb;
+        }
+        
+        .dark .message-input::placeholder {
+            color: #9ca3af;
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img 
+            src="https://i.postimg.cc/bw2vK1BT/Blue-Minimalist-Podcast-Youtube-Banner-20251225-022046-0001.png" 
+            alt="ConceptsBlitz Logo" 
+            class="splash-logo"
+            onerror="this.onerror=null; this.src='https://placehold.co/600x300/3B82F6/FFFFFF?text=ConceptsBlitz';"
+        >
+    </div>
+
+    <!-- Authentication Page -->
+    <div id="auth-wrapper" class="md:rounded-lg">
+        <!-- Home Button on Auth Page -->
+        <button id="auth-home-button" class="auth-home-button" aria-label="Go back to main page">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l8.69 8.69a1.5 1.5 0 0 1 .43 1.069V18a2.25 2.25 0 0 1-2.25 2.25h-5.25a.75.75 0 0 1-.75-.75V15c0-.621-.504-1.125-1.125-1.125h-2.25c-.621 0-1.125.504-1.125 1.125v4.5c0 .414-.336.75-.75.75H3.75A2.25 2.25 0 0 1 1.5 18v-4.401c0-.294.118-.578.325-.785l8.69-8.69Z" />
+            </svg>
+        </button>
+        
+        <div class="auth-card">
+            <!-- Logo -->
+            <div class="text-center mb-6">
+                <h1 class="concepts-blitz-logo text-4xl inline-block px-4 py-2">
+                    <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                </h1>
+                <p class="text-gray-600 mt-2" id="auth-message">Sign in to access the content</p>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="auth-tabs">
+                <div class="auth-tab active" data-tab="signin">Sign In</div>
+                <div class="auth-tab" data-tab="signup">Sign Up</div>
+            </div>
+            
+            <!-- Sign In Form -->
+            <form id="signin-form" class="auth-form active">
+                <div class="space-y-4">
+                    <div>
+                        <label for="signin-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input 
+                            type="email" 
+                            id="signin-email" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="your@email.com"
+                        >
+                    </div>
+                    <div>
+                        <label for="signin-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input 
+                            type="password" 
+                            id="signin-password" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                    <button 
+                        type="submit" 
+                        id="signin-button"
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+                    >
+                        <span id="signin-button-text">Sign In</span>
+                        <div id="signin-button-spinner" class="loading-spinner ml-2 hidden"></div>
+                    </button>
+                </div>
+                
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+                
+                <button 
+                    type="button" 
+                    id="google-signin-button"
+                    class="google-signin-btn"
+                >
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google
+                </button>
+            </form>
+            
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="auth-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="signup-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input 
+                            type="text" 
+                            id="signup-name" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="John Doe"
+                        >
+                    </div>
+                    <div>
+                        <label for="signup-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input 
+                            type="email" 
+                            id="signup-email" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="your@email.com"
+                        >
+                    </div>
+                    <div>
+                        <label for="signup-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input 
+                            type="password" 
+                            id="signup-password" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="••••••••"
+                        >
+                    </div>
+                    <button 
+                        type="submit" 
+                        id="signup-button"
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+                    >
+                        <span id="signup-button-text">Create Account</span>
+                        <div id="signup-button-spinner" class="loading-spinner ml-2 hidden"></div>
+                    </button>
+                </div>
+                
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+                
+                <button 
+                    type="button" 
+                    id="google-signup-button"
+                    class="google-signin-btn"
+                >
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Google
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg hidden">
+
+        <!-- Header - Fixed at top -->
+        <header class="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm flex flex-col space-y-3 flex-shrink-0">
+            
+            <!-- Top Row: Logo, Back Button and Action Buttons -->
+            <div class="flex items-center justify-between w-full">
+                <!-- Back Button (Hidden by default) -->
+                <button
+                    type="button"
+                    id="back-button"
+                    class="back-button hidden flex-shrink-0 mr-2"
+                    aria-label="Go back"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                </button>
+
+                <!-- Title (with new logo) -->
+                <h1 id="header-title" class="text-xl flex-shrink-0 mr-4 mx-auto">
+                    <span class="concepts-blitz-logo text-2xl">
+                        <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                    </span>
+                </h1>
+
+                <!-- Action Buttons (Right End) -->
+                <div class="flex items-center space-x-2 ml-auto">
+                    <!-- Home Button -->
+                    <button
+                        type="button"
+                        id="home-button"
+                        class="header-action-button p-2 bg-green-500 hover:bg-green-600 text-white shadow-md focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                        aria-label="Go to Home"
+                    >
+                        <!-- Home Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l8.69 8.69a1.5 1.5 0 0 1 .43 1.069V18a2.25 2.25 0 0 1-2.25 2.25h-5.25a.75.75 0 0 1-.75-.75V15c0-.621-.504-1.125-1.125-1.125h-2.25c-.621 0-1.125.504-1.125 1.125v4.5c0 .414-.336.75-.75.75H3.75A2.25 2.25 0 0 1 1.5 18v-4.401c0-.294.118-.578.325-.785l8.69-8.69Z" />
+                        </svg>
+                    </button>
+                    
+                    <!-- Login/Sign Out Button (Conditional) -->
+                    <button
+                        type="button"
+                        id="auth-toggle-button"
+                        class="header-action-button p-2 bg-blue-500 hover:bg-blue-600 text-white shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                        aria-label="Sign in or out"
+                    >
+                        <!-- Default login icon (will be updated based on auth state) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm5.03 4.72a.75.75 0 0 1 0 1.06l-1.72 1.72h10.94a.75.75 0 0 1 0 1.5H10.81l1.72 1.72a.75.75 0 1 1-1.06 1.06l-3-3a.75.75 0 0 1 0-1.06l3-3a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Chat Container - ONLY scrollable area (flex-1 overflow-y-auto) -->
+        <main id="chat-container" class="flex-1 overflow-y-auto">
+            <!-- Pages will be loaded here dynamically -->
+        </main>
+
+        <!-- Error Modal (Kept for static error display) -->
+        <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full">
+                <h3 class="text-lg font-medium text-red-600 dark:text-red-400">Error</h3>
+                <p id="error-message" class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                    An internal error occurred.
+                </p>
+                <button id="close-error-modal" class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Close
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ===== SPLASH SCREEN FUNCTIONALITY =====
+        function hideSplashScreen() {
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) {
+                // Add fade-out animation class
+                splashScreen.classList.add('fade-out');
+                
+                // Hide splash screen after animation completes
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    
+                    // Show the main app wrapper
+                    const appWrapper = document.getElementById('app-wrapper');
+                    if (appWrapper) {
+                        appWrapper.classList.remove('hidden');
+                    }
+                    
+                    // Initialize the main app
+                    initializeApp();
+                }, 500); // Match this with CSS transition duration
+            } else {
+                // If no splash screen, initialize app directly
+                initializeApp();
+            }
+        }
+
+        // ===== MAIN APP INITIALIZATION =====
+        function initializeApp() {
+            const authWrapper = document.getElementById('auth-wrapper');
+            const appWrapper = document.getElementById('app-wrapper');
+            const chatContainer = document.getElementById('chat-container');
+            
+            // Authentication elements
+            const authTabs = document.querySelectorAll('.auth-tab');
+            const authForms = document.querySelectorAll('.auth-form');
+            const signinForm = document.getElementById('signin-form');
+            const signupForm = document.getElementById('signup-form');
+            const signinButton = document.getElementById('signin-button');
+            const signupButton = document.getElementById('signup-button');
+            const signinButtonText = document.getElementById('signin-button-text');
+            const signupButtonText = document.getElementById('signup-button-text');
+            const signinButtonSpinner = document.getElementById('signin-button-spinner');
+            const signupButtonSpinner = document.getElementById('signup-button-spinner');
+            const googleSigninButton = document.getElementById('google-signin-button');
+            const googleSignupButton = document.getElementById('google-signup-button');
+            const authToggleButton = document.getElementById('auth-toggle-button');
+            const authHomeButton = document.getElementById('auth-home-button');
+            const authMessage = document.getElementById('auth-message');
+            
+            // Navigation Elements
+            const homeButton = document.getElementById('home-button');
+            const backButton = document.getElementById('back-button');
+            const headerTitle = document.getElementById('header-title');
+            
+            // App State Management
+            let currentView = 'page1'; // 'page1', 'page2', 'page3'
+            let currentCourseId = null;
+            let currentSubjectId = null;
+            let currentChapterType = null; // 'lecture', 'notes', 'practice'
+            let currentSubjectData = null;
+            let currentCourseData = null;
+            
+            // Message interface state
+            let currentLectureId = null;
+            let messageListener = null;
+            
+            // Pending action after login
+            let pendingActionAfterLogin = null;
+            
+            // Firebase Configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                authDomain: "geobazarr.firebaseapp.com",
+                databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                projectId: "geobazarr",
+                storageBucket: "geobazarr.firebasestorage.app",
+                messagingSenderId: "679949247383",
+                appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+            };
+
+            // Initialize Firebase
+            let db, auth;
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                auth = firebase.auth();
+                console.log("Firebase initialized successfully");
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showError("Firebase initialization failed. Please refresh the page.");
+            }
+
+            // --- Authentication Functions ---
+            
+            authTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    
+                    authTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    authForms.forEach(form => {
+                        form.classList.remove('active');
+                        if (form.id === `${tabName}-form`) {
+                            form.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            async function setupUserDocument(user) {
+                if (!db) return;
+                
+                try {
+                    const userRef = db.collection('users').doc(user.uid);
+                    const userDoc = await userRef.get();
+                    
+                    if (!userDoc.exists) {
+                        await userRef.set({
+                            email: user.email,
+                            displayName: user.displayName || document.getElementById('signup-name')?.value || 'User',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("New user document created");
+                    } else {
+                        await userRef.update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("User document updated with last login");
+                    }
+                    
+                } catch (error) {
+                    console.error("Error setting up user document:", error);
+                }
+            }
+            
+            // Handle successful authentication
+            async function handleSuccessfulAuth(user) {
+                await setupUserDocument(user);
+                hideAuthPage();
+                
+                // Check if we should auto-redirect to page2
+                if (shouldAutoRedirectToPage2 && currentCourseId && currentSubjectId) {
+                    // Check permission first
+                    const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, user.uid);
+                    if (hasPermission) {
+                        showPage2(currentCourseId, currentSubjectId);
+                    } else {
+                        showPage1();
+                    }
+                } else if (pendingActionAfterLogin) {
+                    // Execute pending action if exists
+                    pendingActionAfterLogin();
+                    pendingActionAfterLogin = null;
+                } else {
+                    // Default to page1
+                    showPage1();
+                }
+                
+                isAlreadyLoggedIn = true;
+            }
+            
+            signinForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('signin-email').value;
+                const password = document.getElementById('signin-password').value;
+                
+                if (!email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+                
+                signinButtonText.classList.add('hidden');
+                signinButtonSpinner.classList.remove('hidden');
+                signinButton.disabled = true;
+                
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    await handleSuccessfulAuth(userCredential.user);
+                } catch (error) {
+                    console.error("Sign in error:", error);
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    signinButtonText.classList.remove('hidden');
+                    signinButtonSpinner.classList.add('hidden');
+                    signinButton.disabled = false;
+                }
+            });
+            
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                
+                if (!name || !email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showError("Password should be at least 6 characters");
+                    return;
+                }
+                
+                signupButtonText.classList.add('hidden');
+                signupButtonSpinner.classList.remove('hidden');
+                signupButton.disabled = true;
+                
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    await userCredential.user.updateProfile({
+                        displayName: name
+                    });
+                    
+                    await handleSuccessfulAuth(userCredential.user);
+                    
+                } catch (error) {
+                    console.error("Sign up error:", error);
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    signupButtonText.classList.remove('hidden');
+                    signupButtonSpinner.classList.add('hidden');
+                    signupButton.disabled = false;
+                }
+            });
+            
+            const handleGoogleSignIn = async () => {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                
+                try {
+                    const userCredential = await auth.signInWithPopup(provider);
+                    await handleSuccessfulAuth(userCredential.user);
+                } catch (error) {
+                    console.error("Google sign in error:", error);
+                    showError(getAuthErrorMessage(error));
+                }
+            };
+            
+            googleSigninButton.addEventListener('click', handleGoogleSignIn);
+            googleSignupButton.addEventListener('click', handleGoogleSignIn);
+            
+            authToggleButton.addEventListener('click', async () => {
+                const user = auth.currentUser;
+                if (user) {
+                    try {
+                        await auth.signOut();
+                        // After sign out, show page1
+                        showPage1();
+                    } catch (error) {
+                        console.error("Sign out error:", error);
+                        showError("Failed to sign out. Please try again.");
+                    }
+                } else {
+                    // Show auth page with default message
+                    authMessage.textContent = "Sign in to access the content";
+                    showAuthPage();
+                }
+            });
+            
+            authHomeButton.addEventListener('click', () => {
+                hideAuthPage();
+                showPage1();
+            });
+            
+            function showAuthPage(customMessage = null) {
+                if (customMessage) {
+                    authMessage.textContent = customMessage;
+                }
+                authWrapper.classList.add('visible');
+            }
+            
+            function hideAuthPage() {
+                authWrapper.classList.remove('visible');
+            }
+            
+            function updateAuthUI(user) {
+                if (user) {
+                    authToggleButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm10.72 4.72a.75.75 0 0 1 1.06 0l3 3a.75.75 0 0 1 0 1.06l-3 3a.75.75 0 1 1-1.06-1.06l1.72-1.72H9a.75.75 0 0 1 0-1.5h10.94l-1.72-1.72a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                    `;
+                    authToggleButton.setAttribute('aria-label', 'Sign out');
+                } else {
+                    authToggleButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm5.03 4.72a.75.75 0 0 1 0 1.06l-1.72 1.72h10.94a.75.75 0 0 1 0 1.5H10.81l1.72 1.72a.75.75 0 1 1-1.06 1.06l-3-3a.75.75 0 0 1 0-1.06l3-3a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                        </svg>
+                    `;
+                    authToggleButton.setAttribute('aria-label', 'Sign in');
+                }
+            }
+            
+            // --- Permission Check Functions ---
+            
+            async function checkSubjectPermission(courseId, subjectId, userId) {
+                if (!db || !userId) return false;
+                
+                try {
+                    const permissionDoc = await db.collection('courses').doc(courseId)
+                        .collection('subjects').doc(subjectId)
+                        .collection('permissions').doc(userId)
+                        .get();
+                    
+                    return permissionDoc.exists && permissionDoc.data().approved === true;
+                } catch (error) {
+                    console.error("Error checking permission:", error);
+                    return false;
+                }
+            }
+            
+            async function requireAuthAndPermission(courseId, subjectId, actionName) {
+                const user = auth.currentUser;
+                
+                if (!user) {
+                    // Store the pending action
+                    pendingActionAfterLogin = () => requireAuthAndPermission(courseId, subjectId, actionName);
+                    
+                    // Show auth page with custom message
+                    showAuthPage(`Sign in to ${actionName}`);
+                    return false;
+                }
+                
+                const hasPermission = await checkSubjectPermission(courseId, subjectId, user.uid);
+                
+                if (!hasPermission) {
+                    showError("You don't have permission to access this subject. Please contact your administrator.");
+                    return false;
+                }
+                
+                return true;
+            }
+            
+            // --- Message Interface Functions ---
+            
+            function initializeMessageInterface(chapterId, lectureId) {
+                if (!db || !auth.currentUser) {
+                    console.warn("Cannot initialize message interface: No DB or user not logged in");
+                    return;
+                }
+                
+                // Set current lecture ID
+                currentLectureId = lectureId;
+                
+                // Create message interface HTML
+                const messageInterfaceHTML = `
+                    <div class="message-interface-container">
+                        <div class="message-interface-title">
+                            Lecture Discussion
+                        </div>
+                        
+                        <div id="messages-container" class="messages-container">
+                            <div class="initial-message">
+                                Welcome to the lecture discussion! Messages will appear here in real-time.
+                            </div>
+                        </div>
+                        
+                        <div class="message-form-container">
+                            <form id="message-form" class="message-form">
+                                <input 
+                                    type="text" 
+                                    id="message-input"
+                                    placeholder="Type a message..."
+                                    class="message-input"
+                                    autocomplete="off"
+                                >
+                                <button 
+                                    type="submit"
+                                    id="message-send-button"
+                                    class="message-send-button"
+                                >
+                                    Send
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                
+                // Add message interface to chat container
+                const messageInterfaceContainer = document.createElement('div');
+                messageInterfaceContainer.innerHTML = messageInterfaceHTML;
+                chatContainer.appendChild(messageInterfaceContainer);
+                
+                // Setup message listener
+                setupMessageListener(chapterId, lectureId);
+                
+                // Setup message form
+                const messageForm = document.getElementById('message-form');
+                const messageInput = document.getElementById('message-input');
+                
+                messageForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const user = auth.currentUser;
+                    if (!user) {
+                        showAuthPage("Sign in to send messages");
+                        return;
+                    }
+                    
+                    const messageText = messageInput.value.trim();
+                    if (!messageText) return;
+                    
+                    try {
+                        await db.collection('courses').doc(currentCourseId)
+                            .collection('subjects').doc(currentSubjectId)
+                            .collection('chapters').doc(chapterId)
+                            .collection('lectures').doc(lectureId)
+                            .collection('messages')
+                            .add({
+                                text: messageText,
+                                senderId: user.uid,
+                                senderName: user.displayName || user.email || 'Anonymous',
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                createdAt: new Date().toISOString()
+                            });
+                        
+                        // Clear input
+                        messageInput.value = '';
+                        
+                        // Scroll to bottom
+                        const messagesContainer = document.getElementById('messages-container');
+                        if (messagesContainer) {
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }
+                        
+                    } catch (error) {
+                        console.error("Error sending message:", error);
+                        showError("Failed to send message. Please try again.");
+                    }
+                });
+            }
+            
+            function setupMessageListener(chapterId, lectureId) {
+                if (!db) return;
+                
+                // Remove existing listener if any
+                if (messageListener) {
+                    messageListener();
+                }
+                
+                const messagesRef = db.collection('courses').doc(currentCourseId)
+                    .collection('subjects').doc(currentSubjectId)
+                    .collection('chapters').doc(chapterId)
+                    .collection('lectures').doc(lectureId)
+                    .collection('messages')
+                    .orderBy('timestamp', 'asc');
+                
+                messageListener = messagesRef.onSnapshot((snapshot) => {
+                    const messagesContainer = document.getElementById('messages-container');
+                    if (!messagesContainer) return;
+                    
+                    // Clear only initial message if it exists
+                    const initialMessage = messagesContainer.querySelector('.initial-message');
+                    if (initialMessage && snapshot.docs.length > 0) {
+                        initialMessage.remove();
+                    }
+                    
+                    // Track current messages to avoid duplicates
+                    const currentMessageIds = new Set();
+                    Array.from(messagesContainer.children).forEach(child => {
+                        if (child.dataset.messageId) {
+                            currentMessageIds.add(child.dataset.messageId);
+                        }
+                    });
+                    
+                    // Add new messages
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            const messageId = change.doc.id;
+                            if (!currentMessageIds.has(messageId)) {
+                                addMessageToUI(change.doc.data(), messageId);
+                            }
+                        }
+                    });
+                    
+                    // Scroll to bottom
+                    setTimeout(() => {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }, 100);
+                    
+                }, (error) => {
+                    console.error("Error listening to messages:", error);
+                });
+            }
+            
+            function addMessageToUI(messageData, messageId) {
+                const messagesContainer = document.getElementById('messages-container');
+                if (!messagesContainer) return;
+                
+                const user = auth.currentUser;
+                const isCurrentUser = user && messageData.senderId === user.uid;
+                
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `message-wrapper ${isCurrentUser ? 'message-user' : 'message-other'}`;
+                messageWrapper.dataset.messageId = messageId;
+                
+                // Format timestamp
+                let timestamp = 'Just now';
+                if (messageData.timestamp) {
+                    const date = messageData.timestamp.toDate ? messageData.timestamp.toDate() : new Date(messageData.timestamp);
+                    timestamp = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+                
+                messageWrapper.innerHTML = `
+                    <div class="message-sender">
+                        ${messageData.senderName || 'Anonymous'} • ${timestamp}
+                    </div>
+                    <div class="message-bubble">
+                        ${escapeHtml(messageData.text)}
+                    </div>
+                `;
+                
+                messagesContainer.appendChild(messageWrapper);
+                
+                // Render KaTeX if present
+                renderKaTeX(messageWrapper.querySelector('.message-bubble'));
+            }
+            
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // --- Auth State Change Handler ---
+            let authInitialized = false;
+            let isAlreadyLoggedIn = false;
+            let shouldAutoRedirectToPage2 = false;
+            
+            auth.onAuthStateChanged(async (user) => {
+                updateAuthUI(user);
+                
+                if (user) {
+                    // User is already logged in
+                    isAlreadyLoggedIn = true;
+                    
+                    // Hide auth page immediately
+                    hideAuthPage();
+                    
+                    // Check if we should auto-redirect to page2
+                    if (shouldAutoRedirectToPage2 && currentCourseId && currentSubjectId) {
+                        const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, user.uid);
+                        if (hasPermission) {
+                            // Show page2 directly (this will happen during splash screen)
+                            showPage2(currentCourseId, currentSubjectId);
+                        } else {
+                            showPage1();
+                        }
+                    }
+                    // If there's a pending action, execute it
+                    else if (pendingActionAfterLogin) {
+                        pendingActionAfterLogin();
+                        pendingActionAfterLogin = null;
+                    }
+                    // Otherwise, if no specific action, we'll let the normal flow continue
+                } else {
+                    isAlreadyLoggedIn = false;
+                }
+                
+                // Mark auth as initialized
+                authInitialized = true;
+            });
+
+            // --- Core App Functions ---
+
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('copy', (e) => e.preventDefault());
+
+            function showError(message) {
+                const errorModal = document.getElementById('error-modal');
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = message;
+                errorModal.classList.remove('hidden');
+            }
+
+            document.getElementById('close-error-modal').addEventListener('click', () => {
+                document.getElementById('error-modal').classList.add('hidden');
+            });
+
+            function renderKaTeX(element) {
+                if (typeof renderMathInElement === 'undefined') {
+                    console.warn("KaTeX auto-render script not loaded yet.");
+                    return;
+                }
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '$', right: '$', display: false },
+                            { left: '\\(', right: '\\)', display: false },
+                            { left: '\\[', right: '\\]', display: true },
+                            { left: "\\ce{", right: "}", display: false, mhchem: true }
+                        ],
+                        trusted: (context) => ['https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js'].includes(context.url),
+                        throwOnError: false
+                    });
+                } catch (error) {
+                    console.error("KaTeX rendering failed:", error);
+                }
+            }
+            
+            // --- Navigation Functions ---
+            
+            async function showPage1() {
+                currentView = 'page1';
+                currentCourseId = null;
+                currentSubjectId = null;
+                currentChapterType = null;
+                currentSubjectData = null;
+                currentCourseData = null;
+                currentLectureId = null;
+                
+                // Remove message listener
+                if (messageListener) {
+                    messageListener();
+                    messageListener = null;
+                }
+                
+                backButton.classList.add('hidden');
+                headerTitle.innerHTML = `<span class="concepts-blitz-logo text-2xl">
+                    <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                </span>`;
+                
+                await renderPage1();
+            }
+            
+            async function showPage2(courseId, subjectId) {
+                currentView = 'page2';
+                currentCourseId = courseId;
+                currentSubjectId = subjectId;
+                
+                // Remove message listener
+                if (messageListener) {
+                    messageListener();
+                    messageListener = null;
+                }
+                
+                backButton.classList.remove('hidden');
+                backButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                `;
+                
+                await renderPage2(courseId, subjectId);
+            }
+            
+            async function showPage3(subjectData, chapterType) {
+                currentView = 'page3';
+                currentChapterType = chapterType;
+                currentSubjectData = subjectData;
+                
+                // Remove message listener
+                if (messageListener) {
+                    messageListener();
+                    messageListener = null;
+                }
+                
+                backButton.classList.remove('hidden');
+                backButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                `;
+                
+                headerTitle.innerHTML = `<span class="concepts-blitz-logo text-xl">
+                    <span class="concepts-text">Concepts</span><span class="blitz-text">Blitz</span>
+                </span>`;
+                
+                await renderPage3(subjectData, chapterType);
+            }
+            
+            // --- Back Button Handler ---
+            backButton.addEventListener('click', () => {
+                if (currentView === 'page3') {
+                    // Go back to page 2
+                    showPage2(currentCourseId, currentSubjectId);
+                } else if (currentView === 'page2') {
+                    // Go back to page 1
+                    showPage1();
+                }
+            });
+            
+            // --- Home Button Handler ---
+            homeButton.addEventListener('click', () => {
+                showPage1();
+            });
+            
+            // --- Page 1: Home Page Functions ---
+            
+            async function renderPage1() {
+                chatContainer.innerHTML = `
+                    <div class="p-0">
+                        <!-- Header Image -->
+                        <div id="header-image-container" class="w-full">
+                            <img id="header-image" src="https://i.postimg.cc/bw2vK1BT/Blue_Minimalist.png" alt="Header Image" class="header-image">
+                        </div>
+                        
+                        <!-- Course and Subject Selection -->
+                        <div class="selection-container">
+                            <button id="course-select-button" class="selection-button">
+                                Select Course
+                            </button>
+                            
+                            <button id="subject-select-button" class="selection-button" disabled>
+                                Select Subject
+                            </button>
+                            
+                            <button id="proceed-button" class="proceed-button" disabled>
+                                Proceed to Subjects
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Setup event listeners
+                setupPage1EventListeners();
+                
+                // Fetch courses for selection
+                await fetchCoursesForSelection();
+            }
+            
+            async function fetchCoursesForSelection() {
+                if (!db) return;
+                
+                try {
+                    const coursesSnapshot = await db.collection('courses').get();
+                    const courseSelectButton = document.getElementById('course-select-button');
+                    
+                    if (coursesSnapshot.empty) {
+                        courseSelectButton.innerHTML = 'No courses available';
+                        courseSelectButton.disabled = true;
+                        return;
+                    }
+                    
+                    // Store courses in memory for selection
+                    window.coursesList = [];
+                    coursesSnapshot.forEach(doc => {
+                        window.coursesList.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    courseSelectButton.addEventListener('click', () => {
+                        showCourseSelectionModal();
+                    });
+                    
+                } catch (error) {
+                    console.error("Error fetching courses:", error);
+                    showError("Failed to load courses");
+                }
+            }
+            
+            function showCourseSelectionModal() {
+                const modalHtml = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full max-h-96 overflow-y-auto">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Select Course</h3>
+                            <div class="space-y-2">
+                                ${window.coursesList.map(course => `
+                                    <button 
+                                        class="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 course-option ${currentCourseId === course.id ? 'bg-blue-50 dark:bg-blue-900 border-blue-300' : ''}"
+                                        data-course-id="${course.id}"
+                                    >
+                                        <div class="font-medium">${course.title || 'Untitled Course'}</div>
+                                        ${course.description ? `<div class="text-sm text-gray-600 dark:text-gray-400 mt-1">${course.description}</div>` : ''}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <button id="close-course-modal" class="mt-4 w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-2 px-4 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                const modalContainer = document.createElement('div');
+                modalContainer.innerHTML = modalHtml;
+                document.body.appendChild(modalContainer);
+                
+                // Add event listeners
+                modalContainer.querySelectorAll('.course-option').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const courseId = button.getAttribute('data-course-id');
+                        const course = window.coursesList.find(c => c.id === courseId);
+                        
+                        // Update UI
+                        const courseSelectButton = document.getElementById('course-select-button');
+                        courseSelectButton.innerHTML = course.title;
+                        courseSelectButton.classList.add('selected');
+                        
+                        // Set current course
+                        currentCourseId = courseId;
+                        currentCourseData = course;
+                        
+                        // Enable subject selection
+                        const subjectSelectButton = document.getElementById('subject-select-button');
+                        subjectSelectButton.disabled = false;
+                        subjectSelectButton.addEventListener('click', () => {
+                            showSubjectSelectionModal(courseId);
+                        });
+                        
+                        // Check if user is already logged in and set flag for auto-redirect
+                        if (isAlreadyLoggedIn && auth.currentUser) {
+                            shouldAutoRedirectToPage2 = true;
+                        }
+                        
+                        // Remove modal
+                        document.body.removeChild(modalContainer);
+                    });
+                });
+                
+                modalContainer.querySelector('#close-course-modal').addEventListener('click', () => {
+                    document.body.removeChild(modalContainer);
+                });
+            }
+            
+            async function showSubjectSelectionModal(courseId) {
+                if (!db) return;
+                
+                try {
+                    const subjectsSnapshot = await db.collection('courses').doc(courseId).collection('subjects').get();
+                    
+                    if (subjectsSnapshot.empty) {
+                        showError("No subjects available for this course");
+                        return;
+                    }
+                    
+                    const subjectsList = [];
+                    subjectsSnapshot.forEach(doc => {
+                        subjectsList.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    const modalHtml = `
+                        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full max-h-96 overflow-y-auto">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Select Subject</h3>
+                                <div class="space-y-2">
+                                    ${subjectsList.map(subject => `
+                                        <button 
+                                            class="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 subject-option ${currentSubjectId === subject.id ? 'bg-blue-50 dark:bg-blue-900 border-blue-300' : ''}"
+                                            data-subject-id="${subject.id}"
+                                        >
+                                            <div class="font-medium">${subject.title || 'Untitled Subject'}</div>
+                                            ${subject.description ? `<div class="text-sm text-gray-600 dark:text-gray-400 mt-1">${subject.description}</div>` : ''}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                <button id="close-subject-modal" class="mt-4 w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-2 px-4 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const modalContainer = document.createElement('div');
+                    modalContainer.innerHTML = modalHtml;
+                    document.body.appendChild(modalContainer);
+                    
+                    // Add event listeners
+                    modalContainer.querySelectorAll('.subject-option').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const subjectId = button.getAttribute('data-subject-id');
+                            const subject = subjectsList.find(s => s.id === subjectId);
+                            
+                            // Update UI
+                            const subjectSelectButton = document.getElementById('subject-select-button');
+                            subjectSelectButton.innerHTML = subject.title;
+                            subjectSelectButton.classList.add('selected');
+                            
+                            // Set current subject
+                            currentSubjectId = subjectId;
+                            currentSubjectData = subject;
+                            
+                            // Check if user is already logged in and set flag for auto-redirect
+                            if (isAlreadyLoggedIn && auth.currentUser) {
+                                shouldAutoRedirectToPage2 = true;
+                            }
+                            
+                            // Enable proceed button
+                            const proceedButton = document.getElementById('proceed-button');
+                            proceedButton.disabled = false;
+                            proceedButton.addEventListener('click', async () => {
+                                await handleProceedToSubjects();
+                            });
+                            
+                            // Remove modal
+                            document.body.removeChild(modalContainer);
+                        });
+                    });
+                    
+                    modalContainer.querySelector('#close-subject-modal').addEventListener('click', () => {
+                        document.body.removeChild(modalContainer);
+                    });
+                    
+                } catch (error) {
+                    console.error("Error fetching subjects:", error);
+                    showError("Failed to load subjects");
+                }
+            }
+            
+            async function handleProceedToSubjects() {
+                const user = auth.currentUser;
+                
+                if (!user) {
+                    // Set pending action
+                    pendingActionAfterLogin = async () => {
+                        const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, auth.currentUser.uid);
+                        if (hasPermission) {
+                            showPage2(currentCourseId, currentSubjectId);
+                        } else {
+                            showPermissionDeniedMessage();
+                        }
+                    };
+                    
+                    showAuthPage("Sign in to access subjects");
+                    return;
+                }
+                
+                // Check permission
+                const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, user.uid);
+                
+                if (hasPermission) {
+                    showPage2(currentCourseId, currentSubjectId);
+                } else {
+                    showPermissionDeniedMessage();
+                }
+            }
+            
+            function showPermissionDeniedMessage() {
+                chatContainer.innerHTML = `
+                    <div class="permission-message">
+                        <h3>Access Restricted</h3>
+                        <p>You don't have permission to access this subject. Please contact your administrator to request access.</p>
+                        <button id="back-to-home" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Back to Home
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('back-to-home').addEventListener('click', () => {
+                    showPage1();
+                });
+            }
+            
+            function setupPage1EventListeners() {
+                // These are set up in the modal functions
+            }
+            
+            // --- Page 2: Subject Details Page Functions ---
+            
+            async function renderPage2(courseId, subjectId) {
+                if (!db) return;
+                
+                chatContainer.innerHTML = `
+                    <div class="p-4 text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading subject details...</p>
+                    </div>
+                `;
+                
+                try {
+                    // Check permission first
+                    const user = auth.currentUser;
+                    if (!user) {
+                        showAuthPage("Sign in to access subject details");
+                        return;
+                    }
+                    
+                    const hasPermission = await checkSubjectPermission(courseId, subjectId, user.uid);
+                    if (!hasPermission) {
+                        showPermissionDeniedMessage();
+                        return;
+                    }
+                    
+                    // Fetch course and subject data
+                    const [courseDoc, subjectDoc] = await Promise.all([
+                        db.collection('courses').doc(courseId).get(),
+                        db.collection('courses').doc(courseId).collection('subjects').doc(subjectId).get()
+                    ]);
+                    
+                    if (!courseDoc.exists || !subjectDoc.exists) {
+                        showError("Course or subject not found");
+                        showPage1();
+                        return;
+                    }
+                    
+                    const course = courseDoc.data();
+                    const subject = subjectDoc.data();
+                    
+                    // Update header title
+                    headerTitle.innerHTML = `<span class="text-lg font-semibold text-gray-900 dark:text-white">${subject.title} || ${course.title}</span>`;
+                    
+                    // Now fetch chapters for this subject
+                    await fetchChaptersForPage2(courseId, subjectId, course, subject);
+                    
+                } catch (error) {
+                    console.error("Error loading page 2:", error);
+                    showError("Failed to load subject details");
+                }
+            }
+            
+            async function fetchChaptersForPage2(courseId, subjectId, courseData, subjectData) {
+                if (!db) return;
+                
+                try {
+                    const chaptersSnapshot = await db.collection('courses').doc(courseId)
+                        .collection('subjects').doc(subjectId)
+                        .collection('chapters')
+                        .orderBy('order')
+                        .get();
+                    
+                    if (chaptersSnapshot.empty) {
+                        chatContainer.innerHTML = `
+                            <div class="subject-details-header">
+                                <div class="subject-details-title">${subjectData.title} || ${courseData.title}</div>
+                            </div>
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No chapters available for this subject.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Create subject cards list
+                    let subjectCardsHtml = `
+                        <div class="subject-details-header">
+                            <div class="subject-details-title">${subjectData.title} || ${courseData.title}</div>
+                        </div>
+                        <div class="subject-grid">
+                    `;
+                    
+                    chaptersSnapshot.forEach(doc => {
+                        const chapter = doc.data();
+                        const chapterId = doc.id;
+                        
+                        subjectCardsHtml += `
+                            <div class="subject-card" data-chapter-id="${chapterId}">
+                                ${subjectData.thumbnail ? `
+                                    <img src="${subjectData.thumbnail}" alt="${subjectData.title}" class="subject-thumbnail" onerror="this.src='https://placehold.co/600x400/3B82F6/FFFFFF?text=Subject'">
+                                ` : `
+                                    <div class="subject-thumbnail bg-gray-200 flex items-center justify-center">
+                                        <span class="text-gray-500">No Image</span>
+                                    </div>
+                                `}
+                                <div class="subject-content">
+                                    <div class="subject-card-title">${chapter.title || 'Untitled Chapter'}</div>
+                                    <div class="subject-card-description">${subjectData.description || 'No description available'}</div>
+                                    <div class="subject-buttons">
+                                        <button class="subject-button lecture" data-chapter-id="${chapterId}">See Lectures</button>
+                                        <button class="subject-button notes" data-chapter-id="${chapterId}">See Notes</button>
+                                        <button class="subject-button practice" data-chapter-id="${chapterId}">Practice Questions</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    subjectCardsHtml += `</div>`;
+                    
+                    chatContainer.innerHTML = subjectCardsHtml;
+                    
+                    // Add event listeners to buttons
+                    document.querySelectorAll('.subject-button.lecture').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const chapterId = button.getAttribute('data-chapter-id');
+                            const hasPermission = await requireAuthAndPermission(
+                                currentCourseId, 
+                                currentSubjectId, 
+                                "access lectures"
+                            );
+                            
+                            if (!hasPermission) return;
+                            
+                            // Get chapter data
+                            const chapterCard = button.closest('.subject-card');
+                            const chapterTitle = chapterCard.querySelector('.subject-card-title').textContent;
+                            const chapterDescription = chapterCard.querySelector('.subject-card-description').textContent;
+                            const subjectThumbnail = chapterCard.querySelector('img') ? chapterCard.querySelector('img').src : null;
+                            
+                            const subjectData = {
+                                id: chapterId,
+                                title: chapterTitle,
+                                description: chapterDescription,
+                                thumbnail: subjectThumbnail,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            
+                            showPage3(subjectData, 'lecture');
+                        });
+                    });
+                    
+                    document.querySelectorAll('.subject-button.notes').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const chapterId = button.getAttribute('data-chapter-id');
+                            const hasPermission = await requireAuthAndPermission(
+                                currentCourseId, 
+                                currentSubjectId, 
+                                "access notes"
+                            );
+                            
+                            if (!hasPermission) return;
+                            
+                            const chapterCard = button.closest('.subject-card');
+                            const chapterTitle = chapterCard.querySelector('.subject-card-title').textContent;
+                            const chapterDescription = chapterCard.querySelector('.subject-card-description').textContent;
+                            const subjectThumbnail = chapterCard.querySelector('img') ? chapterCard.querySelector('img').src : null;
+                            
+                            const subjectData = {
+                                id: chapterId,
+                                title: chapterTitle,
+                                description: chapterDescription,
+                                thumbnail: subjectThumbnail,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            
+                            showPage3(subjectData, 'notes');
+                        });
+                    });
+                    
+                    document.querySelectorAll('.subject-button.practice').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const chapterId = button.getAttribute('data-chapter-id');
+                            const hasPermission = await requireAuthAndPermission(
+                                currentCourseId, 
+                                currentSubjectId, 
+                                "access practice questions"
+                            );
+                            
+                            if (!hasPermission) return;
+                            
+                            const chapterCard = button.closest('.subject-card');
+                            const chapterTitle = chapterCard.querySelector('.subject-card-title').textContent;
+                            const chapterDescription = chapterCard.querySelector('.subject-card-description').textContent;
+                            const subjectThumbnail = chapterCard.querySelector('img') ? chapterCard.querySelector('img').src : null;
+                            
+                            const subjectData = {
+                                id: chapterId,
+                                title: chapterTitle,
+                                description: chapterDescription,
+                                thumbnail: subjectThumbnail,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            
+                            showPage3(subjectData, 'practice');
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error("Error fetching chapters:", error);
+                    showError("Failed to load chapters");
+                }
+            }
+            
+            // --- Page 3: Content Page Functions ---
+            
+            async function renderPage3(subjectData, chapterType) {
+                chatContainer.innerHTML = `
+                    <div class="content-header">
+                        <div class="content-subject-card">
+                            ${subjectData.thumbnail ? `
+                                <img src="${subjectData.thumbnail}" alt="${subjectData.title}" class="content-subject-thumbnail" onerror="this.src='https://placehold.co/600x400/3B82F6/FFFFFF?text=Subject'">
+                            ` : ''}
+                            <div class="content-subject-title">${subjectData.title}</div>
+                            <div class="content-subject-description">${subjectData.description}</div>
+                        </div>
+                        
+                        <div class="content-section-title">
+                            ${chapterType === 'lecture' ? 'Lecture Room' : 
+                              chapterType === 'notes' ? 'Notes Page' : 
+                              'Practice Page'}
+                        </div>
+                    </div>
+                    
+                    <div id="content-area" class="p-4 text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading content...</p>
+                    </div>
+                `;
+                
+                if (chapterType === 'lecture') {
+                    await loadLecturesForChapter(subjectData.id);
+                } else if (chapterType === 'notes') {
+                    await loadNotesForChapter(subjectData.id);
+                } else if (chapterType === 'practice') {
+                    await loadPracticeForChapter(subjectData.id);
+                }
+            }
+            
+            async function loadLecturesForChapter(chapterId) {
+                if (!db) return;
+                
+                try {
+                    const lecturesSnapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('lectures')
+                        .orderBy('order')
+                        .get();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (lecturesSnapshot.empty) {
+                        contentArea.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No lectures available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let lecturesHtml = '<div class="lecture-list">';
+                    
+                    lecturesSnapshot.forEach(doc => {
+                        const lecture = doc.data();
+                        const lectureId = doc.id;
+                        
+                        lecturesHtml += `
+                            <div class="lecture-item" data-lecture-id="${lectureId}">
+                                <div class="lecture-order">${lecture.order || '?'}</div>
+                                <div class="lecture-info">
+                                    <div class="lecture-title">${lecture.title || 'Untitled Lecture'}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    lecturesHtml += '</div>';
+                    contentArea.innerHTML = lecturesHtml;
+                    
+                    // Add event listeners to lecture items
+                    document.querySelectorAll('.lecture-item').forEach(item => {
+                        item.addEventListener('click', async () => {
+                            const lectureId = item.getAttribute('data-lecture-id');
+                            await displayLectureVideo(chapterId, lectureId);
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error("Error loading lectures:", error);
+                    document.getElementById('content-area').innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load lectures.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            async function loadNotesForChapter(chapterId) {
+                if (!db) return;
+                
+                try {
+                    const notesSnapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('notes')
+                        .get();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (notesSnapshot.empty) {
+                        contentArea.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No notes available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let notesHtml = '<div class="content-image-container">';
+                    
+                    notesSnapshot.forEach(doc => {
+                        const note = doc.data();
+                        if (note.imageUrl) {
+                            notesHtml += `
+                                <img src="${note.imageUrl}" alt="Notes" class="content-full-image" onerror="this.src='https://placehold.co/600x800/10B981/FFFFFF?text=Notes+Image'">
+                            `;
+                        }
+                    });
+                    
+                    notesHtml += '</div>';
+                    contentArea.innerHTML = notesHtml;
+                    
+                } catch (error) {
+                    console.error("Error loading notes:", error);
+                    document.getElementById('content-area').innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load notes.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            async function loadPracticeForChapter(chapterId) {
+                if (!db) return;
+                
+                try {
+                    const practiceSnapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('practice')
+                        .get();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (practiceSnapshot.empty) {
+                        contentArea.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No practice questions available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let practiceHtml = '<div class="content-image-container">';
+                    
+                    practiceSnapshot.forEach(doc => {
+                        const practice = doc.data();
+                        if (practice.imageUrl) {
+                            practiceHtml += `
+                                <img src="${practice.imageUrl}" alt="Practice Questions" class="content-full-image" onerror="this.src='https://placehold.co/600x800/F59E0B/FFFFFF?text=Practice+Questions'">
+                            `;
+                        }
+                    });
+                    
+                    practiceHtml += '</div>';
+                    contentArea.innerHTML = practiceHtml;
+                    
+                } catch (error) {
+                    console.error("Error loading practice:", error);
+                    document.getElementById('content-area').innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load practice questions.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            async function displayLectureVideo(chapterId, lectureId) {
+                if (!db) return;
+                
+                try {
+                    const lectureDoc = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('lectures').doc(lectureId)
+                        .get();
+                    
+                    if (!lectureDoc.exists) {
+                        showError("Lecture not found");
+                        return;
+                    }
+                    
+                    const lecture = lectureDoc.data();
+                    
+                    // Clear and show video
+                    chatContainer.innerHTML = '';
+                    
+                    // Add lecture title container
+                    const lectureTitleContainer = document.createElement('div');
+                    lectureTitleContainer.className = 'lecture-title-container';
+                    lectureTitleContainer.innerHTML = `<div class="lecture-title-text">${lecture.title}</div>`;
+                    chatContainer.appendChild(lectureTitleContainer);
+                    
+                    // Add video player
+                    addLectureVideoPlayer(lecture.videoEmbedCode);
+                    
+                    // Initialize message interface BELOW the video
+                    initializeMessageInterface(chapterId, lectureId);
+                    
+                } catch (error) {
+                    console.error("Error loading lecture video:", error);
+                    showError("Failed to load lecture video");
+                }
+            }
+            
+            function addLectureVideoPlayer(videoEmbedCode) {
+                // Use the embed code directly or construct URL if needed
+                const embedUrl = videoEmbedCode.includes('http') ? videoEmbedCode : `https://www.youtube.com/embed/${videoEmbedCode}`;
+                
+                const videoWrapper = document.createElement('div');
+                videoWrapper.className = 'video-wrapper';
+                
+                const iframeHtml = `
+                    <div class="aspect-video w-full bg-gray-900">
+                        <iframe 
+                            width="100%" 
+                            height="100%" 
+                            src="${embedUrl}" 
+                            title="Video player"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen
+                            class="w-full h-full"
+                            loading="lazy"
+                        ></iframe>
+                    </div>
+                    <button class="fullscreen-button" aria-label="Toggle fullscreen">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M15 3.75a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0V5.56l-3.97 3.97a.75.75 0 1 1-1.06-1.06l3.97-3.97h-2.69a.75.75 0 0 1-.75-.75Zm-12 0A.75.75 0 0 1 3.75 3h4.5a.75.75 0 0 1 0 1.5H5.56l3.97 3.97a.75.75 0 0 1-1.06 1.06L4.5 5.56v2.69a.75.75 0 0 1-1.5 0v-4.5Zm11.47 11.78a.75.75 0 1 1 1.06-1.06l3.97 3.97v-2.69a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75h-4.5a.75.75 0 0 1 0-1.5h2.69l-3.97-3.97Zm-4.94-1.06a.75.75 0 0 1 0 1.06L5.56 19.5h2.69a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 1 1.5 0v2.69l3.97-3.97a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+
+                videoWrapper.innerHTML = iframeHtml;
+                chatContainer.appendChild(videoWrapper);
+                
+                // Add fullscreen toggle functionality
+                const fullscreenButton = videoWrapper.querySelector('.fullscreen-button');
+                fullscreenButton.addEventListener('click', () => {
+                    toggleVideoFullscreen(videoWrapper);
+                });
+            }
+            
+            function toggleVideoFullscreen(videoWrapper) {
+                const isFullscreen = videoWrapper.classList.contains('chat-video-fullscreen');
+                
+                if (isFullscreen) {
+                    videoWrapper.classList.remove('chat-video-fullscreen');
+                    const allChildren = Array.from(chatContainer.children);
+                    allChildren.forEach(child => {
+                        child.style.display = '';
+                    });
+                } else {
+                    videoWrapper.classList.add('chat-video-fullscreen');
+                    const allChildren = Array.from(chatContainer.children);
+                    allChildren.forEach(child => {
+                        if (child !== videoWrapper) {
+                            child.style.display = 'none';
+                        }
+                    });
+                }
+            }
+
+            function getAuthErrorMessage(error) {
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        return 'Invalid email address.';
+                    case 'auth/user-disabled':
+                        return 'This account has been disabled.';
+                    case 'auth/user-not-found':
+                        return 'No account found with this email.';
+                    case 'auth/wrong-password':
+                        return 'Incorrect password.';
+                    case 'auth/email-already-in-use':
+                        return 'An account with this email already exists.';
+                    case 'auth/weak-password':
+                        return 'Password is too weak.';
+                    case 'auth/network-request-failed':
+                        return 'Network error. Please check your connection.';
+                    default:
+                        return error.message || 'Authentication failed. Please try again.';
+                }
+            }
+
+            // Initialize the app with page 1
+            showPage1();
+        }
+
+        // ===== START SPLASH SCREEN TIMER =====
+        window.addEventListener('load', () => {
+            // Initialize Firebase early to check auth state
+            const firebaseConfig = {
+                apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                authDomain: "geobazarr.firebaseapp.com",
+                databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                projectId: "geobazarr",
+                storageBucket: "geobazarr.firebasestorage.app",
+                messagingSenderId: "679949247383",
+                appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+            };
+            
+            try {
+                firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+                
+                // Check auth state during splash screen
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        console.log("User already logged in during splash screen");
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+            }
+            
+            // Hide splash screen after 2.5 seconds (faster for logged-in users)
+            setTimeout(hideSplashScreen, 2500);
+            
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) {
+                splashScreen.addEventListener('click', () => {
+                    hideSplashScreen();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
