@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <!-- Head content remains the same until the script section -->
+    <!-- ... all the head content remains unchanged ... -->
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img 
+            src="https://i.postimg.cc/bw2vK1BT/Blue-Minimalist-Podcast-Youtube-Banner-20251225-022046-0001.png" 
+            alt="ConceptBlitz Logo" 
+            class="splash-logo"
+            onerror="this.onerror=null; this.src='https://placehold.co/600x300/3B82F6/FFFFFF?text=ConceptBlitz';"
+        >
+    </div>
+
+    <!-- Authentication Page -->
+    <div id="auth-wrapper" class="md:rounded-lg">
+        <!-- ... authentication HTML remains unchanged ... -->
+    </div>
+
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg hidden">
+        <!-- ... app wrapper HTML remains unchanged ... -->
+    </div>
+
+    <script>
+        // ===== SPLASH SCREEN FUNCTIONALITY =====
+        function hideSplashScreen() {
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) {
+                splashScreen.classList.add('fade-out');
+                
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    
+                    const appWrapper = document.getElementById('app-wrapper');
+                    if (appWrapper) {
+                        appWrapper.classList.remove('hidden');
+                    }
+                    
+                    initializeApp();
+                }, 500);
+            } else {
+                initializeApp();
+            }
+        }
+
+        // ===== KEYBOARD DETECTION =====
+        function setupKeyboardDetection() {
+            const appWrapper = document.getElementById('app-wrapper');
+            const messageInput = document.getElementById('message-input');
+            
+            if (!messageInput) return;
+            
+            let originalViewportHeight = window.innerHeight;
+            
+            window.addEventListener('resize', function() {
+                const currentViewportHeight = window.innerHeight;
+                
+                if (currentViewportHeight < originalViewportHeight * 0.7) {
+                    appWrapper.classList.add('keyboard-active');
+                    
+                    setTimeout(() => {
+                        if (messageInput) {
+                            messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 300);
+                } else {
+                    appWrapper.classList.remove('keyboard-active');
+                }
+            });
+            
+            messageInput.addEventListener('focus', function() {
+                if (window.innerWidth <= 768) {
+                    appWrapper.classList.add('keyboard-active');
+                    
+                    setTimeout(() => {
+                        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 500);
+                }
+            });
+            
+            messageInput.addEventListener('blur', function() {
+                appWrapper.classList.remove('keyboard-active');
+            });
+        }
+
+        // ===== MAIN APP INITIALIZATION =====
+        function initializeApp() {
+            const authWrapper = document.getElementById('auth-wrapper');
+            const appWrapper = document.getElementById('app-wrapper');
+            const chatContainer = document.getElementById('chat-container');
+            
+            // Authentication elements
+            const authTabs = document.querySelectorAll('.auth-tab');
+            const authForms = document.querySelectorAll('.auth-form');
+            const signinForm = document.getElementById('signin-form');
+            const signupForm = document.getElementById('signup-form');
+            const signinButton = document.getElementById('signin-button');
+            const signupButton = document.getElementById('signup-button');
+            const signinButtonText = document.getElementById('signin-button-text');
+            const signupButtonText = document.getElementById('signup-button-text');
+            const signinButtonSpinner = document.getElementById('signin-button-spinner');
+            const signupButtonSpinner = document.getElementById('signup-button-spinner');
+            const googleSigninButton = document.getElementById('google-signin-button');
+            const googleSignupButton = document.getElementById('google-signup-button');
+            const authToggleButton = document.getElementById('auth-toggle-button');
+            const authHomeButton = document.getElementById('auth-home-button');
+            const authMessage = document.getElementById('auth-message');
+            
+            // Navigation Elements
+            const homeButton = document.getElementById('home-button');
+            const backButton = document.getElementById('back-button');
+            const headerTitle = document.getElementById('header-title');
+            
+            // App State Management
+            let currentView = 'page1';
+            let currentCourseId = null;
+            let currentSubjectId = null;
+            let currentChapterType = null;
+            let currentSubjectData = null;
+            let currentCourseData = null;
+            
+            // Message interface state
+            let currentLectureId = null;
+            let messageListener = null;
+            
+            // Pending action after login
+            let pendingActionAfterLogin = null;
+            
+            // Practice questions pagination state
+            let allQuestions = [];
+            let currentPage = 0;
+            const questionsPerPage = 5;
+            
+            // Firebase Configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                authDomain: "geobazarr.firebaseapp.com",
+                databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                projectId: "geobazarr",
+                storageBucket: "geobazarr.firebasestorage.app",
+                messagingSenderId: "679949247383",
+                appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+            };
+
+            // Initialize Firebase
+            let db, auth;
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                auth = firebase.auth();
+                console.log("Firebase initialized successfully");
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showError("Firebase initialization failed. Please refresh the page.");
+            }
+
+            // --- KaTeX Configuration ---
+            const katexConfig = {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true },
+                    { left: "\\ce{", right: "}", display: false, mhchem: true }
+                ],
+                throwOnError: false,
+                trust: true,
+                errorColor: '#cc0000'
+            };
+
+            // --- Helper Functions ---
+            
+            function isImageUrl(text) {
+                const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+                const urlRegex = /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp|bmp|svg))(?:\?.*)?$/i;
+                return urlRegex.test(text.trim());
+            }
+            
+            function isLatexContent(text) {
+                const latexPatterns = [
+                    /\$\$.*\$\$/,
+                    /\$.*\$/,
+                    /\\\(.*\\\)/,
+                    /\\\[.*\\\]/,
+                    /\\begin\{.*\}.*\\end\{.*\}/
+                ];
+                return latexPatterns.some(pattern => pattern.test(text));
+            }
+            
+            // ONLY use escaping for user-generated chat messages
+            function formatMessageContent(text) {
+                let formattedText = escapeHtml(text);
+                
+                // Convert URLs to clickable links
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                formattedText = formattedText.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; text-decoration: underline;">$1</a>');
+                
+                // Convert line breaks to <br>
+                formattedText = formattedText.replace(/\n/g, '<br>');
+                
+                return formattedText;
+            }
+            
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // --- Simplified LaTeX rendering function ---
+            function renderMathInContainer(container) {
+                if (!container || typeof renderMathInElement === 'undefined') {
+                    console.warn("KaTeX auto-render script not loaded.");
+                    return;
+                }
+                
+                try {
+                    // Use KaTeX's auto-render with proper configuration
+                    renderMathInElement(container, katexConfig);
+                } catch (error) {
+                    console.error("KaTeX rendering failed:", error);
+                }
+            }
+            
+            // --- Authentication Functions ---
+            
+            authTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.getAttribute('data-tab');
+                    
+                    authTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    authForms.forEach(form => {
+                        form.classList.remove('active');
+                        if (form.id === `${tabName}-form`) {
+                            form.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            async function setupUserDocument(user) {
+                if (!db) return;
+                
+                try {
+                    const userRef = db.collection('users').doc(user.uid);
+                    const userDoc = await userRef.get();
+                    
+                    if (!userDoc.exists) {
+                        await userRef.set({
+                            email: user.email,
+                            displayName: user.displayName || document.getElementById('signup-name')?.value || 'User',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("New user document created");
+                    } else {
+                        await userRef.update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("User document updated with last login");
+                    }
+                    
+                } catch (error) {
+                    console.error("Error setting up user document:", error);
+                }
+            }
+            
+            // Handle successful authentication
+            async function handleSuccessfulAuth(user) {
+                await setupUserDocument(user);
+                hideAuthPage();
+                
+                if (shouldAutoRedirectToPage2 && currentCourseId && currentSubjectId) {
+                    const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, user.uid);
+                    if (hasPermission) {
+                        showPage2(currentCourseId, currentSubjectId);
+                    } else {
+                        showPage1();
+                    }
+                } else if (pendingActionAfterLogin) {
+                    pendingActionAfterLogin();
+                    pendingActionAfterLogin = null;
+                } else {
+                    showPage1();
+                }
+                
+                isAlreadyLoggedIn = true;
+            }
+            
+            signinForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('signin-email').value;
+                const password = document.getElementById('signin-password').value;
+                
+                if (!email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+                
+                signinButtonText.classList.add('hidden');
+                signinButtonSpinner.classList.remove('hidden');
+                signinButton.disabled = true;
+                
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    await handleSuccessfulAuth(userCredential.user);
+                } catch (error) {
+                    console.error("Sign in error:", error);
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    signinButtonText.classList.remove('hidden');
+                    signinButtonSpinner.classList.add('hidden');
+                    signinButton.disabled = false;
+                }
+            });
+            
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                
+                if (!name || !email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showError("Password should be at least 6 characters");
+                    return;
+                }
+                
+                signupButtonText.classList.add('hidden');
+                signupButtonSpinner.classList.remove('hidden');
+                signupButton.disabled = true;
+                
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    await userCredential.user.updateProfile({
+                        displayName: name
+                    });
+                    
+                    await handleSuccessfulAuth(userCredential.user);
+                    
+                } catch (error) {
+                    console.error("Sign up error:", error);
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    signupButtonText.classList.remove('hidden');
+                    signupButtonSpinner.classList.add('hidden');
+                    signupButton.disabled = false;
+                }
+            });
+            
+            const handleGoogleSignIn = async () => {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                
+                try {
+                    const userCredential = await auth.signInWithPopup(provider);
+                    await handleSuccessfulAuth(userCredential.user);
+                } catch (error) {
+                    console.error("Google sign in error:", error);
+                    showError(getAuthErrorMessage(error));
+                }
+            };
+            
+            googleSigninButton.addEventListener('click', handleGoogleSignIn);
+            googleSignupButton.addEventListener('click', handleGoogleSignIn);
+            
+            authToggleButton.addEventListener('click', async () => {
+                const user = auth.currentUser;
+                if (user) {
+                    try {
+                        await auth.signOut();
+                        showPage1();
+                    } catch (error) {
+                        console.error("Sign out error:", error);
+                        showError("Failed to sign out. Please try again.");
+                    }
+                } else {
+                    authMessage.textContent = "Sign in to access the content";
+                    showAuthPage();
+                }
+            });
+            
+            authHomeButton.addEventListener('click', () => {
+                hideAuthPage();
+                showPage1();
+            });
+            
+            function showAuthPage(customMessage = null) {
+                if (customMessage) {
+                    authMessage.textContent = customMessage;
+                }
+                authWrapper.classList.add('visible');
+            }
+            
+            function hideAuthPage() {
+                authWrapper.classList.remove('visible');
+            }
+            
+            function updateAuthUI(user) {
+                if (user) {
+                    authToggleButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm10.72 4.72a.75.75 0 0 1 1.06 0l3 3a.75.75 0 0 1 0 1.06l-3 3a.75.75 0 1 1-1.06-1.06l1.72-1.72H9a.75.75 0 0 1 0-1.5h10.94l-1.72-1.72a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                    `;
+                    authToggleButton.setAttribute('aria-label', 'Sign out');
+                } else {
+                    authToggleButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                            <path fill-rule="evenodd" d="M7.5 3.75A1.5 1.5 0 0 0 6 5.25v13.5a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5V15a.75.75 0 0 1 1.5 0v3.75a3 3 0 0 1-3 3h-6a3 3 0 0 1-3-3V5.25a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3V9A.75.75 0 0 1 15 9V5.25a1.5 1.5 0 0 0-1.5-1.5h-6Zm5.03 4.72a.75.75 0 0 1 0 1.06l-1.72 1.72h10.94a.75.75 0 0 1 0 1.5H10.81l1.72 1.72a.75.75 0 1 1-1.06 1.06l-3-3a.75.75 0 0 1 0-1.06l3-3a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                        </svg>
+                    `;
+                    authToggleButton.setAttribute('aria-label', 'Sign in');
+                }
+            }
+            
+            // --- Permission Check Functions ---
+            
+            async function checkSubjectPermission(courseId, subjectId, userId) {
+                if (!db || !userId) return false;
+                
+                try {
+                    const permissionDoc = await db.collection('courses').doc(courseId)
+                        .collection('subjects').doc(subjectId)
+                        .collection('permissions').doc(userId)
+                        .get();
+                    
+                    return permissionDoc.exists && permissionDoc.data().approved === true;
+                } catch (error) {
+                    console.error("Error checking permission:", error);
+                    return false;
+                }
+            }
+            
+            async function requireAuthAndPermission(courseId, subjectId, actionName) {
+                const user = auth.currentUser;
+                
+                if (!user) {
+                    pendingActionAfterLogin = () => requireAuthAndPermission(courseId, subjectId, actionName);
+                    showAuthPage(`Sign in to ${actionName}`);
+                    return false;
+                }
+                
+                const hasPermission = await checkSubjectPermission(courseId, subjectId, user.uid);
+                
+                if (!hasPermission) {
+                    showError("You don't have permission to access this subject. Please contact your administrator.");
+                    return false;
+                }
+                
+                return true;
+            }
+            
+            // --- Message Interface Functions ---
+            
+            function initializeMessageInterface(chapterId, lectureId) {
+                if (!db || !auth.currentUser) {
+                    console.warn("Cannot initialize message interface: No DB or user not logged in");
+                    return;
+                }
+                
+                currentLectureId = lectureId;
+                
+                const messageInterfaceHTML = `
+                    <div class="message-interface-container">
+                        <div class="message-interface-title">
+                            Lecture Discussion
+                        </div>
+                        
+                        <div id="messages-container" class="messages-container">
+                            <div class="initial-message">
+                                Welcome to the lecture discussion! Share your thoughts, ask questions, or post relevant images.
+                            </div>
+                        </div>
+                        
+                        <div id="image-preview-container" class="image-preview-container hidden">
+                            <img id="image-preview" class="image-preview" src="" alt="Image preview">
+                            <button id="remove-image-preview" class="text-red-500 ml-2">Remove</button>
+                        </div>
+                        
+                        <div class="message-form-container">
+                            <form id="message-form" class="message-form">
+                                <input 
+                                    type="text" 
+                                    id="message-input"
+                                    placeholder="Type a message or paste image URL..."
+                                    class="message-input"
+                                    autocomplete="off"
+                                >
+                                <button 
+                                    type="submit"
+                                    id="message-send-button"
+                                    class="message-send-button"
+                                >
+                                    Send
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                
+                const messageInterfaceContainer = document.createElement('div');
+                messageInterfaceContainer.innerHTML = messageInterfaceHTML;
+                chatContainer.appendChild(messageInterfaceContainer);
+                
+                setupMessageListener(chapterId, lectureId);
+                
+                const messageForm = document.getElementById('message-form');
+                const messageInput = document.getElementById('message-input');
+                const imagePreviewContainer = document.getElementById('image-preview-container');
+                const imagePreview = document.getElementById('image-preview');
+                const removeImagePreview = document.getElementById('remove-image-preview');
+                
+                let currentImageUrl = null;
+                
+                messageInput.addEventListener('input', () => {
+                    const text = messageInput.value.trim();
+                    if (isImageUrl(text)) {
+                        currentImageUrl = text;
+                        imagePreview.src = text;
+                        imagePreviewContainer.classList.remove('hidden');
+                    } else {
+                        currentImageUrl = null;
+                        imagePreviewContainer.classList.add('hidden');
+                    }
+                });
+                
+                removeImagePreview.addEventListener('click', () => {
+                    currentImageUrl = null;
+                    imagePreviewContainer.classList.add('hidden');
+                    messageInput.value = '';
+                });
+                
+                messageForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const user = auth.currentUser;
+                    if (!user) {
+                        showAuthPage("Sign in to send messages");
+                        return;
+                    }
+                    
+                    const messageText = messageInput.value.trim();
+                    if (!messageText && !currentImageUrl) return;
+                    
+                    try {
+                        const messageData = {
+                            senderId: user.uid,
+                            senderName: user.displayName || user.email || 'Anonymous',
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            createdAt: new Date().toISOString()
+                        };
+                        
+                        if (currentImageUrl) {
+                            messageData.imageUrl = currentImageUrl;
+                            messageData.text = "📷 Image shared";
+                        } else {
+                            messageData.text = messageText;
+                        }
+                        
+                        await db.collection('courses').doc(currentCourseId)
+                            .collection('subjects').doc(currentSubjectId)
+                            .collection('chapters').doc(chapterId)
+                            .collection('lectures').doc(lectureId)
+                            .collection('messages')
+                            .add(messageData);
+                        
+                        messageInput.value = '';
+                        currentImageUrl = null;
+                        imagePreviewContainer.classList.add('hidden');
+                        
+                        const messagesContainer = document.getElementById('messages-container');
+                        if (messagesContainer) {
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }
+                        
+                    } catch (error) {
+                        console.error("Error sending message:", error);
+                        showError("Failed to send message. Please try again.");
+                    }
+                });
+                
+                setTimeout(() => {
+                    setupKeyboardDetection();
+                }, 500);
+            }
+            
+            function setupMessageListener(chapterId, lectureId) {
+                if (!db) return;
+                
+                if (messageListener) {
+                    messageListener();
+                }
+                
+                const messagesRef = db.collection('courses').doc(currentCourseId)
+                    .collection('subjects').doc(currentSubjectId)
+                    .collection('chapters').doc(chapterId)
+                    .collection('lectures').doc(lectureId)
+                    .collection('messages')
+                    .orderBy('timestamp', 'asc');
+                
+                messageListener = messagesRef.onSnapshot((snapshot) => {
+                    const messagesContainer = document.getElementById('messages-container');
+                    if (!messagesContainer) return;
+                    
+                    const initialMessage = messagesContainer.querySelector('.initial-message');
+                    if (initialMessage && snapshot.docs.length > 0) {
+                        initialMessage.remove();
+                    }
+                    
+                    const currentMessageIds = new Set();
+                    Array.from(messagesContainer.children).forEach(child => {
+                        if (child.dataset.messageId) {
+                            currentMessageIds.add(child.dataset.messageId);
+                        }
+                    });
+                    
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            const messageId = change.doc.id;
+                            if (!currentMessageIds.has(messageId)) {
+                                addMessageToUI(change.doc.data(), messageId);
+                            }
+                        }
+                    });
+                    
+                    setTimeout(() => {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }, 100);
+                    
+                }, (error) => {
+                    console.error("Error listening to messages:", error);
+                });
+            }
+            
+            function addMessageToUI(messageData, messageId) {
+                const messagesContainer = document.getElementById('messages-container');
+                if (!messagesContainer) return;
+                
+                const user = auth.currentUser;
+                const isCurrentUser = user && messageData.senderId === user.uid;
+                
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `message-wrapper ${isCurrentUser ? 'message-user' : 'message-other'}`;
+                messageWrapper.dataset.messageId = messageId;
+                
+                let timestamp = 'Just now';
+                if (messageData.timestamp) {
+                    const date = messageData.timestamp.toDate ? messageData.timestamp.toDate() : new Date(messageData.timestamp);
+                    timestamp = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+                
+                let messageContent = '';
+                
+                if (messageData.imageUrl) {
+                    messageContent = `
+                        <div class="message-sender">
+                            ${messageData.senderName || 'Anonymous'} • ${timestamp}
+                        </div>
+                        <div class="message-bubble message-image-bubble">
+                            ${messageData.text || 'Image shared'}
+                            <img src="${messageData.imageUrl}" alt="Shared image" class="message-image" onerror="this.src='https://placehold.co/300x200/3B82F6/FFFFFF?text=Image+Not+Found'">
+                        </div>
+                    `;
+                } else {
+                    const formattedText = formatMessageContent(messageData.text || '');
+                    messageContent = `
+                        <div class="message-sender">
+                            ${messageData.senderName || 'Anonymous'} • ${timestamp}
+                        </div>
+                        <div class="message-bubble">
+                            ${formattedText}
+                        </div>
+                    `;
+                }
+                
+                messageWrapper.innerHTML = messageContent;
+                messagesContainer.appendChild(messageWrapper);
+                
+                // Render KaTeX for chat messages
+                if (typeof renderMathInElement !== 'undefined') {
+                    try {
+                        renderMathInElement(messageWrapper, katexConfig);
+                    } catch (error) {
+                        console.error("KaTeX rendering failed for chat message:", error);
+                    }
+                }
+            }
+            
+            // --- Auth State Change Handler ---
+            let authInitialized = false;
+            let isAlreadyLoggedIn = false;
+            let shouldAutoRedirectToPage2 = false;
+            
+            auth.onAuthStateChanged(async (user) => {
+                updateAuthUI(user);
+                
+                if (user) {
+                    isAlreadyLoggedIn = true;
+                    hideAuthPage();
+                    
+                    if (shouldAutoRedirectToPage2 && currentCourseId && currentSubjectId) {
+                        const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, user.uid);
+                        if (hasPermission) {
+                            showPage2(currentCourseId, currentSubjectId);
+                        } else {
+                            showPage1();
+                        }
+                    }
+                    else if (pendingActionAfterLogin) {
+                        pendingActionAfterLogin();
+                        pendingActionAfterLogin = null;
+                    }
+                } else {
+                    isAlreadyLoggedIn = false;
+                }
+                
+                authInitialized = true;
+            });
+
+            // --- Core App Functions ---
+
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('copy', (e) => e.preventDefault());
+
+            function showError(message) {
+                const errorModal = document.getElementById('error-modal');
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = message;
+                errorModal.classList.remove('hidden');
+            }
+
+            document.getElementById('close-error-modal').addEventListener('click', () => {
+                document.getElementById('error-modal').classList.add('hidden');
+            });
+
+            // --- Navigation Functions ---
+            
+            async function showPage1() {
+                currentView = 'page1';
+                currentCourseId = null;
+                currentSubjectId = null;
+                currentChapterType = null;
+                currentSubjectData = null;
+                currentCourseData = null;
+                currentLectureId = null;
+                currentPage = 0;
+                allQuestions = [];
+                
+                if (messageListener) {
+                    messageListener();
+                    messageListener = null;
+                }
+                
+                backButton.classList.add('hidden');
+                headerTitle.innerHTML = `<span class="conceptblitz-logo text-2xl">
+                    <span class="concept-text">Concept</span><span class="blitz-text">Blitz</span>
+                </span>`;
+                
+                await renderPage1();
+            }
+            
+            async function showPage2(courseId, subjectId) {
+                currentView = 'page2';
+                currentCourseId = courseId;
+                currentSubjectId = subjectId;
+                currentPage = 0;
+                allQuestions = [];
+                
+                if (messageListener) {
+                    messageListener();
+                    messageListener = null;
+                }
+                
+                backButton.classList.remove('hidden');
+                backButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                `;
+                
+                await renderPage2(courseId, subjectId);
+            }
+            
+            async function showPage3(subjectData, chapterType) {
+                currentView = 'page3';
+                currentChapterType = chapterType;
+                currentSubjectData = subjectData;
+                currentPage = 0;
+                allQuestions = [];
+                
+                if (messageListener) {
+                    messageListener();
+                    messageListener = null;
+                }
+                
+                backButton.classList.remove('hidden');
+                backButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.06 9l5.47 5.47a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                `;
+                
+                headerTitle.innerHTML = `<span class="conceptblitz-logo text-xl">
+                    <span class="concept-text">Concept</span><span class="blitz-text">Blitz</span>
+                </span>`;
+                
+                await renderPage3(subjectData, chapterType);
+            }
+            
+            backButton.addEventListener('click', () => {
+                if (currentView === 'page3') {
+                    showPage2(currentCourseId, currentSubjectId);
+                } else if (currentView === 'page2') {
+                    showPage1();
+                }
+            });
+            
+            homeButton.addEventListener('click', () => {
+                showPage1();
+            });
+            
+            // --- Page 1: Home Page Functions ---
+            
+            async function renderPage1() {
+                chatContainer.innerHTML = `
+                    <div class="p-0">
+                        <!-- Header Image -->
+                        <div id="header-image-container" class="w-full">
+                            <img id="header-image" src="https://i.postimg.cc/bw2vK1BT/Blue_Minimalist.png" alt="Header Image" class="header-image">
+                        </div>
+                        
+                        <!-- Course and Subject Selection -->
+                        <div class="selection-container">
+                            <button id="course-select-button" class="selection-button">
+                                Select Course
+                            </button>
+                            
+                            <button id="subject-select-button" class="selection-button" disabled>
+                                Select Subject
+                            </button>
+                            
+                            <button id="proceed-button" class="proceed-button" disabled>
+                                Proceed to Subjects
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                setupPage1EventListeners();
+                await fetchCoursesForSelection();
+            }
+            
+            async function fetchCoursesForSelection() {
+                if (!db) return;
+                
+                try {
+                    const coursesSnapshot = await db.collection('courses').get();
+                    const courseSelectButton = document.getElementById('course-select-button');
+                    
+                    if (coursesSnapshot.empty) {
+                        courseSelectButton.innerHTML = 'No courses available';
+                        courseSelectButton.disabled = true;
+                        return;
+                    }
+                    
+                    window.coursesList = [];
+                    coursesSnapshot.forEach(doc => {
+                        window.coursesList.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    courseSelectButton.addEventListener('click', () => {
+                        showCourseSelectionModal();
+                    });
+                    
+                } catch (error) {
+                    console.error("Error fetching courses:", error);
+                    showError("Failed to load courses");
+                }
+            }
+            
+            function showCourseSelectionModal() {
+                const modalHtml = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full max-h-96 overflow-y-auto">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Select Course</h3>
+                            <div class="space-y-2">
+                                ${window.coursesList.map(course => `
+                                    <button 
+                                        class="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 course-option ${currentCourseId === course.id ? 'bg-blue-50 dark:bg-blue-900 border-blue-300' : ''}"
+                                        data-course-id="${course.id}"
+                                    >
+                                        <div class="font-medium">${course.title || 'Untitled Course'}</div>
+                                        ${course.description ? `<div class="text-sm text-gray-600 dark:text-gray-400 mt-1">${course.description}</div>` : ''}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <button id="close-course-modal" class="mt-4 w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-2 px-4 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                const modalContainer = document.createElement('div');
+                modalContainer.innerHTML = modalHtml;
+                document.body.appendChild(modalContainer);
+                
+                modalContainer.querySelectorAll('.course-option').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const courseId = button.getAttribute('data-course-id');
+                        const course = window.coursesList.find(c => c.id === courseId);
+                        
+                        const courseSelectButton = document.getElementById('course-select-button');
+                        courseSelectButton.innerHTML = course.title;
+                        courseSelectButton.classList.add('selected');
+                        
+                        currentCourseId = courseId;
+                        currentCourseData = course;
+                        
+                        const subjectSelectButton = document.getElementById('subject-select-button');
+                        subjectSelectButton.disabled = false;
+                        subjectSelectButton.addEventListener('click', () => {
+                            showSubjectSelectionModal(courseId);
+                        });
+                        
+                        if (isAlreadyLoggedIn && auth.currentUser) {
+                            shouldAutoRedirectToPage2 = true;
+                        }
+                        
+                        document.body.removeChild(modalContainer);
+                    });
+                });
+                
+                modalContainer.querySelector('#close-course-modal').addEventListener('click', () => {
+                    document.body.removeChild(modalContainer);
+                });
+            }
+            
+            async function showSubjectSelectionModal(courseId) {
+                if (!db) return;
+                
+                try {
+                    const subjectsSnapshot = await db.collection('courses').doc(courseId).collection('subjects').get();
+                    
+                    if (subjectsSnapshot.empty) {
+                        showError("No subjects available for this course");
+                        return;
+                    }
+                    
+                    const subjectsList = [];
+                    subjectsSnapshot.forEach(doc => {
+                        subjectsList.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    const modalHtml = `
+                        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-sm w-full max-h-96 overflow-y-auto">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Select Subject</h3>
+                                <div class="space-y-2">
+                                    ${subjectsList.map(subject => `
+                                        <button 
+                                            class="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-50 dark:hover:bg-gray-700 subject-option ${currentSubjectId === subject.id ? 'bg-blue-50 dark:bg-blue-900 border-blue-300' : ''}"
+                                            data-subject-id="${subject.id}"
+                                        >
+                                            <div class="font-medium">${subject.title || 'Untitled Subject'}</div>
+                                            ${subject.description ? `<div class="text-sm text-gray-600 dark:text-gray-400 mt-1">${subject.description}</div>` : ''}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                <button id="close-subject-modal" class="mt-4 w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white py-2 px-4 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const modalContainer = document.createElement('div');
+                    modalContainer.innerHTML = modalHtml;
+                    document.body.appendChild(modalContainer);
+                    
+                    modalContainer.querySelectorAll('.subject-option').forEach(button => {
+                        button.addEventListener('click', () => {
+                            const subjectId = button.getAttribute('data-subject-id');
+                            const subject = subjectsList.find(s => s.id === subjectId);
+                            
+                            const subjectSelectButton = document.getElementById('subject-select-button');
+                            subjectSelectButton.innerHTML = subject.title;
+                            subjectSelectButton.classList.add('selected');
+                            
+                            currentSubjectId = subjectId;
+                            currentSubjectData = subject;
+                            
+                            if (isAlreadyLoggedIn && auth.currentUser) {
+                                shouldAutoRedirectToPage2 = true;
+                            }
+                            
+                            const proceedButton = document.getElementById('proceed-button');
+                            proceedButton.disabled = false;
+                            proceedButton.addEventListener('click', async () => {
+                                await handleProceedToSubjects();
+                            });
+                            
+                            document.body.removeChild(modalContainer);
+                        });
+                    });
+                    
+                    modalContainer.querySelector('#close-subject-modal').addEventListener('click', () => {
+                        document.body.removeChild(modalContainer);
+                    });
+                    
+                } catch (error) {
+                    console.error("Error fetching subjects:", error);
+                    showError("Failed to load subjects");
+                }
+            }
+            
+            async function handleProceedToSubjects() {
+                const user = auth.currentUser;
+                
+                if (!user) {
+                    pendingActionAfterLogin = async () => {
+                        const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, auth.currentUser.uid);
+                        if (hasPermission) {
+                            showPage2(currentCourseId, currentSubjectId);
+                        } else {
+                            showPermissionDeniedMessage();
+                        }
+                    };
+                    
+                    showAuthPage("Sign in to access subjects");
+                    return;
+                }
+                
+                const hasPermission = await checkSubjectPermission(currentCourseId, currentSubjectId, user.uid);
+                
+                if (hasPermission) {
+                    showPage2(currentCourseId, currentSubjectId);
+                } else {
+                    showPermissionDeniedMessage();
+                }
+            }
+            
+            function showPermissionDeniedMessage() {
+                chatContainer.innerHTML = `
+                    <div class="permission-message">
+                        <h3>Access Restricted</h3>
+                        <p>You don't have permission to access this subject. Please contact your administrator to request access.</p>
+                        <button id="back-to-home" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Back to Home
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('back-to-home').addEventListener('click', () => {
+                    showPage1();
+                });
+            }
+            
+            function setupPage1EventListeners() {
+                // These are set up in the modal functions
+            }
+            
+            // --- Page 2: Subject Details Page Functions ---
+            
+            async function renderPage2(courseId, subjectId) {
+                if (!db) return;
+                
+                chatContainer.innerHTML = `
+                    <div class="p-4 text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading subject details...</p>
+                    </div>
+                `;
+                
+                try {
+                    const user = auth.currentUser;
+                    if (!user) {
+                        showAuthPage("Sign in to access subject details");
+                        return;
+                    }
+                    
+                    const hasPermission = await checkSubjectPermission(courseId, subjectId, user.uid);
+                    if (!hasPermission) {
+                        showPermissionDeniedMessage();
+                        return;
+                    }
+                    
+                    const [courseDoc, subjectDoc] = await Promise.all([
+                        db.collection('courses').doc(courseId).get(),
+                        db.collection('courses').doc(courseId).collection('subjects').doc(subjectId).get()
+                    ]);
+                    
+                    if (!courseDoc.exists || !subjectDoc.exists) {
+                        showError("Course or subject not found");
+                        showPage1();
+                        return;
+                    }
+                    
+                    const course = courseDoc.data();
+                    const subject = subjectDoc.data();
+                    
+                    headerTitle.innerHTML = `<span class="text-lg font-semibold text-gray-900 dark:text-white">${subject.title} || ${course.title}</span>`;
+                    
+                    await fetchChaptersForPage2(courseId, subjectId, course, subject);
+                    
+                } catch (error) {
+                    console.error("Error loading page 2:", error);
+                    showError("Failed to load subject details");
+                }
+            }
+            
+            async function fetchChaptersForPage2(courseId, subjectId, courseData, subjectData) {
+                if (!db) return;
+                
+                try {
+                    const chaptersSnapshot = await db.collection('courses').doc(courseId)
+                        .collection('subjects').doc(subjectId)
+                        .collection('chapters')
+                        .orderBy('order')
+                        .get();
+                    
+                    if (chaptersSnapshot.empty) {
+                        chatContainer.innerHTML = `
+                            <div class="subject-details-header">
+                                <div class="subject-details-title">${subjectData.title} || ${courseData.title}</div>
+                            </div>
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No chapters available for this subject.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let subjectCardsHtml = `
+                        <div class="subject-details-header">
+                            <div class="subject-details-title">${subjectData.title} || ${courseData.title}</div>
+                        </div>
+                        <div class="subject-grid">
+                    `;
+                    
+                    chaptersSnapshot.forEach(doc => {
+                        const chapter = doc.data();
+                        const chapterId = doc.id;
+                        
+                        subjectCardsHtml += `
+                            <div class="subject-card" data-chapter-id="${chapterId}">
+                                <div class="subject-content">
+                                    <div class="subject-card-title">${chapter.title || 'Untitled Chapter'}</div>
+                                    <div class="subject-card-description">${chapter.description || 'No description available'}</div>
+                                    <div class="subject-buttons">
+                                        <button class="subject-button lecture" data-chapter-id="${chapterId}">See Lectures</button>
+                                        <button class="subject-button notes" data-chapter-id="${chapterId}">See Notes</button>
+                                        <button class="subject-button practice" data-chapter-id="${chapterId}">Practice Questions</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    subjectCardsHtml += `</div>`;
+                    
+                    chatContainer.innerHTML = subjectCardsHtml;
+                    
+                    document.querySelectorAll('.subject-button.lecture').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const chapterId = button.getAttribute('data-chapter-id');
+                            const hasPermission = await requireAuthAndPermission(
+                                currentCourseId, 
+                                currentSubjectId, 
+                                "access lectures"
+                            );
+                            
+                            if (!hasPermission) return;
+                            
+                            const chapterCard = button.closest('.subject-card');
+                            const chapterTitle = chapterCard.querySelector('.subject-card-title').textContent;
+                            const chapterDescription = chapterCard.querySelector('.subject-card-description').textContent;
+                            
+                            const subjectData = {
+                                id: chapterId,
+                                title: chapterTitle,
+                                description: chapterDescription,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            
+                            showPage3(subjectData, 'lecture');
+                        });
+                    });
+                    
+                    document.querySelectorAll('.subject-button.notes').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const chapterId = button.getAttribute('data-chapter-id');
+                            const hasPermission = await requireAuthAndPermission(
+                                currentCourseId, 
+                                currentSubjectId, 
+                                "access notes"
+                            );
+                            
+                            if (!hasPermission) return;
+                            
+                            const chapterCard = button.closest('.subject-card');
+                            const chapterTitle = chapterCard.querySelector('.subject-card-title').textContent;
+                            const chapterDescription = chapterCard.querySelector('.subject-card-description').textContent;
+                            
+                            const subjectData = {
+                                id: chapterId,
+                                title: chapterTitle,
+                                description: chapterDescription,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            
+                            showPage3(subjectData, 'notes');
+                        });
+                    });
+                    
+                    document.querySelectorAll('.subject-button.practice').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const chapterId = button.getAttribute('data-chapter-id');
+                            const hasPermission = await requireAuthAndPermission(
+                                currentCourseId, 
+                                currentSubjectId, 
+                                "access practice questions"
+                            );
+                            
+                            if (!hasPermission) return;
+                            
+                            const chapterCard = button.closest('.subject-card');
+                            const chapterTitle = chapterCard.querySelector('.subject-card-title').textContent;
+                            const chapterDescription = chapterCard.querySelector('.subject-card-description').textContent;
+                            
+                            const subjectData = {
+                                id: chapterId,
+                                title: chapterTitle,
+                                description: chapterDescription,
+                                courseId: currentCourseId,
+                                subjectId: currentSubjectId
+                            };
+                            
+                            showPage3(subjectData, 'practice');
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error("Error fetching chapters:", error);
+                    showError("Failed to load chapters");
+                }
+            }
+            
+            // --- Page 3: Content Page Functions ---
+            
+            async function renderPage3(subjectData, chapterType) {
+                chatContainer.innerHTML = `
+                    <div class="content-header">
+                        <div class="content-subject-card">
+                            <div class="content-subject-title">${subjectData.title}</div>
+                        </div>
+                        
+                        <div class="content-section-title">
+                            ${chapterType === 'lecture' ? 'Lecture Room' : 
+                              chapterType === 'notes' ? 'Notes Page' : 
+                              'Practice Page'}
+                        </div>
+                    </div>
+                    
+                    <div id="content-area" class="text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading content...</p>
+                    </div>
+                `;
+                
+                if (chapterType === 'lecture') {
+                    await loadLecturesForChapter(subjectData.id);
+                } else if (chapterType === 'notes') {
+                    await loadNotesForChapter(subjectData.id);
+                } else if (chapterType === 'practice') {
+                    await loadPracticeForChapter(subjectData.id);
+                }
+            }
+            
+            async function loadLecturesForChapter(chapterId) {
+                if (!db) return;
+                
+                try {
+                    const lecturesSnapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('lectures')
+                        .orderBy('order')
+                        .get();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (lecturesSnapshot.empty) {
+                        contentArea.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No lectures available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let lecturesHtml = '<div class="lecture-list">';
+                    
+                    lecturesSnapshot.forEach(doc => {
+                        const lecture = doc.data();
+                        const lectureId = doc.id;
+                        
+                        lecturesHtml += `
+                            <div class="lecture-item" data-lecture-id="${lectureId}">
+                                <div class="lecture-order">${lecture.order || '?'}</div>
+                                <div class="lecture-info">
+                                    <div class="lecture-title">${lecture.title || 'Untitled Lecture'}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    lecturesHtml += '</div>';
+                    contentArea.innerHTML = lecturesHtml;
+                    
+                    document.querySelectorAll('.lecture-item').forEach(item => {
+                        item.addEventListener('click', async () => {
+                            const lectureId = item.getAttribute('data-lecture-id');
+                            await displayLectureVideo(chapterId, lectureId);
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error("Error loading lectures:", error);
+                    document.getElementById('content-area').innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load lectures.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            async function loadNotesForChapter(chapterId) {
+                if (!db) return;
+                
+                try {
+                    const notesSnapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('notes')
+                        .get();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (notesSnapshot.empty) {
+                        contentArea.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No notes available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let notesHtml = '<div class="content-image-container">';
+                    
+                    notesSnapshot.forEach(doc => {
+                        const note = doc.data();
+                        if (note.imageUrls && Array.isArray(note.imageUrls)) {
+                            note.imageUrls.forEach(imageUrl => {
+                                if (imageUrl) {
+                                    notesHtml += `
+                                        <img src="${imageUrl}" alt="Notes" class="content-full-image" onerror="this.src='https://placehold.co/600x800/10B981/FFFFFF?text=Notes+Image'">
+                                    `;
+                                }
+                            });
+                        } else if (note.imageUrl) {
+                            notesHtml += `
+                                <img src="${note.imageUrl}" alt="Notes" class="content-full-image" onerror="this.src='https://placehold.co/600x800/10B981/FFFFFF?text=Notes+Image'">
+                            `;
+                        }
+                    });
+                    
+                    notesHtml += '</div>';
+                    contentArea.innerHTML = notesHtml;
+                    
+                } catch (error) {
+                    console.error("Error loading notes:", error);
+                    document.getElementById('content-area').innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load notes.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            async function loadPracticeForChapter(chapterId) {
+                if (!db) return;
+                
+                try {
+                    const questionsSnapshot = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('questions')
+                        .orderBy('order')
+                        .get();
+                    
+                    const contentArea = document.getElementById('content-area');
+                    
+                    if (questionsSnapshot.empty) {
+                        contentArea.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No practice questions available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    allQuestions = [];
+                    questionsSnapshot.forEach(doc => {
+                        allQuestions.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    renderPracticePage(0);
+                    
+                } catch (error) {
+                    console.error("Error loading practice questions:", error);
+                    document.getElementById('content-area').innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load practice questions.</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            function renderPracticePage(pageNumber) {
+                const contentArea = document.getElementById('content-area');
+                const totalQuestions = allQuestions.length;
+                const totalPages = Math.ceil(totalQuestions / questionsPerPage);
+                
+                const startIndex = pageNumber * questionsPerPage;
+                const endIndex = Math.min(startIndex + questionsPerPage, totalQuestions);
+                const currentQuestions = allQuestions.slice(startIndex, endIndex);
+                
+                let practiceHtml = '<div class="practice-container">';
+                
+                // Add total questions counter
+                practiceHtml += `
+                    <div class="total-questions-box">
+                        Total: ${totalQuestions}
+                    </div>
+                `;
+                
+                currentQuestions.forEach((question, index) => {
+                    const questionNumber = startIndex + index + 1;
+                    const questionId = question.id;
+                    
+                    practiceHtml += `
+                        <div class="question-section" data-question-id="${questionId}">
+                            <div class="question-header">
+                                <div class="question-number">Question ${questionNumber}</div>
+                                <div class="question-text">${question.question || 'No question text'}</div>
+                            </div>
+                            
+                            ${question.questionUrl ? `
+                                <div class="question-image">
+                                    <img src="${question.questionUrl}" alt="Question image" onerror="this.src='https://placehold.co/600x400/F59E0B/FFFFFF?text=Question+Image'">
+                                </div>
+                            ` : ''}
+                            
+                            <div class="options-container">
+                                ${question.options && question.options.length > 0 ? 
+                                    question.options.map((option, optionIndex) => `
+                                        <div class="option-item" data-option-index="${optionIndex}">
+                                            <div class="option-marker">${String.fromCharCode(65 + optionIndex)}</div>
+                                            <div class="option-text">${option || 'No option text'}</div>
+                                        </div>
+                                    `).join('') : 
+                                    '<p>No options available</p>'
+                                }
+                            </div>
+                            
+                            <button class="submit-button" disabled>Submit Answer</button>
+                            
+                            <div class="explanation-section">
+                                <div class="result-message"></div>
+                                <div class="explanation-title">Explanation:</div>
+                                <div class="explanation-text">${question.explanation || 'No explanation available'}</div>
+                                
+                                ${question.explanationUrl ? `
+                                    <div class="explanation-image">
+                                        <img src="${question.explanationUrl}" alt="Explanation image" onerror="this.src='https://placehold.co/600x400/10B981/FFFFFF?text=Explanation+Image'">
+                                    </div>
+                                ` : ''}
+                                
+                                ${question.explanationVideoUrl ? `
+                                    <button class="watch-video-button" onclick="window.open('${question.explanationVideoUrl}', '_blank')">
+                                        Watch Video Explanation
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                practiceHtml += `
+                    <div class="practice-pagination">
+                        <div class="page-info">
+                            Questions ${startIndex + 1}-${endIndex} of ${totalQuestions}
+                        </div>
+                        <div class="pagination-buttons">
+                            <button class="page-button prev-button" ${pageNumber === 0 ? 'disabled' : ''}>
+                                Previous
+                            </button>
+                            <button class="page-button next-button" ${pageNumber >= totalPages - 1 ? 'disabled' : ''}>
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                practiceHtml += '</div>';
+                contentArea.innerHTML = practiceHtml;
+                
+                setupPracticeQuestionsListeners();
+                
+                document.querySelector('.prev-button')?.addEventListener('click', () => {
+                    if (currentPage > 0) {
+                        currentPage--;
+                        renderPracticePage(currentPage);
+                    }
+                });
+                
+                document.querySelector('.next-button')?.addEventListener('click', () => {
+                    if (currentPage < Math.ceil(allQuestions.length / questionsPerPage) - 1) {
+                        currentPage++;
+                        renderPracticePage(currentPage);
+                    }
+                });
+                
+                // Render LaTeX in practice questions using KaTeX auto-render
+                if (typeof renderMathInElement !== 'undefined') {
+                    try {
+                        // Render LaTeX in the entire practice container
+                        renderMathInElement(contentArea.querySelector('.practice-container'), katexConfig);
+                    } catch (error) {
+                        console.error("KaTeX rendering failed for practice questions:", error);
+                    }
+                }
+            }
+            
+            function setupPracticeQuestionsListeners() {
+                document.querySelectorAll('.option-item').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const questionSection = this.closest('.question-section');
+                        
+                        questionSection.querySelectorAll('.option-item').forEach(item => {
+                            item.classList.remove('selected');
+                        });
+                        
+                        this.classList.add('selected');
+                        
+                        const submitButton = questionSection.querySelector('.submit-button');
+                        submitButton.disabled = false;
+                    });
+                });
+                
+                document.querySelectorAll('.submit-button').forEach(button => {
+                    button.addEventListener('click', async function() {
+                        const questionSection = this.closest('.question-section');
+                        const questionId = questionSection.dataset.questionId;
+                        const selectedOption = questionSection.querySelector('.option-item.selected');
+                        
+                        if (!selectedOption) return;
+                        
+                        const selectedIndex = parseInt(selectedOption.dataset.optionIndex);
+                        
+                        try {
+                            const question = allQuestions.find(q => q.id === questionId);
+                            
+                            if (!question) {
+                                showError("Question not found");
+                                return;
+                            }
+                            
+                            const correctIndex = question.correctIndex || 0;
+                            
+                            questionSection.querySelectorAll('.option-item').forEach(item => {
+                                item.style.cursor = 'default';
+                            });
+                            this.disabled = true;
+                            
+                            questionSection.querySelectorAll('.option-item').forEach(item => {
+                                const itemIndex = parseInt(item.dataset.optionIndex);
+                                if (itemIndex === correctIndex) {
+                                    item.classList.add('correct');
+                                } else if (itemIndex === selectedIndex && itemIndex !== correctIndex) {
+                                    item.classList.add('incorrect');
+                                }
+                            });
+                            
+                            const resultMessage = questionSection.querySelector('.result-message');
+                            const explanationSection = questionSection.querySelector('.explanation-section');
+                            
+                            if (selectedIndex === correctIndex) {
+                                resultMessage.textContent = 'Correct! Well done!';
+                                resultMessage.className = 'result-message correct';
+                            } else {
+                                resultMessage.textContent = `Incorrect. The correct answer is ${String.fromCharCode(65 + correctIndex)}.`;
+                                resultMessage.className = 'result-message incorrect';
+                            }
+                            
+                            explanationSection.classList.add('show');
+                            
+                            // Re-render LaTeX in the explanation section after showing it
+                            if (typeof renderMathInElement !== 'undefined') {
+                                try {
+                                    renderMathInElement(explanationSection, katexConfig);
+                                } catch (error) {
+                                    console.error("KaTeX rendering failed for explanation:", error);
+                                }
+                            }
+                            
+                        } catch (error) {
+                            console.error("Error checking answer:", error);
+                            showError("Failed to check answer. Please try again.");
+                        }
+                    });
+                });
+            }
+            
+            async function displayLectureVideo(chapterId, lectureId) {
+                if (!db) return;
+                
+                try {
+                    const lectureDoc = await db.collection('courses').doc(currentCourseId)
+                        .collection('subjects').doc(currentSubjectId)
+                        .collection('chapters').doc(chapterId)
+                        .collection('lectures').doc(lectureId)
+                        .get();
+                    
+                    if (!lectureDoc.exists) {
+                        showError("Lecture not found");
+                        return;
+                    }
+                    
+                    const lecture = lectureDoc.data();
+                    
+                    chatContainer.innerHTML = '';
+                    
+                    const lectureTitleContainer = document.createElement('div');
+                    lectureTitleContainer.className = 'lecture-title-container';
+                    lectureTitleContainer.innerHTML = `<div class="lecture-title-text">${lecture.title}</div>`;
+                    chatContainer.appendChild(lectureTitleContainer);
+                    
+                    addLectureVideoPlayer(lecture.videoEmbedCode);
+                    
+                    initializeMessageInterface(chapterId, lectureId);
+                    
+                } catch (error) {
+                    console.error("Error loading lecture video:", error);
+                    showError("Failed to load lecture video");
+                }
+            }
+            
+            function addLectureVideoPlayer(videoEmbedCode) {
+                const embedUrl = videoEmbedCode.includes('http') ? videoEmbedCode : `https://www.youtube.com/embed/${videoEmbedCode}`;
+                
+                const videoWrapper = document.createElement('div');
+                videoWrapper.className = 'video-wrapper';
+                
+                const iframeHtml = `
+                    <div class="aspect-video w-full bg-gray-900">
+                        <iframe 
+                            width="100%" 
+                            height="100%" 
+                            src="${embedUrl}" 
+                            title="Video player"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen
+                            class="w-full h-full"
+                            loading="lazy"
+                        ></iframe>
+                        <div class="video-overlay"></div>
+                    </div>
+                    <button class="fullscreen-button" aria-label="Toggle fullscreen">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M15 3.75a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0V5.56l-3.97 3.97a.75.75 0 1 1-1.06-1.06l3.97-3.97h-2.69a.75.75 0 0 1-.75-.75Zm-12 0A.75.75 0 0 1 3.75 3h4.5a.75.75 0 0 1 0 1.5H5.56l3.97 3.97a.75.75 0 0 1-1.06 1.06L4.5 5.56v2.69a.75.75 0 0 1-1.5 0v-4.5Zm11.47 11.78a.75.75 0 1 1 1.06-1.06l3.97 3.97v-2.69a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75h-4.5a.75.75 0 0 1 0-1.5h2.69l-3.97-3.97Zm-4.94-1.06a.75.75 0 0 1 0 1.06L5.56 19.5h2.69a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 1 1.5 0v2.69l3.97-3.97a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+
+                videoWrapper.innerHTML = iframeHtml;
+                chatContainer.appendChild(videoWrapper);
+                
+                const fullscreenButton = videoWrapper.querySelector('.fullscreen-button');
+                fullscreenButton.addEventListener('click', () => {
+                    toggleVideoFullscreen(videoWrapper);
+                });
+            }
+            
+            function toggleVideoFullscreen(videoWrapper) {
+                const isFullscreen = videoWrapper.classList.contains('chat-video-fullscreen');
+                
+                if (isFullscreen) {
+                    videoWrapper.classList.remove('chat-video-fullscreen');
+                    const allChildren = Array.from(chatContainer.children);
+                    allChildren.forEach(child => {
+                        child.style.display = '';
+                    });
+                } else {
+                    videoWrapper.classList.add('chat-video-fullscreen');
+                    const allChildren = Array.from(chatContainer.children);
+                    allChildren.forEach(child => {
+                        if (child !== videoWrapper) {
+                            child.style.display = 'none';
+                        }
+                    });
+                }
+            }
+
+            function getAuthErrorMessage(error) {
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        return 'Invalid email address.';
+                    case 'auth/user-disabled':
+                        return 'This account has been disabled.';
+                    case 'auth/user-not-found':
+                        return 'No account found with this email.';
+                    case 'auth/wrong-password':
+                        return 'Incorrect password.';
+                    case 'auth/email-already-in-use':
+                        return 'An account with this email already exists.';
+                    case 'auth/weak-password':
+                        return 'Password is too weak.';
+                    case 'auth/network-request-failed':
+                        return 'Network error. Please check your connection.';
+                    default:
+                        return error.message || 'Authentication failed. Please try again.';
+                }
+            }
+
+            // Initialize the app with page 1
+            showPage1();
+        }
+
+        // ===== START SPLASH SCREEN TIMER =====
+        window.addEventListener('load', () => {
+            const firebaseConfig = {
+                apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                authDomain: "geobazarr.firebaseapp.com",
+                databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                projectId: "geobazarr",
+                storageBucket: "geobazarr.firebasestorage.app",
+                messagingSenderId: "679949247383",
+                appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+            };
+            
+            try {
+                firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+                
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        console.log("User already logged in during splash screen");
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+            }
+            
+            setTimeout(hideSplashScreen, 2500);
+            
+            const splashScreen = document.getElementById('splash-screen');
+            if (splashScreen) {
+                splashScreen.addEventListener('click', () => {
+                    hideSplashScreen();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
