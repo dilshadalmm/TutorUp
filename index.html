@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>ConceptBlitz - Chapter Based Learning</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* App Container */
+        #app-container {
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 40px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .back-button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        /* Main Content Area */
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+            width: 100%;
+        }
+
+        /* Page 1 - Home Page */
+        .subject-image {
+            width: 100%;
+            height: auto;
+            max-height: 40vh;
+            object-fit: cover;
+            display: block;
+        }
+
+        .chapters-container {
+            padding: 1rem;
+        }
+
+        .chapter-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            width: 98%;
+            margin-left: auto;
+            margin-right: auto;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .chapter-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .chapter-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        /* Auth Buttons Container */
+        .auth-buttons-container {
+            background: #3b82f6;
+            border-radius: 12px;
+            padding: 1.5rem;
+            width: 98%;
+            margin: 2rem auto;
+            text-align: center;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .auth-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 120px;
+        }
+
+        .login-button {
+            background: white;
+            color: #3b82f6;
+        }
+
+        .logout-button {
+            background: #ef4444;
+            color: white;
+        }
+
+        .register-button {
+            background: #10b981;
+            color: white;
+        }
+
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Page 2 - Chapter Page */
+        .categories-container {
+            padding: 1rem;
+        }
+
+        .category-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            width: 98%;
+            margin-left: auto;
+            margin-right: auto;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .category-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .category-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        /* Page 3 - Questions Page */
+        .category-header {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .category-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .questions-container {
+            padding: 1rem;
+        }
+
+        /* Question Styles */
+        .question-section {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            width: 98%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .question-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .question-number {
+            background: #f59e0b;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: inline-block;
+            margin-bottom: 0.75rem;
+        }
+
+        .question-text {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: #1f2937;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .question-image {
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        .question-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .options-container {
+            margin: 1.5rem 0;
+        }
+
+        .option-item {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            text-align: left;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .option-item:hover {
+            background: #f9fafb;
+            border-color: #3b82f6;
+        }
+
+        .option-item.selected {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .option-item.correct {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+
+        .option-item.incorrect {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #7f1d1d;
+        }
+
+        .option-marker {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .option-item.selected .option-marker {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .option-text {
+            flex: 1;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 1rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+
+        .submit-button:hover:not(:disabled) {
+            background: #2563eb;
+        }
+
+        .submit-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .explanation-section {
+            width: 100%;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            display: none;
+            text-align: left;
+        }
+
+        .explanation-section.show {
+            display: block;
+        }
+
+        .explanation-title {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+        }
+
+        .explanation-text {
+            color: #4b5563;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .result-message {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .result-message.correct {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .result-message.incorrect {
+            background: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #ef4444;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .modal form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .modal input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-button.primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .modal-button.secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .google-signin-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.75rem;
+            background: white;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.2s;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+
+        .google-signin-btn:hover {
+            background: #f9fafb;
+            border-color: #3b82f6;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error Message */
+        .error-message {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem;
+            text-align: center;
+            color: #7f1d1d;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+
+        /* Ensure KaTeX renders properly */
+        .katex {
+            font-size: 1.1em !important;
+        }
+
+        .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        /* Scrollbar Styling */
+        .content-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content-area::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .content-area::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .content-area::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- App Container -->
+    <div id="app-container">
+        <!-- Header -->
+        <div class="header">
+            <button class="back-button" id="back-button" style="display: none;">
+                ←
+            </button>
+            <div class="header-title" id="header-title">ConceptBlitz</div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="content-area" id="content-area">
+            <!-- Content will be loaded here -->
+        </div>
+
+        <!-- Login Modal -->
+        <div class="modal-overlay" id="login-modal" style="display: none;">
+            <div class="modal">
+                <h2>Login</h2>
+                <form id="login-form">
+                    <input type="email" id="login-email" placeholder="Email" required>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                    <button type="submit" class="modal-button primary">Login</button>
+                </form>
+                <button class="google-signin-btn" id="google-login-button">
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Login with Google
+                </button>
+                <div class="modal-buttons">
+                    <button class="modal-button secondary" id="close-login-modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Modal -->
+        <div class="modal-overlay" id="register-modal" style="display: none;">
+            <div class="modal">
+                <h2>Register</h2>
+                <form id="register-form">
+                    <input type="text" id="register-name" placeholder="Full Name" required>
+                    <input type="email" id="register-email" placeholder="Email" required>
+                    <input type="password" id="register-password" placeholder="Password" required>
+                    <button type="submit" class="modal-button primary">Register</button>
+                </form>
+                <button class="google-signin-btn" id="google-register-button">
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Register with Google
+                </button>
+                <div class="modal-buttons">
+                    <button class="modal-button secondary" id="close-register-modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+            authDomain: "geobazarr.firebaseapp.com",
+            databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+            projectId: "geobazarr",
+            storageBucket: "geobazarr.firebasestorage.app",
+            messagingSenderId: "679949247383",
+            appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+        };
+
+        // Initialize Firebase
+        let db, auth;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+            console.log("Firebase initialized successfully");
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            showError("Firebase initialization failed. Please refresh the page.");
+        }
+
+        // App State
+        let currentPage = 'home'; // 'home', 'chapter', 'questions'
+        let currentSubject = 'Mathematics'; // Default subject name - you can change this
+        let currentChapter = null;
+        let currentCategory = null;
+        let currentUser = null;
+
+        // DOM Elements
+        const contentArea = document.getElementById('content-area');
+        const backButton = document.getElementById('back-button');
+        const headerTitle = document.getElementById('header-title');
+        
+        // Modal Elements
+        const loginModal = document.getElementById('login-modal');
+        const registerModal = document.getElementById('register-modal');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const googleLoginButton = document.getElementById('google-login-button');
+        const googleRegisterButton = document.getElementById('google-register-button');
+
+        // Initialize App
+        function initApp() {
+            // Set up back button
+            backButton.addEventListener('click', handleBackButton);
+            
+            // Set up modal close buttons
+            document.getElementById('close-login-modal').addEventListener('click', () => hideModal('login'));
+            document.getElementById('close-register-modal').addEventListener('click', () => hideModal('register'));
+            
+            // Set up auth forms
+            loginForm.addEventListener('submit', handleLogin);
+            registerForm.addEventListener('submit', handleRegister);
+            
+            // Set up Google auth
+            googleLoginButton.addEventListener('click', () => handleGoogleAuth());
+            googleRegisterButton.addEventListener('click', () => handleGoogleAuth());
+            
+            // Listen for auth state changes
+            auth.onAuthStateChanged((user) => {
+                currentUser = user;
+                if (currentPage === 'home') {
+                    showHomePage();
+                }
+            });
+            
+            // Start with home page
+            showHomePage();
+        }
+
+        // Navigation Functions
+        function showHomePage() {
+            currentPage = 'home';
+            currentChapter = null;
+            currentCategory = null;
+            
+            // Update UI
+            backButton.style.display = 'none';
+            headerTitle.textContent = 'ConceptBlitz';
+            
+            // Load home page content
+            loadHomePage();
+        }
+
+        function showChapterPage(chapterName) {
+            currentPage = 'chapter';
+            currentChapter = chapterName;
+            
+            // Update UI
+            backButton.style.display = 'flex';
+            headerTitle.textContent = chapterName;
+            
+            // Load chapter page content
+            loadChapterPage(chapterName);
+        }
+
+        function showQuestionsPage(chapterName, categoryName) {
+            currentPage = 'questions';
+            currentChapter = chapterName;
+            currentCategory = categoryName;
+            
+            // Update UI
+            backButton.style.display = 'flex';
+            headerTitle.textContent = chapterName;
+            
+            // Load questions page content
+            loadQuestionsPage(chapterName, categoryName);
+        }
+
+        function handleBackButton() {
+            if (currentPage === 'questions') {
+                showChapterPage(currentChapter);
+            } else if (currentPage === 'chapter') {
+                showHomePage();
+            }
+        }
+
+        // Page Loading Functions
+        async function loadHomePage() {
+            contentArea.innerHTML = '<div class="loading-spinner"></div>';
+            
+            try {
+                // Fetch subject image
+                const subjectDoc = await db.collection('subjects').doc(currentSubject).get();
+                
+                if (!subjectDoc.exists) {
+                    contentArea.innerHTML = '<div class="error-message">Subject not found</div>';
+                    return;
+                }
+                
+                const subjectData = subjectDoc.data();
+                const imageUrl = subjectData.imageUrl || 'https://placehold.co/600x400/3B82F6/FFFFFF?text=Subject+Image';
+                
+                // Fetch chapters
+                const chaptersSnapshot = await db.collection('subjects').doc(currentSubject)
+                    .collection('chapters').get();
+                
+                // Build HTML
+                let html = `
+                    <img src="${imageUrl}" alt="${currentSubject}" class="subject-image">
+                    <div class="chapters-container">
+                `;
+                
+                if (chaptersSnapshot.empty) {
+                    html += '<div class="empty-state">No chapters available</div>';
+                } else {
+                    chaptersSnapshot.forEach(doc => {
+                        const chapter = doc.data();
+                        html += `
+                            <div class="chapter-card" data-chapter="${doc.id}">
+                                <h3 class="chapter-title">${chapter.title || doc.id}</h3>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Add auth buttons
+                html += `
+                    </div>
+                    <div class="auth-buttons-container">
+                        <div class="auth-buttons">
+                `;
+                
+                if (currentUser) {
+                    html += `
+                        <button class="auth-button logout-button" id="logout-button">Logout</button>
+                    `;
+                } else {
+                    html += `
+                        <button class="auth-button login-button" id="login-button">Login</button>
+                        <button class="auth-button register-button" id="register-button">Register</button>
+                    `;
+                }
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+                
+                contentArea.innerHTML = html;
+                
+                // Add event listeners
+                document.querySelectorAll('.chapter-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        const chapterName = e.currentTarget.dataset.chapter;
+                        showChapterPage(chapterName);
+                    });
+                });
+                
+                // Add auth button listeners
+                if (currentUser) {
+                    document.getElementById('logout-button').addEventListener('click', handleLogout);
+                } else {
+                    document.getElementById('login-button').addEventListener('click', () => showModal('login'));
+                    document.getElementById('register-button').addEventListener('click', () => showModal('register'));
+                }
+                
+            } catch (error) {
+                console.error('Error loading home page:', error);
+                contentArea.innerHTML = '<div class="error-message">Error loading page. Please try again.</div>';
+            }
+        }
+
+        async function loadChapterPage(chapterName) {
+            contentArea.innerHTML = '<div class="loading-spinner"></div>';
+            
+            try {
+                // Fetch categories
+                const categoriesSnapshot = await db.collection('subjects').doc(currentSubject)
+                    .collection('chapters').doc(chapterName)
+                    .collection('categories').get();
+                
+                // Build HTML
+                let html = '<div class="categories-container">';
+                
+                if (categoriesSnapshot.empty) {
+                    html += '<div class="empty-state">No categories available</div>';
+                } else {
+                    categoriesSnapshot.forEach(doc => {
+                        const category = doc.data();
+                        html += `
+                            <div class="category-card" data-category="${doc.id}">
+                                <h3 class="category-title">${category.title || doc.id}</h3>
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += '</div>';
+                contentArea.innerHTML = html;
+                
+                // Add event listeners
+                document.querySelectorAll('.category-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        const categoryName = e.currentTarget.dataset.category;
+                        showQuestionsPage(chapterName, categoryName);
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Error loading chapter page:', error);
+                contentArea.innerHTML = '<div class="error-message">Error loading page. Please try again.</div>';
+            }
+        }
+
+        async function loadQuestionsPage(chapterName, categoryName) {
+            contentArea.innerHTML = '<div class="loading-spinner"></div>';
+            
+            try {
+                // Fetch category title
+                const categoryDoc = await db.collection('subjects').doc(currentSubject)
+                    .collection('chapters').doc(chapterName)
+                    .collection('categories').doc(categoryName).get();
+                
+                const categoryTitle = categoryDoc.exists ? (categoryDoc.data().title || categoryName) : categoryName;
+                
+                // Fetch questions
+                const questionsSnapshot = await db.collection('subjects').doc(currentSubject)
+                    .collection('chapters').doc(chapterName)
+                    .collection('categories').doc(categoryName)
+                    .collection('questions').get();
+                
+                // Build HTML
+                let html = `
+                    <div class="category-header">
+                        <h2>${categoryTitle}</h2>
+                    </div>
+                    <div class="questions-container">
+                `;
+                
+                if (questionsSnapshot.empty) {
+                    html += '<div class="empty-state">No questions available</div>';
+                } else {
+                    let questionNumber = 1;
+                    questionsSnapshot.forEach(doc => {
+                        const question = doc.data();
+                        const options = question.options || [];
+                        
+                        html += `
+                            <div class="question-section" data-question-id="${doc.id}">
+                                <div class="question-header">
+                                    <div class="question-number">Question ${questionNumber}</div>
+                                    <div class="question-text">${question.question || 'No question text'}</div>
+                                </div>
+                                
+                                ${question.imageUrl ? `
+                                    <div class="question-image">
+                                        <img src="${question.imageUrl}" alt="Question image" onerror="this.src='https://placehold.co/600x400/F59E0B/FFFFFF?text=Question+Image'">
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="options-container">
+                                    ${options.length > 0 ? 
+                                        options.map((option, index) => `
+                                            <div class="option-item" data-option-index="${index}">
+                                                <div class="option-marker">${String.fromCharCode(65 + index)}</div>
+                                                <div class="option-text">${option || 'No option text'}</div>
+                                            </div>
+                                        `).join('') : 
+                                        '<div class="empty-state">No options available</div>'
+                                    }
+                                </div>
+                                
+                                <button class="submit-button" disabled>Submit Answer</button>
+                                
+                                <div class="explanation-section">
+                                    <div class="result-message"></div>
+                                    <div class="explanation-title">Explanation:</div>
+                                    <div class="explanation-text">${question.explanation || 'No explanation available'}</div>
+                                </div>
+                            </div>
+                        `;
+                        questionNumber++;
+                    });
+                }
+                
+                html += '</div>';
+                contentArea.innerHTML = html;
+                
+                // Setup question interactions
+                setupQuestionInteractions();
+                
+                // Render KaTeX
+                setTimeout(() => {
+                    renderKaTeX(contentArea);
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error loading questions page:', error);
+                contentArea.innerHTML = '<div class="error-message">Error loading questions. Please try again.</div>';
+            }
+        }
+
+        function setupQuestionInteractions() {
+            // Setup option selection
+            document.querySelectorAll('.option-item').forEach(option => {
+                option.addEventListener('click', function() {
+                    const questionSection = this.closest('.question-section');
+                    
+                    // Remove selected class from all options in this question
+                    questionSection.querySelectorAll('.option-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    
+                    // Enable submit button
+                    const submitButton = questionSection.querySelector('.submit-button');
+                    submitButton.disabled = false;
+                });
+            });
+            
+            // Setup submit button
+            document.querySelectorAll('.submit-button').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const questionSection = this.closest('.question-section');
+                    const questionId = questionSection.dataset.questionId;
+                    const selectedOption = questionSection.querySelector('.option-item.selected');
+                    
+                    if (!selectedOption) return;
+                    
+                    const selectedIndex = parseInt(selectedOption.dataset.optionIndex);
+                    
+                    try {
+                        // Get the question data to check answer
+                        const questionDoc = await db.collection('subjects').doc(currentSubject)
+                            .collection('chapters').doc(currentChapter)
+                            .collection('categories').doc(currentCategory)
+                            .collection('questions').doc(questionId).get();
+                        
+                        if (!questionDoc.exists) {
+                            showError('Question not found');
+                            return;
+                        }
+                        
+                        const question = questionDoc.data();
+                        const correctIndex = question.correctIndex || 0;
+                        
+                        // Disable all options and submit button
+                        questionSection.querySelectorAll('.option-item').forEach(item => {
+                            item.style.cursor = 'default';
+                        });
+                        this.disabled = true;
+                        
+                        // Show correct/incorrect styling
+                        questionSection.querySelectorAll('.option-item').forEach(item => {
+                            const itemIndex = parseInt(item.dataset.optionIndex);
+                            if (itemIndex === correctIndex) {
+                                item.classList.add('correct');
+                            } else if (itemIndex === selectedIndex && itemIndex !== correctIndex) {
+                                item.classList.add('incorrect');
+                            }
+                        });
+                        
+                        // Show result message and explanation
+                        const resultMessage = questionSection.querySelector('.result-message');
+                        const explanationSection = questionSection.querySelector('.explanation-section');
+                        
+                        if (selectedIndex === correctIndex) {
+                            resultMessage.textContent = 'Correct! Well done!';
+                            resultMessage.className = 'result-message correct';
+                        } else {
+                            resultMessage.textContent = `Incorrect. The correct answer is ${String.fromCharCode(65 + correctIndex)}.`;
+                            resultMessage.className = 'result-message incorrect';
+                        }
+                        
+                        explanationSection.classList.add('show');
+                        
+                    } catch (error) {
+                        console.error('Error checking answer:', error);
+                        showError('Failed to check answer. Please try again.');
+                    }
+                });
+            });
+        }
+
+        // Authentication Functions
+        function showModal(modalType) {
+            if (modalType === 'login') {
+                loginModal.style.display = 'flex';
+            } else if (modalType === 'register') {
+                registerModal.style.display = 'flex';
+            }
+        }
+
+        function hideModal(modalType) {
+            if (modalType === 'login') {
+                loginModal.style.display = 'none';
+                loginForm.reset();
+            } else if (modalType === 'register') {
+                registerModal.style.display = 'none';
+                registerForm.reset();
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                hideModal('login');
+                showHomePage();
+            } catch (error) {
+                showError(getAuthErrorMessage(error));
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                await userCredential.user.updateProfile({
+                    displayName: name
+                });
+                hideModal('register');
+                showHomePage();
+            } catch (error) {
+                showError(getAuthErrorMessage(error));
+            }
+        }
+
+        async function handleGoogleAuth() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            try {
+                await auth.signInWithPopup(provider);
+                hideModal('login');
+                hideModal('register');
+                showHomePage();
+            } catch (error) {
+                showError(getAuthErrorMessage(error));
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await auth.signOut();
+                showHomePage();
+            } catch (error) {
+                showError('Failed to logout. Please try again.');
+            }
+        }
+
+        // Utility Functions
+        function getAuthErrorMessage(error) {
+            switch (error.code) {
+                case 'auth/invalid-email':
+                    return 'Invalid email address.';
+                case 'auth/user-disabled':
+                    return 'This account has been disabled.';
+                case 'auth/user-not-found':
+                    return 'No account found with this email.';
+                case 'auth/wrong-password':
+                    return 'Incorrect password.';
+                case 'auth/email-already-in-use':
+                    return 'An account with this email already exists.';
+                case 'auth/weak-password':
+                    return 'Password is too weak.';
+                case 'auth/network-request-failed':
+                    return 'Network error. Please check your connection.';
+                default:
+                    return error.message || 'Authentication failed. Please try again.';
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.top = '20px';
+            errorDiv.style.left = '50%';
+            errorDiv.style.transform = 'translateX(-50%)';
+            errorDiv.style.zIndex = '1001';
+            errorDiv.style.maxWidth = '90%';
+            
+            document.body.appendChild(errorDiv);
+            
+            setTimeout(() => {
+                errorDiv.remove();
+            }, 5000);
+        }
+
+        function renderKaTeX(element) {
+            if (typeof renderMathInElement === 'undefined') return;
+            
+            try {
+                renderMathInElement(element, {
+                    delimiters: [
+                        { left: '$$', right: '$$', display: true },
+                        { left: '$', right: '$', display: false },
+                        { left: '\\(', right: '\\)', display: false },
+                        { left: '\\[', right: '\\]', display: true }
+                    ],
+                    throwOnError: false
+                });
+            } catch (error) {
+                console.error('KaTeX rendering error:', error);
+            }
+        }
+
+        // Initialize the app when the page loads
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
