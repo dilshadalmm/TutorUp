@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>ConceptBlitz - CEE Ultimate Solutions</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Anton for brand and Merriweather for body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Use the Merriweather font family as default */
+        body {
+            font-family: 'Merriweather', serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-variation-settings: "wdth" 100;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            
+            /* Light mode: Black text */
+            color: #000000;
+            
+            /* CRITICAL: Prevent the main body from scrolling at all */
+            overflow: hidden !important; 
+            
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            
+            /* Prevents elastic scrolling on iOS */
+            overscroll-behavior: none;
+            
+            /* Make body a fixed container occupying full screen */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Dark mode: White text */
+        body.dark {
+            color: #ffffff;
+        }
+
+        /* App wrapper - uses dynamic viewport height for mobile keyboard stability */
+        #app-wrapper {
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height (best for mobile keyboard) */
+            width: 100%;
+            position: absolute; /* Relative to fixed body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden; /* Ensures only the chat container can scroll */
+        }
+        
+        /* Style for the ConceptBlitz logo font - USING ANTON */
+        .conceptblitz-logo {
+            font-family: 'Anton', sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+        
+        /* REVERSED: Brand font colors - Light mode: White and Orange */
+        .concept-text {
+            color: #ffffff; /* White for light mode - REVERSED */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .blitz-text {
+            color: #F97316; /* Orange */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* REVERSED: Brand font colors - Dark mode: Black and Orange */
+        .dark .concept-text {
+            color: #000000; /* Black for dark mode - REVERSED */
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.1);
+        }
+        
+        .dark .blitz-text {
+            color: #F97316; /* Orange (same for dark mode) */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Improve KaTeX readability on mobile */
+        .katex {
+            font-size: 1.1em !important;
+            text-align: left !important;
+        }
+        .katex-display {
+            /* Allow display math to be scrollable if too wide */
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 4px;
+        }
+
+        /* --- Hide Scrollbar on Chat Container --- */
+        #chat-container {
+            /* Scroll is now always auto (default of overflow-y-auto is active) */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #chat-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Video Player Styles - SQUARE CORNERS */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 16px;
+            border-radius: 0; /* SQUARE CORNERS */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        /* Ensure text wraps properly for questions and explanations */
+        .question-text, .explanation-text, .option-text {
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            line-height: 1.6;
+        }
+
+        /* Loading indicator styles */
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* ===== NEW AUTH PAGE STYLES ===== */
+        #auth-wrapper {
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        #auth-wrapper.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .auth-card {
+            width: 100%;
+            max-width: 24rem;
+            background: white;
+        }
+        
+        /* Strict No-Oval/No-Round Policy */
+        * {
+            border-radius: 0 !important;
+        }
+
+        .input-border {
+            border: 1px solid #e2e8f0;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-border:focus {
+            outline: none;
+            border-color: #000000;
+        }
+
+        .btn-black {
+            background-color: #000000;
+            color: #ffffff;
+            transition: opacity 0.2s ease;
+        }
+
+        .btn-black:hover {
+            opacity: 0.85;
+        }
+
+        .hidden {
+            display: none;
+        }
+        
+        /* Auth Feedback Message */
+        #auth-error {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #000000;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: none;
+            z-index: 101;
+            white-space: nowrap;
+        }
+        
+        /* Dark mode adjustments for auth */
+        .dark #auth-wrapper {
+            background-color: #1f2937;
+        }
+        
+        .dark .auth-card {
+            background: #1f2937;
+            color: #ffffff;
+        }
+        
+        .dark .input-border {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #ffffff;
+        }
+        
+        .dark .input-border:focus {
+            border-color: #ffffff;
+        }
+        
+        .dark .input-border::placeholder {
+            color: #9ca3af;
+        }
+        
+        .dark .text-gray-500 {
+            color: #9ca3af;
+        }
+        
+        .dark .border-gray-100 {
+            border-color: #374151;
+        }
+
+        /* ===== PRACTICE QUESTIONS PAGE STYLES ===== */
+        .practice-container {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Chapter selector header */
+        .chapter-selector-header {
+            width: 100%;
+            background: white;
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .chapter-selector-header .conceptblitz-logo {
+            font-size: 1.5rem;
+        }
+        
+        /* Chapter selection dropdown */
+        .chapter-selector {
+            position: relative;
+            flex: 1;
+            margin-left: 1rem;
+        }
+        
+        .select-exam-btn {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: white;
+            border: 2px solid #d1d5db;
+            color: #6b7280;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        
+        .select-exam-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        
+        .select-exam-btn.selected {
+            border-color: #3b82f6;
+            color: #1f2937;
+            font-weight: 600;
+        }
+        
+        .chapter-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #d1d5db;
+            border-top: none;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chapter-dropdown.show {
+            display: block;
+        }
+        
+        .chapter-item {
+            padding: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: left;
+        }
+        
+        .chapter-item:hover {
+            background: #f3f4f6;
+        }
+        
+        .chapter-item:last-child {
+            border-bottom: none;
+        }
+        
+        .chapter-name {
+            font-weight: 500;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+        
+        .chapter-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        /* Top image container - NO MARGIN */
+        .top-image-container {
+            width: 100%;
+            margin: 0 auto 0 auto;
+            padding: 0;
+            max-width: 100%;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: white;
+        }
+        
+        .top-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            max-height: 250px;
+        }
+        
+        /* Page numbers navigation */
+        .page-numbers-container {
+            width: 100%;
+            background: white;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .page-numbers-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .page-numbers {
+            display: inline-flex;
+            gap: 12px;
+            padding: 0 4px;
+        }
+        
+        .page-number-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #f3f4f6;
+            border: 2px solid #d1d5db;
+            border-radius: 0;
+            font-weight: 600;
+            font-size: 16px;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .page-number-box:hover {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+        
+        .page-number-box.active {
+            background: #3b82f6;
+            border-color: #2563eb;
+            color: white;
+        }
+        
+        /* Question container with light gray background */
+        .question-section {
+            width: 100%;
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb; /* Light gray background */
+            margin: 0;
+        }
+        
+        .question-section:last-child {
+            border-bottom: none;
+        }
+        
+        .question-header {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .question-number {
+            background: #f59e0b;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .question-text {
+            flex: 1;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.5;
+            text-align: left;
+            width: 100%;
+            background: #f9fafb; /* Same as container */
+            padding: 0;
+        }
+        
+        .question-image {
+            width: 100%;
+            margin: 1rem 0;
+        }
+        
+        .question-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 0;
+            display: block;
+            max-height: 400px;
+            object-fit: contain;
+        }
+        
+        .options-container {
+            width: 100%;
+            margin: 1.5rem 0;
+        }
+        
+        .option-item {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 0;
+            text-align: left;
+            font-family: 'Merriweather', serif;
+            font-size: 1rem;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .option-item:hover {
+            background: #f9fafb;
+            border-color: #3b82f6;
+        }
+        
+        .option-item.selected {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        
+        .option-item.correct {
+            background: #d1fae5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+        
+        .option-item.incorrect {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #7f1d1d;
+        }
+        
+        .option-marker {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #d1d5db;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .option-item.selected .option-marker {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        .option-text {
+            flex: 1;
+            line-height: 1.5;
+            text-align: left;
+        }
+        
+        .submit-button {
+            width: 100%;
+            padding: 1rem;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 0;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+        
+        .submit-button:hover:not(:disabled) {
+            background: #d97706;
+        }
+        
+        .submit-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .explanation-section {
+            width: 100%;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 0;
+            display: none;
+            text-align: left;
+        }
+        
+        .explanation-section.show {
+            display: block;
+        }
+        
+        .explanation-title {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        
+        .explanation-text {
+            color: #4b5563;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        
+        .result-message {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0;
+            font-weight: 600;
+            text-align: left;
+        }
+        
+        .result-message.correct {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        
+        .result-message.incorrect {
+            background: #fee2e2;
+            color: #7f1d1d;
+            border: 1px solid #ef4444;
+        }
+        
+        /* Explanation image - 108% width with centered alignment */
+        .explanation-image {
+            width: 108%;
+            margin: 0.3rem 0 0.3rem -4%; /* Reduced margin by 80% from 1.5rem to 0.3rem, 4% negative margin for centering */
+        }
+        
+        .explanation-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 0;
+            display: block;
+            max-height: 400px;
+            object-fit: contain;
+        }
+        
+        /* Video player in explanation - 108% width with reduced margins */
+        .explanation-video {
+            width: 108%;
+            margin: 0.3rem 0 0.3rem -4%; /* Reduced margin by 80% from 1.5rem to 0.3rem, 4% negative margin for centering */
+        }
+        
+        .explanation-video .video-wrapper {
+            margin: 0;
+            width: 100%;
+        }
+        
+        /* Practice pagination styles */
+        .practice-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .page-info {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .pagination-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .page-button {
+            padding: 0.5rem 1rem;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .page-button:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        
+        .page-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        /* LaTeX styling for questions and options */
+        .latex-content {
+            font-size: 1rem;
+            line-height: 1.6;
+            text-align: left;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+        }
+        
+        .katex-display {
+            margin: 1rem 0;
+            text-align: left !important;
+        }
+        
+        .katex {
+            font-size: 1.05em;
+            text-align: left !important;
+        }
+
+        /* Dark mode adjustments for practice questions */
+        .dark .chapter-selector-header {
+            background: #1f2937;
+            border-bottom-color: #374151;
+        }
+        
+        .dark .select-exam-btn {
+            background: #374151;
+            border-color: #4b5563;
+            color: #9ca3af;
+        }
+        
+        .dark .select-exam-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        
+        .dark .select-exam-btn.selected {
+            border-color: #3b82f6;
+            color: #f9fafb;
+        }
+        
+        .dark .chapter-dropdown {
+            background: #374151;
+            border-color: #4b5563;
+        }
+        
+        .dark .chapter-item {
+            border-bottom-color: #4b5563;
+        }
+        
+        .dark .chapter-item:hover {
+            background: #4b5563;
+        }
+        
+        .dark .chapter-name {
+            color: #f9fafb;
+        }
+        
+        .dark .chapter-description {
+            color: #9ca3af;
+        }
+        
+        .dark .top-image-container {
+            background: #1f2937;
+        }
+        
+        .dark .page-numbers-container {
+            background: #1f2937;
+            border-bottom-color: #374151;
+        }
+        
+        .dark .page-number-box {
+            background: #374151;
+            border-color: #4b5563;
+            color: #f9fafb;
+        }
+        
+        .dark .page-number-box:hover {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+        
+        .dark .page-number-box.active {
+            background: #3b82f6;
+            border-color: #2563eb;
+            color: white;
+        }
+        
+        .dark .question-section {
+            background: #374151; /* Dark gray background */
+            border-bottom-color: #4b5563;
+        }
+        
+        .dark .question-text {
+            color: #f9fafb;
+            background: #374151; /* Same as container */
+        }
+        
+        .dark .option-item {
+            background: #4b5563;
+            border-color: #6b7280;
+            color: #f9fafb;
+        }
+        
+        .dark .option-item:hover {
+            background: #6b7280;
+            border-color: #3b82f6;
+        }
+        
+        .dark .option-item.selected {
+            background: #1e40af;
+            border-color: #3b82f6;
+            color: #f9fafb;
+        }
+        
+        .dark .option-marker {
+            border-color: #9ca3af;
+        }
+        
+        .dark .option-item.selected .option-marker {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        .dark .explanation-section {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+        
+        .dark .explanation-title {
+            color: #f9fafb;
+        }
+        
+        .dark .explanation-text {
+            color: #d1d5db;
+        }
+        
+        .dark .result-message.correct {
+            background: #064e3b;
+            color: #a7f3d0;
+            border-color: #10b981;
+        }
+        
+        .dark .result-message.incorrect {
+            background: #7f1d1d;
+            color: #fecaca;
+            border-color: #ef4444;
+        }
+        
+        .dark .practice-pagination {
+            background: #1f2937;
+            border-top-color: #374151;
+        }
+        
+        .dark .page-info {
+            color: #9ca3af;
+        }
+        
+        /* Ensure all text elements inherit the body font */
+        h1, h2, h3, h4, h5, h6, p, span, div, button, input, textarea, label, a {
+            font-family: 'Merriweather', serif;
+        }
+
+        /* Exception for logo only */
+        .conceptblitz-logo,
+        #header-title .conceptblitz-logo,
+        .auth-card .conceptblitz-logo {
+            font-family: 'Anton', sans-serif !important;
+        }
+
+        /* Buttons should also use Merriweather */
+        button, .auth-button, .google-signin-btn, .submit-button, .page-button {
+            font-family: 'Merriweather', serif !important;
+        }
+
+        /* Input fields */
+        input, textarea {
+            font-family: 'Merriweather', serif !important;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .dark .loading-content {
+            background: #1f2937;
+            color: white;
+        }
+        
+        /* No chapters message */
+        .no-chapters-message {
+            padding: 3rem 1rem;
+            text-align: center;
+            color: #6b7280;
+            background: #f9fafb;
+        }
+        
+        .dark .no-chapters-message {
+            background: #374151;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+
+    <!-- NEW Authentication Page -->
+    <div id="auth-wrapper">
+        <div class="auth-card">
+            <!-- Logo/Header -->
+            <div class="mb-12">
+                <div class="conceptblitz-logo text-4xl inline-block px-4 py-2 mb-4">
+                    <span class="concept-text">Concept</span><span class="blitz-text">Blitz</span>
+                </div>
+                <h1 id="auth-title" class="text-2xl font-bold tracking-tight">Sign In</h1>
+                <p id="auth-subtitle" class="text-gray-500 text-sm mt-1">Please enter your account details.</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="signin-form" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Email</label>
+                    <input type="email" id="signin-email" placeholder="email@domain.com" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Password</label>
+                    <input type="password" id="signin-password" placeholder="••••••••" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <button type="submit" id="signin-button" class="w-full py-3 btn-black font-semibold text-sm">
+                    <span id="signin-button-text">Sign In</span>
+                    <div id="signin-button-spinner" class="loading-spinner ml-2 hidden inline-block"></div>
+                </button>
+                
+                <!-- Google Sign In Button -->
+                <div class="divider">
+                    <span class="text-xs text-gray-500">Or continue with</span>
+                </div>
+                
+                <button type="button" id="google-signin-button" class="w-full py-3 bg-white border border-gray-300 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-gray-50">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="signup-form" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Full Name</label>
+                    <input type="text" id="signup-name" placeholder="John Doe" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Email</label>
+                    <input type="email" id="signup-email" placeholder="email@domain.com" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Password</label>
+                    <input type="password" id="signup-password" placeholder="••••••••" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <button type="submit" id="signup-button" class="w-full py-3 btn-black font-semibold text-sm">
+                    <span id="signup-button-text">Create Account</span>
+                    <div id="signup-button-spinner" class="loading-spinner ml-2 hidden inline-block"></div>
+                </button>
+                
+                <!-- Google Sign Up Button -->
+                <div class="divider">
+                    <span class="text-xs text-gray-500">Or continue with</span>
+                </div>
+                
+                <button type="button" id="google-signup-button" class="w-full py-3 bg-white border border-gray-300 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-gray-50">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </form>
+
+            <!-- Toggle Link -->
+            <div class="mt-8 text-center border-t pt-8 border-gray-100">
+                <button id="toggle-auth-btn" class="text-sm font-semibold hover:underline">
+                    New here? Create an account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Error Message -->
+    <div id="auth-error" class="fixed"></div>
+
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg hidden">
+        <!-- Chapter selector header -->
+        <header class="chapter-selector-header">
+            <div class="conceptblitz-logo">
+                <span class="concept-text">Concept</span><span class="blitz-text">Blitz</span>
+            </div>
+            
+            <div class="chapter-selector">
+                <button id="select-exam-btn" class="select-exam-btn">
+                    <span id="selected-chapter-text">Select Exam</span>
+                    <svg id="dropdown-arrow" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div id="chapter-dropdown" class="chapter-dropdown"></div>
+            </div>
+        </header>
+        
+        <!-- Chat Container - ONLY scrollable area (flex-1 overflow-y-auto) -->
+        <main id="chat-container" class="flex-1 overflow-y-auto">
+            <!-- Questions will be loaded here dynamically -->
+        </main>
+    </div>
+
+    <script>
+        // ===== MAIN APP INITIALIZATION =====
+        function initializeApp() {
+            const authWrapper = document.getElementById('auth-wrapper');
+            const appWrapper = document.getElementById('app-wrapper');
+            const chatContainer = document.getElementById('chat-container');
+            const authError = document.getElementById('auth-error');
+            
+            // NEW Authentication elements
+            const authTitle = document.getElementById('auth-title');
+            const authSubtitle = document.getElementById('auth-subtitle');
+            const toggleAuthBtn = document.getElementById('toggle-auth-btn');
+            const signinForm = document.getElementById('signin-form');
+            const signupForm = document.getElementById('signup-form');
+            const signinButton = document.getElementById('signin-button');
+            const signupButton = document.getElementById('signup-button');
+            const signinButtonText = document.getElementById('signin-button-text');
+            const signupButtonText = document.getElementById('signup-button-text');
+            const signinButtonSpinner = document.getElementById('signin-button-spinner');
+            const signupButtonSpinner = document.getElementById('signup-button-spinner');
+            const googleSigninButton = document.getElementById('google-signin-button');
+            const googleSignupButton = document.getElementById('google-signup-button');
+            
+            // Chapter selection elements
+            const selectExamBtn = document.getElementById('select-exam-btn');
+            const selectedChapterText = document.getElementById('selected-chapter-text');
+            const chapterDropdown = document.getElementById('chapter-dropdown');
+            const dropdownArrow = document.getElementById('dropdown-arrow');
+            
+            // App State Management
+            let currentView = 'auth'; // 'auth' or 'questions'
+            let allQuestions = [];
+            let currentPage = 0;
+            let chaptersList = [];
+            let selectedChapterId = null;
+            let selectedChapterData = null;
+            const questionsPerPage = 5;
+            let topImageUrl = null;
+            let totalPages = 0;
+            
+            // Fixed Firebase paths
+            const FIXED_COURSE_ID = "CEE Ultimate Solutions";
+            const FIXED_SUBJECT_ID = "CEE Ultimate Solutions";
+            
+            // Firebase Configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                authDomain: "geobazarr.firebaseapp.com",
+                databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                projectId: "geobazarr",
+                storageBucket: "geobazarr.firebasestorage.app",
+                messagingSenderId: "679949247383",
+                appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+            };
+
+            // Initialize Firebase
+            let db, auth;
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firefirebase.firestore();
+                auth = firebase.auth();
+                console.log("Firebase initialized successfully");
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                showError("Firebase initialization failed. Please refresh the page.");
+            }
+
+            // --- Helper Functions ---
+            
+            function showError(message) {
+                authError.textContent = message;
+                authError.style.display = 'block';
+                setTimeout(() => {
+                    authError.style.display = 'none';
+                }, 5000);
+            }
+            
+            function showLoading() {
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.innerHTML = `
+                    <div class="loading-content">
+                        <div class="loading-spinner mx-auto mb-4"></div>
+                        <p>Loading...</p>
+                    </div>
+                `;
+                document.body.appendChild(loadingOverlay);
+                return loadingOverlay;
+            }
+            
+            function hideLoading(loadingOverlay) {
+                if (loadingOverlay && loadingOverlay.parentNode) {
+                    loadingOverlay.parentNode.removeChild(loadingOverlay);
+                }
+            }
+            
+            // --- FIXED: KaTeX render configuration ---
+            function renderKaTeX(element) {
+                if (typeof renderMathInElement === 'undefined') {
+                    console.warn("KaTeX auto-render script not loaded yet.");
+                    return;
+                }
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '$', right: '$', display: false },
+                            { left: '\\(', right: '\\)', display: false },
+                            { left: '\\[', right: '\\]', display: true }
+                        ],
+                        throwOnError: false,
+                        errorColor: '#cc0000',
+                        trusted: false,
+                        strict: false
+                    });
+                } catch (error) {
+                    console.error("KaTeX rendering failed:", error);
+                }
+            }
+            
+            // --- NEW Authentication Functions ---
+            
+            let isLogin = true;
+            
+            function toggleForms() {
+                if (isLogin) {
+                    signinForm.classList.add('hidden');
+                    signupForm.classList.remove('hidden');
+                    authTitle.innerText = 'Sign Up';
+                    authSubtitle.innerText = 'Enter your details to register.';
+                    toggleAuthBtn.innerText = 'Back to Sign In';
+                } else {
+                    signupForm.classList.add('hidden');
+                    signinForm.classList.remove('hidden');
+                    authTitle.innerText = 'Sign In';
+                    authSubtitle.innerText = 'Please enter your account details.';
+                    toggleAuthBtn.innerText = 'New here? Create an account';
+                }
+                isLogin = !isLogin;
+            }
+            
+            toggleAuthBtn.addEventListener('click', toggleForms);
+            
+            async function setupUserDocument(user) {
+                if (!db) return;
+                
+                try {
+                    const userRef = db.collection('users').doc(user.uid);
+                    const userDoc = await userRef.get();
+                    
+                    if (!userDoc.exists) {
+                        await userRef.set({
+                            email: user.email,
+                            displayName: user.displayName || document.getElementById('signup-name')?.value || 'User',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("New user document created");
+                    } else {
+                        await userRef.update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("User document updated with last login");
+                    }
+                    
+                } catch (error) {
+                    console.error("Error setting up user document:", error);
+                }
+            }
+            
+            // --- Chapter Management Functions ---
+            
+            async function loadChapters() {
+                if (!db) {
+                    showError("Database not initialized");
+                    return;
+                }
+                
+                try {
+                    const chaptersSnapshot = await db.collection('courses').doc(FIXED_COURSE_ID)
+                        .collection('subjects').doc(FIXED_SUBJECT_ID)
+                        .collection('chapters')
+                        .orderBy('order')
+                        .get();
+                    
+                    if (chaptersSnapshot.empty) {
+                        chaptersList = [];
+                        showNoChaptersMessage();
+                        return;
+                    }
+                    
+                    chaptersList = [];
+                    chaptersSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        chaptersList.push({
+                            id: doc.id,
+                            name: data.name || `Chapter ${chaptersList.length + 1}`,
+                            description: data.description || '',
+                            thumbnailUrl: data.thumbnailUrl || '',
+                            order: data.order || 0
+                        });
+                    });
+                    
+                    // Sort by order
+                    chaptersList.sort((a, b) => (a.order || 0) - (b.order || 0));
+                    
+                    // Render chapter dropdown
+                    renderChapterDropdown();
+                    
+                    // Select first chapter by default
+                    if (chaptersList.length > 0 && !selectedChapterId) {
+                        selectChapter(chaptersList[0].id);
+                    }
+                    
+                } catch (error) {
+                    console.error("Error loading chapters:", error);
+                    showError("Failed to load chapters. Please try again.");
+                    chaptersList = [];
+                    showNoChaptersMessage();
+                }
+            }
+            
+            function renderChapterDropdown() {
+                if (chaptersList.length === 0) {
+                    chapterDropdown.innerHTML = `
+                        <div class="chapter-item">
+                            <div class="chapter-name">No chapters available</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let dropdownHtml = '';
+                chaptersList.forEach(chapter => {
+                    dropdownHtml += `
+                        <div class="chapter-item" data-chapter-id="${chapter.id}">
+                            <div class="chapter-name">${chapter.name}</div>
+                            ${chapter.description ? `<div class="chapter-description">${chapter.description}</div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                chapterDropdown.innerHTML = dropdownHtml;
+                
+                // Add click listeners to chapter items
+                document.querySelectorAll('.chapter-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const chapterId = this.dataset.chapterId;
+                        selectChapter(chapterId);
+                        toggleChapterDropdown();
+                    });
+                });
+            }
+            
+            function toggleChapterDropdown() {
+                chapterDropdown.classList.toggle('show');
+                dropdownArrow.style.transform = chapterDropdown.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+            
+            function selectChapter(chapterId) {
+                selectedChapterId = chapterId;
+                selectedChapterData = chaptersList.find(ch => ch.id === chapterId);
+                
+                if (selectedChapterData) {
+                    selectedChapterText.textContent = selectedChapterData.name;
+                    selectExamBtn.classList.add('selected');
+                    
+                    // Load questions for selected chapter
+                    loadQuestionsPage(chapterId);
+                }
+            }
+            
+            function showNoChaptersMessage() {
+                chatContainer.innerHTML = `
+                    <div class="no-chapters-message">
+                        <p>No chapters available for this subject.</p>
+                        <p class="mt-2 text-sm">Please check back later or contact support.</p>
+                    </div>
+                `;
+            }
+            
+            // Handle successful authentication
+            async function handleSuccessfulAuth(user) {
+                await setupUserDocument(user);
+                hideAuthPage();
+                
+                // Show loading
+                const loadingOverlay = showLoading();
+                
+                // Load chapters first
+                try {
+                    await loadChapters();
+                } catch (error) {
+                    console.error("Error loading chapters:", error);
+                    showError("Failed to load chapters. Please try again.");
+                } finally {
+                    hideLoading(loadingOverlay);
+                }
+            }
+            
+            signinForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('signin-email').value;
+                const password = document.getElementById('signin-password').value;
+                
+                if (!email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+                
+                signinButtonText.classList.add('hidden');
+                signinButtonSpinner.classList.remove('hidden');
+                signinButton.disabled = true;
+                
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    await handleSuccessfulAuth(userCredential.user);
+                } catch (error) {
+                    console.error("Sign in error:", error);
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    signinButtonText.classList.remove('hidden');
+                    signinButtonSpinner.classList.add('hidden');
+                    signinButton.disabled = false;
+                }
+            });
+            
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                
+                if (!name || !email || !password) {
+                    showError("Please fill in all fields");
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showError("Password should be at least 6 characters");
+                    return;
+                }
+                
+                signupButtonText.classList.add('hidden');
+                signupButtonSpinner.classList.remove('hidden');
+                signupButton.disabled = true;
+                
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    
+                    await userCredential.user.updateProfile({
+                        displayName: name
+                    });
+                    
+                    await handleSuccessfulAuth(userCredential.user);
+                    
+                } catch (error) {
+                    console.error("Sign up error:", error);
+                    showError(getAuthErrorMessage(error));
+                } finally {
+                    signupButtonText.classList.remove('hidden');
+                    signupButtonSpinner.classList.add('hidden');
+                    signupButton.disabled = false;
+                }
+            });
+            
+            const handleGoogleSignIn = async () => {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                
+                try {
+                    const userCredential = await auth.signInWithPopup(provider);
+                    await handleSuccessfulAuth(userCredential.user);
+                } catch (error) {
+                    console.error("Google sign in error:", error);
+                    showError(getAuthErrorMessage(error));
+                }
+            };
+            
+            googleSigninButton.addEventListener('click', handleGoogleSignIn);
+            googleSignupButton.addEventListener('click', handleGoogleSignIn);
+            
+            function showAuthPage() {
+                authWrapper.classList.add('visible');
+                appWrapper.classList.add('hidden');
+                currentView = 'auth';
+            }
+            
+            function hideAuthPage() {
+                authWrapper.classList.remove('visible');
+                appWrapper.classList.remove('hidden');
+                currentView = 'questions';
+            }
+            
+            // --- Questions Page Functions ---
+            
+            async function loadQuestionsPage(chapterId) {
+                if (!db) {
+                    showError("Database not initialized");
+                    return;
+                }
+                
+                if (!chapterId) {
+                    showError("Please select a chapter first");
+                    return;
+                }
+                
+                chatContainer.innerHTML = `
+                    <div class="p-4 text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2 text-gray-600">Loading questions...</p>
+                    </div>
+                `;
+                
+                try {
+                    // Get chapter data for top image
+                    const chapterDoc = await db.collection('courses').doc(FIXED_COURSE_ID)
+                        .collection('subjects').doc(FIXED_SUBJECT_ID)
+                        .collection('chapters').doc(chapterId)
+                        .get();
+                    
+                    if (chapterDoc.exists) {
+                        const chapterData = chapterDoc.data();
+                        topImageUrl = chapterData.thumbnailUrl || null;
+                    }
+                    
+                    // Fetch questions from the selected chapter
+                    const questionsSnapshot = await db.collection('courses').doc(FIXED_COURSE_ID)
+                        .collection('subjects').doc(FIXED_SUBJECT_ID)
+                        .collection('chapters').doc(chapterId)
+                        .collection('questions')
+                        .orderBy('order')
+                        .get();
+                    
+                    if (questionsSnapshot.empty) {
+                        chatContainer.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No questions available for this chapter.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Store all questions
+                    allQuestions = [];
+                    questionsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        // Ensure text fields have proper line breaks
+                        const formattedData = {
+                            id: doc.id,
+                            question: data.question ? data.question.replace(/\\n/g, '\n') : '',
+                            explanation: data.explanation ? data.explanation.replace(/\\n/g, '\n') : '',
+                            options: data.options ? data.options.map(opt => opt ? opt.replace(/\\n/g, '\n') : '') : [],
+                            correctIndex: data.correctIndex || 0,
+                            questionUrl: data.questionUrl || '',
+                            explanationUrl: data.explanationUrl || '',
+                            explanationVideoUrl: data.explanationVideoUrl || '',
+                            order: data.order || 0
+                        };
+                        allQuestions.push(formattedData);
+                    });
+                    
+                    // Sort by order
+                    allQuestions.sort((a, b) => (a.order || 0) - (b.order || 0));
+                    
+                    // Calculate total pages
+                    totalPages = Math.ceil(allQuestions.length / questionsPerPage);
+                    
+                    // Render first page
+                    renderPracticePage(0);
+                    
+                } catch (error) {
+                    console.error("Error loading questions:", error);
+                    chatContainer.innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load questions.</p>
+                            <button id="retry-load-questions" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                Retry
+                            </button>
+                        </div>
+                    `;
+                    
+                    document.getElementById('retry-load-questions')?.addEventListener('click', () => loadQuestionsPage(chapterId));
+                }
+            }
+            
+            function renderPracticePage(pageNumber) {
+                currentPage = pageNumber;
+                const totalQuestions = allQuestions.length;
+                totalPages = Math.ceil(totalQuestions / questionsPerPage);
+                
+                // Calculate start and end indices
+                const startIndex = pageNumber * questionsPerPage;
+                const endIndex = Math.min(startIndex + questionsPerPage, totalQuestions);
+                const currentQuestions = allQuestions.slice(startIndex, endIndex);
+                
+                let practiceHtml = '<div class="practice-container">';
+                
+                // Add top image if available from chapter thumbnail
+                if (topImageUrl) {
+                    practiceHtml += `
+                        <div class="top-image-container">
+                            <img src="${topImageUrl}" alt="Chapter Image" class="top-image" onerror="this.src='https://placehold.co/600x300/3B82F6/FFFFFF?text=Chapter+Image'">
+                        </div>
+                    `;
+                }
+                
+                // Add page numbers navigation
+                practiceHtml += `
+                    <div class="page-numbers-container">
+                        <div class="page-numbers">
+                `;
+                
+                // Generate page number boxes
+                for (let i = 0; i < totalPages; i++) {
+                    const pageNumberDisplay = i + 1;
+                    const isActive = i === pageNumber;
+                    practiceHtml += `
+                        <div class="page-number-box ${isActive ? 'active' : ''}" data-page="${i}">
+                            ${pageNumberDisplay}
+                        </div>
+                    `;
+                }
+                
+                practiceHtml += `
+                        </div>
+                    </div>
+                `;
+                
+                // Render questions
+                currentQuestions.forEach((question, index) => {
+                    const questionNumber = startIndex + index + 1;
+                    const questionId = question.id;
+                    
+                    practiceHtml += `
+                        <div class="question-section" data-question-id="${questionId}" data-question-number="${questionNumber}">
+                            <div class="question-header">
+                                <div class="question-number">Question ${questionNumber}</div>
+                                <div class="question-text latex-content">${question.question || 'No question text'}</div>
+                            </div>
+                            
+                            ${question.questionUrl ? `
+                                <div class="question-image">
+                                    <img src="${question.questionUrl}" alt="Question image" onerror="this.src='https://placehold.co/600x400/F59E0B/FFFFFF?text=Question+Image'">
+                                </div>
+                            ` : ''}
+                            
+                            <div class="options-container">
+                                ${question.options && question.options.length > 0 ? 
+                                    question.options.map((option, optionIndex) => `
+                                        <div class="option-item" data-option-index="${optionIndex}">
+                                            <div class="option-marker">${String.fromCharCode(65 + optionIndex)}</div>
+                                            <div class="option-text latex-content">${option || 'No option text'}</div>
+                                        </div>
+                                    `).join('') : 
+                                    '<p>No options available</p>'
+                                }
+                            </div>
+                            
+                            <button class="submit-button" disabled>Submit Answer</button>
+                            
+                            <div class="explanation-section">
+                                <div class="result-message"></div>
+                                <div class="explanation-title">Explanation:</div>
+                                <div class="explanation-text latex-content">${question.explanation || 'No explanation available'}</div>
+                                
+                                ${question.explanationUrl ? `
+                                    <div class="explanation-image">
+                                        <img src="${question.explanationUrl}" alt="Explanation image" onerror="this.src='https://placehold.co/600x400/10B981/FFFFFF?text=Explanation+Image'">
+                                    </div>
+                                ` : ''}
+                                
+                                ${question.explanationVideoUrl ? `
+                                    <div class="explanation-video">
+                                        ${renderVideoPlayer(question.explanationVideoUrl)}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Add pagination controls
+                practiceHtml += `
+                    <div class="practice-pagination">
+                        <div class="page-info">
+                            Questions ${startIndex + 1}-${endIndex} of ${totalQuestions}
+                        </div>
+                        <div class="pagination-buttons">
+                            <button class="page-button prev-button" ${pageNumber === 0 ? 'disabled' : ''}>
+                                Previous
+                            </button>
+                            <button class="page-button next-button" ${pageNumber >= totalPages - 1 ? 'disabled' : ''}>
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                practiceHtml += '</div>';
+                chatContainer.innerHTML = practiceHtml;
+                
+                // Scroll to top when changing pages
+                chatContainer.scrollTop = 0;
+                
+                // Setup page number click listeners
+                document.querySelectorAll('.page-number-box').forEach(box => {
+                    box.addEventListener('click', function() {
+                        const page = parseInt(this.dataset.page);
+                        if (page !== currentPage) {
+                            renderPracticePage(page);
+                        }
+                    });
+                });
+                
+                // Setup event listeners for questions
+                setupPracticeQuestionsListeners();
+                
+                // Setup pagination listeners
+                document.querySelector('.prev-button')?.addEventListener('click', () => {
+                    if (currentPage > 0) {
+                        renderPracticePage(currentPage - 1);
+                    }
+                });
+                
+                document.querySelector('.next-button')?.addEventListener('click', () => {
+                    if (currentPage < totalPages - 1) {
+                        renderPracticePage(currentPage + 1);
+                    }
+                });
+                
+                // Render LaTeX
+                setTimeout(() => {
+                    document.querySelectorAll('.question-section').forEach(section => {
+                        renderKaTeX(section);
+                    });
+                }, 100);
+            }
+            
+            function renderVideoPlayer(videoUrl) {
+                // Extract YouTube video ID from URL
+                let videoId = '';
+                
+                // Handle different YouTube URL formats
+                if (videoUrl.includes('youtube.com/watch?v=')) {
+                    videoId = videoUrl.split('v=')[1];
+                    const ampersandPosition = videoId.indexOf('&');
+                    if (ampersandPosition !== -1) {
+                        videoId = videoId.substring(0, ampersandPosition);
+                    }
+                } else if (videoUrl.includes('youtu.be/')) {
+                    videoId = videoUrl.split('youtu.be/')[1];
+                    const questionMarkPosition = videoId.indexOf('?');
+                    if (questionMarkPosition !== -1) {
+                        videoId = videoId.substring(0, questionMarkPosition);
+                    }
+                } else if (videoUrl.includes('youtube.com/embed/')) {
+                    videoId = videoUrl.split('embed/')[1];
+                    const slashPosition = videoId.indexOf('/');
+                    if (slashPosition !== -1) {
+                        videoId = videoId.substring(0, slashPosition);
+                    }
+                } else {
+                    // Assume it's already a video ID or embed URL
+                    videoId = videoUrl;
+                }
+                
+                const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                
+                return `
+                    <div class="video-wrapper">
+                        <div class="aspect-video w-full bg-gray-900">
+                            <iframe 
+                                width="100%" 
+                                height="100%" 
+                                src="${embedUrl}" 
+                                title="Video explanation"
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                allowfullscreen
+                                class="w-full h-full"
+                                loading="lazy"
+                            ></iframe>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            function setupPracticeQuestionsListeners() {
+                // Setup option selection
+                document.querySelectorAll('.option-item').forEach(option => {
+                    option.addEventListener('click', function() {
+                        const questionSection = this.closest('.question-section');
+                        const questionId = questionSection.dataset.questionId;
+                        
+                        // Remove selected class from all options in this question
+                        questionSection.querySelectorAll('.option-item').forEach(item => {
+                            item.classList.remove('selected');
+                        });
+                        
+                        // Add selected class to clicked option
+                        this.classList.add('selected');
+                        
+                        // Enable submit button for this question
+                        const submitButton = questionSection.querySelector('.submit-button');
+                        submitButton.disabled = false;
+                    });
+                });
+                
+                // Setup submit button handlers
+                document.querySelectorAll('.submit-button').forEach(button => {
+                    button.addEventListener('click', async function() {
+                        const questionSection = this.closest('.question-section');
+                        const questionId = questionSection.dataset.questionId;
+                        const selectedOption = questionSection.querySelector('.option-item.selected');
+                        
+                        if (!selectedOption) return;
+                        
+                        const selectedIndex = parseInt(selectedOption.dataset.optionIndex);
+                        
+                        try {
+                            // Find the question in our allQuestions array
+                            const question = allQuestions.find(q => q.id === questionId);
+                            
+                            if (!question) {
+                                showError("Question not found");
+                                return;
+                            }
+                            
+                            const correctIndex = question.correctIndex || 0;
+                            
+                            // Disable all options and submit button
+                            questionSection.querySelectorAll('.option-item').forEach(item => {
+                                item.style.cursor = 'default';
+                            });
+                            this.disabled = true;
+                            
+                            // Show correct/incorrect styling
+                            questionSection.querySelectorAll('.option-item').forEach(item => {
+                                const itemIndex = parseInt(item.dataset.optionIndex);
+                                if (itemIndex === correctIndex) {
+                                    item.classList.add('correct');
+                                } else if (itemIndex === selectedIndex && itemIndex !== correctIndex) {
+                                    item.classList.add('incorrect');
+                                }
+                            });
+                            
+                            // Show result message
+                            const resultMessage = questionSection.querySelector('.result-message');
+                            const explanationSection = questionSection.querySelector('.explanation-section');
+                            
+                            if (selectedIndex === correctIndex) {
+                                resultMessage.textContent = 'Correct! Well done!';
+                                resultMessage.className = 'result-message correct';
+                            } else {
+                                resultMessage.textContent = `Incorrect. The correct answer is ${String.fromCharCode(65 + correctIndex)}.`;
+                                resultMessage.className = 'result-message incorrect';
+                            }
+                            
+                            // Show explanation
+                            explanationSection.classList.add('show');
+                            
+                            // Re-render LaTeX in the explanation section
+                            setTimeout(() => {
+                                renderKaTeX(explanationSection);
+                            }, 50);
+                            
+                        } catch (error) {
+                            console.error("Error checking answer:", error);
+                            showError("Failed to check answer. Please try again.");
+                        }
+                    });
+                });
+            }
+
+            function getAuthErrorMessage(error) {
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        return 'Invalid email address.';
+                    case 'auth/user-disabled':
+                        return 'This account has been disabled.';
+                    case 'auth/user-not-found':
+                        return 'No account found with this email.';
+                    case 'auth/wrong-password':
+                        return 'Incorrect password.';
+                    case 'auth/email-already-in-use':
+                        return 'An account with this email already exists.';
+                    case 'auth/weak-password':
+                        return 'Password is too weak.';
+                    case 'auth/network-request-failed':
+                        return 'Network error. Please check your connection.';
+                    default:
+                        return error.message || 'Authentication failed. Please try again.';
+                }
+            }
+
+            // --- Chapter dropdown toggle ---
+            selectExamBtn.addEventListener('click', toggleChapterDropdown);
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (event) => {
+                if (!selectExamBtn.contains(event.target) && !chapterDropdown.contains(event.target)) {
+                    chapterDropdown.classList.remove('show');
+                    dropdownArrow.style.transform = 'rotate(0deg)';
+                }
+            });
+
+            // --- Auth State Change Handler ---
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    // User is logged in - load chapters
+                    console.log("User already logged in, loading chapters...");
+                    
+                    // Hide auth page immediately
+                    hideAuthPage();
+                    
+                    // Show loading
+                    const loadingOverlay = showLoading();
+                    
+                    // Load chapters first
+                    try {
+                        await loadChapters();
+                    } catch (error) {
+                        console.error("Error loading chapters:", error);
+                        showError("Failed to load chapters. Please try again.");
+                    } finally {
+                        hideLoading(loadingOverlay);
+                    }
+                } else {
+                    // User is not logged in - show auth page
+                    console.log("User not logged in, showing auth page");
+                    showAuthPage();
+                }
+            });
+        }
+
+        // ===== START APP =====
+        window.addEventListener('load', () => {
+            // Initialize the app
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
