@@ -1,0 +1,3613 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>ConceptBlitz - Live Streaming & Questions</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Anton for brand and Merriweather for body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/mhchem.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Use the Merriweather font family as default */
+        body {
+            font-family: 'Merriweather', serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-variation-settings: "wdth" 100;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            
+            /* Light mode: Black text */
+            color: #000000;
+            
+            /* CRITICAL: Prevent the main body from scrolling at all */
+            overflow: hidden !important; 
+            
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            
+            /* Prevents elastic scrolling on iOS */
+            overscroll-behavior: none;
+            
+            /* Make body a fixed container occupying full screen */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Dark mode: White text */
+        body.dark {
+            color: #ffffff;
+        }
+
+        /* App wrapper - uses dynamic viewport height for mobile keyboard stability */
+        #app-wrapper {
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height (best for mobile keyboard) */
+            width: 100%;
+            position: absolute; /* Relative to fixed body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden; /* Ensures only the questions container can scroll */
+        }
+        
+        /* Style for the ConceptBlitz logo font - USING ANTON */
+        .conceptblitz-logo {
+            font-family: 'Anton', sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+        
+        /* REVERSED: Brand font colors - Light mode: White and Orange */
+        .concept-text {
+            color: #ffffff; /* White for light mode - REVERSED */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .blitz-text {
+            color: #F97316; /* Orange */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* REVERSED: Brand font colors - Dark mode: Black and Orange */
+        .dark .concept-text {
+            color: #000000; /* Black for dark mode - REVERSED */
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.1);
+        }
+        
+        .dark .blitz-text {
+            color: #F97316; /* Orange (same for dark mode) */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Improve KaTeX readability on mobile */
+        .katex {
+            font-size: 1.1em !important;
+            text-align: left !important;
+        }
+        .katex-display {
+            /* Allow display math to be scrollable if too wide */
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 4px;
+        }
+
+        /* --- Hide Scrollbar on Chat Container --- */
+        #chat-container {
+            /* Scroll is now always auto (default of overflow-y-auto is active) */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #chat-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ===== ACTIVE QUESTION OVER VIDEO ===== */
+        #active-question-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 12px 16px;
+            z-index: 30;
+            display: none;
+            border-bottom: 2px solid #F97316;
+        }
+        
+        #active-question-overlay.active {
+            display: block;
+        }
+        
+        .active-question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .active-question-number {
+            background: #F97316;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .active-question-timer {
+            background: #000;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .active-question-timer.expired {
+            background: #6b7280;
+        }
+        
+        .active-question-timer.warning {
+            background: #ef4444;
+            animation: pulse 1s infinite;
+        }
+        
+        .active-question-text {
+            font-size: 13px;
+            line-height: 1.4;
+            color: white;
+            margin-bottom: 8px;
+            max-height: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        
+        .active-options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .active-option-item {
+            flex: 1;
+            min-width: calc(50% - 3px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .active-option-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .active-option-item.selected {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+        
+        .active-option-item.correct {
+            background: rgba(16, 185, 129, 0.3);
+            border-color: #10b981;
+        }
+        
+        .active-option-item.incorrect {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: #ef4444;
+        }
+        
+        .active-option-marker {
+            width: 18px;
+            height: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .active-option-item.selected .active-option-marker {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        .active-option-text {
+            flex: 1;
+            line-height: 1.3;
+            font-size: 11px;
+        }
+        
+        .active-submit-button {
+            width: 100%;
+            background: #F97316;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+        
+        .active-submit-button:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+        
+        /* Video Player Styles - SQUARE CORNERS */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 0;
+            border-radius: 0; /* SQUARE CORNERS */
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        /* Fixed video streaming section */
+        #streaming-video-container {
+            position: sticky;
+            top: 60px; /* Below top bar */
+            left: 0;
+            right: 0;
+            width: 100%;
+            z-index: 40;
+            background: #000;
+        }
+
+        /* Ensure text wraps properly for questions and explanations */
+        .question-text, .explanation-text, .option-text {
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        /* Loading indicator styles */
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Slightly rounded corners for specific elements */
+        .question-timer-box, .question-number-box, .live-indicator {
+            border-radius: 4px !important; /* Slightly rounded corners */
+        }
+        
+        .question-section, .option-item, .submit-button {
+            border-radius: 4px !important; /* Slightly rounded corners */
+        }
+        
+        /* Live indicator animation */
+        @keyframes livePulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        
+        .live-indicator {
+            width: 40px;
+            height: 40px;
+            background: #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: livePulse 2s infinite;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .live-indicator i {
+            color: white;
+            font-size: 18px;
+        }
+        
+        /* Question container with light gray background - 100% width */
+        .question-section {
+            width: 100%; /* 100% width as requested */
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: #000000; /* Black background as requested */
+            margin: 0;
+            position: relative;
+            box-sizing: border-box;
+            color: #ffffff; /* White font as requested */
+        }
+        
+        .question-section:last-child {
+            border-bottom: none;
+        }
+        
+        .question-header {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .question-number-timer-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        .question-number-box {
+            background: #f59e0b;
+            color: white;
+            padding: 0.4rem 1rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+        
+        .question-timer-box {
+            background: #ffffff;
+            color: #000000;
+            padding: 0.4rem 1rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: inline-block;
+            min-width: 70px;
+            text-align: center;
+        }
+        
+        .question-timer-box.expired {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .question-timer-box.warning {
+            background: #ef4444;
+            color: white;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .question-text {
+            flex: 1;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff; /* White font as requested */
+            line-height: 1.5;
+            text-align: left;
+            width: 100%; /* 100% width as requested */
+            background: #000000; /* Black background as requested */
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        
+        .question-image {
+            width: 100%; /* 100% width as requested */
+            margin: 1rem 0;
+        }
+        
+        .question-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            display: block;
+            max-height: 400px;
+            object-fit: contain;
+        }
+        
+        /* Options container with radio button approach */
+        .options-container {
+            width: 100%; /* 100% width as requested */
+            margin: 1.5rem 0;
+            box-sizing: border-box;
+        }
+        
+        .option-item {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
+            border: 2px solid rgba(255, 255, 255, 0.3); /* Semi-transparent border */
+            text-align: left;
+            font-family: 'Merriweather', serif;
+            font-size: 0.9rem;
+            color: #ffffff; /* White font as requested */
+            cursor: pointer;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            position: relative;
+            box-sizing: border-box;
+        }
+        
+        /* Hide the actual radio button */
+        .option-radio {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        /* Default state - no hover effects when selected */
+        .option-item:not(.selected):hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #3b82f6;
+        }
+        
+        /* Selected state using :checked pseudo-class */
+        .option-item.selected {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+            color: #ffffff;
+        }
+        
+        /* Remove all hover/focus effects when selected */
+        .option-item.selected:hover,
+        .option-item.selected:focus,
+        .option-item.selected:active {
+            background: rgba(59, 130, 246, 0.3) !important;
+            border-color: #3b82f6 !important;
+            color: #ffffff !important;
+        }
+        
+        /* Correct state (after time up) */
+        .option-item.correct {
+            background: rgba(16, 185, 129, 0.3);
+            border-color: #10b981;
+            color: #ffffff;
+        }
+        
+        /* Incorrect state (after time up) */
+        .option-item.incorrect {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: #ef4444;
+            color: #ffffff;
+        }
+        
+        /* Remove hover effects for submitted questions */
+        .question-section.submitted .option-item {
+            cursor: default;
+        }
+        
+        .question-section.submitted .option-item:hover {
+            background: inherit;
+            border-color: inherit;
+        }
+        
+        .option-marker {
+            width: 24px;
+            height: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            margin-top: 2px;
+            border-radius: 4px;
+            color: white;
+        }
+        
+        .option-item.selected .option-marker {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        .option-text {
+            flex: 1;
+            line-height: 1.5;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        
+        .submit-button {
+            width: 100%;
+            padding: 1rem;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin: 1rem 0 0 0;
+            display: block;
+        }
+        
+        .submit-button:hover:not(:disabled) {
+            background: #d97706;
+        }
+        
+        .submit-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .explanation-section {
+            width: 100%;
+            padding: 1.5rem;
+            margin: 1.5rem 0 0 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: none;
+            text-align: left;
+            border-radius: 4px;
+            box-sizing: border-box;
+            color: white;
+        }
+        
+        .explanation-section.show {
+            display: block;
+        }
+        
+        .explanation-title {
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        
+        .explanation-text {
+            color: #d1d5db;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        
+        .result-message {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            text-align: left;
+            font-size: 0.9rem;
+            border-radius: 4px;
+        }
+        
+        .result-message.correct {
+            background: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+        
+        .result-message.incorrect {
+            background: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        
+        /* User count display */
+        .user-count {
+            margin-left: auto;
+            padding-left: 10px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            min-width: 40px;
+            text-align: right;
+        }
+        
+        .user-count.correct {
+            color: #10b981;
+        }
+        
+        .user-count.incorrect {
+            color: #ef4444;
+        }
+        
+        /* Fullscreen mode styles */
+        .fullscreen-questions-overlay {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 40%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2147483647;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+            transition: opacity 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .fullscreen-questions-overlay.active {
+            display: block;
+        }
+        
+        .fullscreen-questions-overlay .question-section {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+        
+        .fullscreen-questions-overlay .question-text,
+        .fullscreen-questions-overlay .options-container {
+            width: 100%;
+            color: white;
+        }
+        
+        .fullscreen-questions-overlay .option-item {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .fullscreen-questions-overlay .option-text {
+            color: white;
+        }
+        
+        .fullscreen-questions-overlay .submit-button {
+            width: 100%;
+        }
+        
+        /* Chat container */
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background: #f9fafb;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .dark #chat-container {
+            background: #1f2937;
+        }
+        
+        /* Chat message styles */
+        .chat-message {
+            display: flex;
+            margin-bottom: 8px;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+        
+        .chat-message.sender {
+            margin-left: auto;
+            flex-direction: row-reverse;
+        }
+        
+        .chat-message.receiver {
+            margin-right: auto;
+        }
+        
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+            font-size: 14px;
+            position: relative;
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+        
+        .sender .message-bubble {
+            background: #3b82f6;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .receiver .message-bubble {
+            background: #e5e7eb;
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .dark .receiver .message-bubble {
+            background: #374151;
+            color: #f9fafb;
+        }
+        
+        .message-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 12px;
+            margin-top: 4px;
+            display: block;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
+            text-align: right;
+        }
+        
+        .sender .message-time {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .dark .receiver .message-time {
+            color: #9ca3af;
+        }
+        
+        /* Chat input container */
+        .chat-input-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            padding: 12px 16px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .dark .chat-input-container {
+            background: #1f2937;
+            border-top-color: #374151;
+        }
+        
+        .chat-textarea {
+            flex: 1;
+            min-height: 40px;
+            max-height: 120px;
+            padding: 10px 16px;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            font-family: 'Merriweather', serif;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            transition: all 0.2s ease;
+            overflow-y: auto;
+        }
+        
+        .dark .chat-textarea {
+            background: #374151;
+            border-color: #4b5563;
+            color: white;
+        }
+        
+        .chat-textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        
+        .chat-textarea::placeholder {
+            color: #6b7280;
+        }
+        
+        .dark .chat-textarea::placeholder {
+            color: #9ca3af;
+        }
+        
+        .chat-send-button {
+            width: 40px;
+            height: 40px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        
+        .chat-send-button:hover {
+            background: #2563eb;
+        }
+        
+        .chat-send-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        /* Chat icon in video controls */
+        .chat-control-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chat-control-btn i {
+            font-size: 18px;
+        }
+        
+        /* Dark mode adjustments */
+        .dark .question-section {
+            background: #000000;
+            border-bottom-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .dark .question-text {
+            color: #ffffff;
+            background: #000000;
+        }
+        
+        .dark .option-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+        }
+        
+        .dark .option-item:not(.selected):hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #3b82f6;
+        }
+        
+        .dark .option-item.selected {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+            color: #ffffff;
+        }
+        
+        .dark .option-item.selected:hover,
+        .dark .option-item.selected:focus,
+        .dark .option-item.selected:active {
+            background: rgba(59, 130, 246, 0.3) !important;
+            border-color: #3b82f6 !important;
+            color: #ffffff !important;
+        }
+        
+        .dark .explanation-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .dark .explanation-title {
+            color: #ffffff;
+        }
+        
+        .dark .explanation-text {
+            color: #d1d5db;
+        }
+        
+        /* Ensure all text elements inherit the body font */
+        h1, h2, h3, h4, h5, h6, p, span, div, button, input, textarea, label, a {
+            font-family: 'Merriweather', serif;
+        }
+
+        /* Exception for logo only */
+        .conceptblitz-logo {
+            font-family: 'Anton', sans-serif !important;
+        }
+
+        /* Buttons should also use Merriweather */
+        button, .submit-button {
+            font-family: 'Merriweather', serif !important;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 4px;
+        }
+        
+        .dark .loading-content {
+            background: #1f2937;
+            color: white;
+        }
+        
+        /* Single loading question placeholder */
+        .single-loading-placeholder {
+            width: 100%;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .single-loading-placeholder .loading-spinner {
+            margin: 0 auto;
+        }
+        
+        .single-loading-placeholder p {
+            margin-top: 1rem;
+            color: #6b7280;
+        }
+        
+        .dark .single-loading-placeholder p {
+            color: #9ca3af;
+        }
+        
+        /* KaTeX rendered element marker */
+        .katex-rendered {
+            display: inline-block;
+        }
+        
+        .katex-rendered * {
+            pointer-events: none;
+        }
+
+        /* ===== UPDATED: Modern YouTube Player Control Bar Styles ===== */
+        .video-player-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            background: #000;
+        }
+        
+        /* Ensure video player controls are visible in fullscreen */
+        .video-wrapper:fullscreen .video-player-container,
+        .video-wrapper:-webkit-full-screen .video-player-container,
+        .video-wrapper:-moz-full-screen .video-player-container,
+        .video-wrapper:-ms-fullscreen .video-player-container {
+            height: 100vh;
+            padding-bottom: 0;
+        }
+        
+        .video-wrapper:fullscreen .modern-control-bar,
+        .video-wrapper:-webkit-full-screen .modern-control-bar,
+        .video-wrapper:-moz-full-screen .modern-control-bar,
+        .video-wrapper:-ms-fullscreen .modern-control-bar {
+            z-index: 2147483647;
+        }
+        
+        .youtube-iframe-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .youtube-iframe-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            pointer-events: none;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        /* New Modern Control Bar */
+        .modern-control-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.7) 60%, transparent 100%);
+            color: white;
+            padding: 12px 16px 8px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 20;
+            font-family: 'Merriweather', serif;
+            pointer-events: auto;
+        }
+        
+        .video-overlay:hover .modern-control-bar,
+        .modern-control-bar.visible {
+            opacity: 1;
+        }
+        
+        /* Thin Progress Bar - RED COLOR */
+        .top-progress-container {
+            width: 100%;
+            height: 3px;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            position: relative;
+            margin-bottom: 2px;
+        }
+        
+        .progress-track {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: #ef4444;
+            transition: width 0.1s linear;
+        }
+        
+        .progress-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: #ef4444;
+            border: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            cursor: pointer;
+            pointer-events: none;
+        }
+        
+        .top-progress-container:hover .progress-thumb {
+            opacity: 1;
+        }
+        
+        /* Bottom Controls Row - ALL ELEMENTS IN ONE LINE */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            min-height: 36px;
+            flex-wrap: nowrap;
+        }
+        
+        /* Left Controls */
+        .left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+            min-width: 0;
+        }
+        
+        /* Right Controls */
+        .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+            min-width: 0;
+            flex-wrap: nowrap;
+        }
+        
+        /* Center Controls (for time display) */
+        .center-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        /* Control Buttons - Dark black square boxes with white icons */
+        .control-btn {
+            background: #000000;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            min-height: 40px;
+            font-size: 16px;
+            transition: background-color 0.15s ease;
+            flex-shrink: 0;
+        }
+        
+        .control-btn:hover {
+            background: #333333;
+        }
+        
+        .control-btn:active {
+            background: #666666;
+        }
+        
+        /* SVG Icons for buttons */
+        .control-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        .play-pause-btn {
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .play-pause-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* Time Display */
+        .time-display {
+            font-family: 'Merriweather', serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            min-width: 100px;
+            text-align: center;
+            color: rgba(255,255,255,0.95);
+            flex-shrink: 0;
+        }
+        
+        /* Volume button - dark black square box */
+        .volume-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .volume-btn i {
+            font-size: 18px;
+        }
+        
+        /* Speed Control */
+        .speed-control {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .speed-btn {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 4px 8px;
+            min-width: 40px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        /* Fullscreen Button - dark black square box */
+        .fullscreen-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fullscreen-btn i {
+            font-size: 18px;
+        }
+        
+        /* Video Loading */
+        .video-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 5;
+        }
+        
+        .video-loading-spinner {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        .player-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            font-size: 12px;
+            text-align: center;
+            z-index: 5;
+        }
+        
+        /* Mobile Touch-Friendly Adjustments */
+        @media (max-width: 640px) {
+            .modern-control-bar {
+                padding: 10px 12px 6px 12px;
+            }
+            
+            .control-btn {
+                min-width: 36px;
+                min-height: 36px;
+                padding: 6px;
+            }
+            
+            .play-pause-btn {
+                min-width: 40px;
+                min-height: 40px;
+            }
+            
+            .time-display {
+                font-size: 11px;
+                min-width: 90px;
+            }
+            
+            .left-controls {
+                gap: 6px;
+            }
+            
+            .right-controls {
+                gap: 6px;
+            }
+            
+            .speed-btn {
+                min-width: 36px;
+                padding: 4px 6px;
+                font-size: 13px;
+            }
+            
+            .fullscreen-questions-overlay {
+                width: 100%;
+                padding: 10px;
+            }
+            
+            .question-section {
+                padding: 1rem 0.75rem;
+            }
+            
+            .active-question-text {
+                font-size: 12px;
+                -webkit-line-clamp: 2;
+                max-height: 40px;
+            }
+            
+            .active-option-item {
+                min-width: 100%;
+                font-size: 10px;
+            }
+            
+            .active-option-text {
+                font-size: 10px;
+            }
+        }
+        
+        /* Double tap indicators */
+        .double-tap-indicator {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .double-tap-left {
+            left: 0;
+            background: linear-gradient(to right, rgba(239, 68, 68, 0.7), transparent);
+        }
+        
+        .double-tap-right {
+            right: 0;
+            background: linear-gradient(to left, rgba(239, 68, 68, 0.7), transparent);
+        }
+        
+        .double-tap-indicator.show {
+            opacity: 1;
+        }
+        
+        .double-tap-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-family: 'Merriweather', serif;
+        }
+        
+        /* Top bar with menu, search and profile */
+        .top-bar {
+            width: 100%;
+            background: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e5e7eb;
+            height: 60px;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .dark .top-bar {
+            background: #1f2937;
+            border-bottom-color: #374151;
+        }
+        
+        /* Search box - now acts as chat input */
+        .search-container {
+            flex: 1;
+            margin: 0 16px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 10px 16px;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            font-family: 'Merriweather', serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+            border-radius: 20px;
+            resize: none;
+            min-height: 40px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        
+        .dark .search-box {
+            background: #374151;
+            border-color: #4b5563;
+            color: white;
+        }
+        
+        .search-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        
+        .search-box::placeholder {
+            color: #6b7280;
+        }
+        
+        .dark .search-box::placeholder {
+            color: #9ca3af;
+        }
+        
+        /* Send button in search box */
+        .search-send-button {
+            width: 40px;
+            height: 40px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        
+        .search-send-button:hover {
+            background: #2563eb;
+        }
+        
+        .search-send-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        /* Profile image container */
+        .profile-container {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: 4px !important;
+            overflow: hidden;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .dark .profile-container {
+            background: #374151;
+            border-color: #4b5563;
+        }
+        
+        .profile-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        /* Chat section */
+        #chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f9fafb;
+            overflow: hidden;
+        }
+        
+        .dark #chat-section {
+            background: #1f2937;
+        }
+        
+        /* Tab navigation for chat/questions */
+        .tab-navigation {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .dark .tab-navigation {
+            background: #1f2937;
+            border-bottom-color: #374151;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            font-family: 'Merriweather', serif;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .dark .tab-button {
+            color: #9ca3af;
+        }
+        
+        .tab-button.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .dark .tab-button.active {
+            color: #60a5fa;
+            border-bottom-color: #60a5fa;
+        }
+        
+        .tab-content {
+            flex: 1;
+            display: none;
+            overflow: hidden;
+        }
+        
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg">
+        <!-- Top bar -->
+        <div class="top-bar">
+            <!-- Live indicator (replaces menu button) -->
+            <div id="left-button-container">
+                <button class="live-indicator">
+                    <i class="fas fa-broadcast-tower"></i>
+                </button>
+            </div>
+            
+            <!-- Chat input box (formerly search) -->
+            <div class="search-container">
+                <textarea class="search-box" placeholder="Type your message..." rows="1"></textarea>
+                <button class="search-send-button" id="send-message-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            
+            <!-- Profile image -->
+            <div class="profile-container">
+                <div id="profile-image-container">
+                    <!-- Profile image will be loaded here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active question overlay (above video) -->
+        <div id="active-question-overlay"></div>
+        
+        <!-- Streaming video section - fixed position -->
+        <div id="streaming-video-container">
+            <!-- Live streaming video will be loaded here -->
+        </div>
+        
+        <!-- Tab navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="chat">Discussion Chat</button>
+            <button class="tab-button" data-tab="questions">Past Questions</button>
+        </div>
+        
+        <!-- Chat section -->
+        <div id="chat-section">
+            <!-- Chat container -->
+            <div id="chat-container" class="tab-content active">
+                <!-- Chat messages will be loaded here -->
+            </div>
+            
+            <!-- Questions container -->
+            <div id="questions-container" class="tab-content">
+                <!-- Past questions will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Fullscreen questions overlay -->
+        <div id="fullscreen-questions-overlay" class="fullscreen-questions-overlay"></div>
+    </div>
+
+    <script>
+        // ===== FIXED YOUTUBE PLAYER MANAGER =====
+        class SimpleYouTubePlayer {
+            constructor(containerId, videoId, isStreaming = false) {
+                this.containerId = containerId;
+                this.videoId = videoId;
+                this.player = null;
+                this.updateInterval = null;
+                this.controlsVisible = true;
+                this.playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+                this.currentPlaybackRate = 1;
+                this.lastTapTime = 0;
+                this.tapCount = 0;
+                this.isYouTubeAPIReady = false;
+                this.isStreaming = isStreaming;
+                this.appInstance = window.conceptBlitzApp;
+                this.init();
+            }
+            
+            init() {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                // Create YouTube iframe with proper parameters for streaming
+                const iframe = document.createElement('iframe');
+                iframe.id = `yt-iframe-${this.containerId}`;
+                iframe.width = '100%';
+                iframe.height = '100%';
+                iframe.src = `https://www.youtube.com/embed/${this.videoId}?enablejsapi=1&origin=${window.location.origin}&controls=0&disablekb=1&modestbranding=1&fs=0&rel=0&iv_load_policy=3&playsinline=1&autoplay=0&widget_referrer=${window.location.href}`;
+                iframe.frameBorder = '0';
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                iframe.allowFullscreen = true;
+                iframe.style.pointerEvents = 'none';
+                
+                const iframeWrapper = container.querySelector('.youtube-iframe-wrapper');
+                if (iframeWrapper) {
+                    iframeWrapper.innerHTML = '';
+                    iframeWrapper.appendChild(iframe);
+                }
+                
+                // Load YouTube API
+                this.loadYouTubeAPI().then(() => {
+                    this.initializePlayer();
+                }).catch(error => {
+                    console.error('Failed to load YouTube API:', error);
+                    this.showError(container, 'Failed to load video');
+                });
+            }
+            
+            loadYouTubeAPI() {
+                return new Promise((resolve, reject) => {
+                    if (window.YT && window.YT.Player) {
+                        this.isYouTubeAPIReady = true;
+                        resolve();
+                        return;
+                    }
+                    
+                    // Check if script is already loading
+                    if (window.youtubeAPILoading) {
+                        const checkInterval = setInterval(() => {
+                            if (window.YT && window.YT.Player) {
+                                clearInterval(checkInterval);
+                                this.isYouTubeAPIReady = true;
+                                resolve();
+                            }
+                        }, 100);
+                        setTimeout(() => {
+                            clearInterval(checkInterval);
+                            if (!window.YT) reject('Timeout loading YouTube API');
+                        }, 10000);
+                        return;
+                    }
+                    
+                    window.youtubeAPILoading = true;
+                    
+                    // Create a more robust YouTube API loading
+                    const tag = document.createElement('script');
+                    tag.src = 'https://www.youtube.com/iframe_api';
+                    
+                    // Add error handling for script loading
+                    tag.onerror = () => {
+                        window.youtubeAPILoading = false;
+                        reject('Failed to load YouTube API script');
+                    };
+                    
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                    
+                    // Set a timeout for API ready
+                    const apiReadyTimeout = setTimeout(() => {
+                        if (!window.YT) {
+                            window.youtubeAPILoading = false;
+                            reject('YouTube API ready timeout');
+                        }
+                    }, 15000);
+                    
+                    window.onYouTubeIframeAPIReady = () => {
+                        clearTimeout(apiReadyTimeout);
+                        window.youtubeAPILoading = false;
+                        this.isYouTubeAPIReady = true;
+                        resolve();
+                    };
+                });
+            }
+            
+            initializePlayer() {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                // Hide loading
+                const loadingEl = container.querySelector('.video-loading');
+                if (loadingEl) loadingEl.style.display = 'none';
+                
+                try {
+                    this.player = new YT.Player(`yt-iframe-${this.containerId}`, {
+                        events: {
+                            'onReady': (event) => this.onPlayerReady(event),
+                            'onStateChange': (event) => this.onPlayerStateChange(event),
+                            'onError': (event) => this.onPlayerError(event),
+                            'onApiChange': (event) => this.onApiChange(event)
+                        },
+                        playerVars: {
+                            'autoplay': this.isStreaming ? 1 : 0,
+                            'controls': 0,
+                            'disablekb': 1,
+                            'enablejsapi': 1,
+                            'fs': 0,
+                            'iv_load_policy': 3,
+                            'modestbranding': 1,
+                            'playsinline': 1,
+                            'rel': 0,
+                            'origin': window.location.origin
+                        }
+                    });
+                    
+                    // Setup controls
+                    this.setupControls(container);
+                } catch (error) {
+                    console.error('Failed to create YouTube player:', error);
+                    // Retry initialization after delay
+                    setTimeout(() => {
+                        this.initializePlayer();
+                    }, 1000);
+                }
+            }
+            
+            onPlayerReady(event) {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                // Set initial volume and playback rate
+                try {
+                    event.target.setVolume(100);
+                    event.target.setPlaybackRate(this.currentPlaybackRate);
+                    
+                    // Update speed button text
+                    const speedBtn = container.querySelector('.speed-btn');
+                    if (speedBtn) {
+                        speedBtn.textContent = `${this.currentPlaybackRate}x`;
+                    }
+                    
+                    // Start update interval
+                    this.startUpdateInterval();
+                    
+                    console.log('YouTube player ready for:', this.videoId);
+                } catch (error) {
+                    console.error('Error in onPlayerReady:', error);
+                }
+            }
+            
+            onPlayerStateChange(event) {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                const playPauseBtn = container.querySelector('.play-pause-btn');
+                if (!playPauseBtn) return;
+                
+                const playIcon = playPauseBtn.querySelector('.play-icon');
+                const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+                
+                if (event.data === YT.PlayerState.PLAYING) {
+                    if (playIcon) playIcon.style.display = 'none';
+                    if (pauseIcon) pauseIcon.style.display = 'block';
+                } else {
+                    if (playIcon) playIcon.style.display = 'block';
+                    if (pauseIcon) pauseIcon.style.display = 'none';
+                }
+                
+                // Auto-hide controls when playing
+                if (event.data === YT.PlayerState.PLAYING) {
+                    this.hideControlsAfterDelay(container);
+                }
+            }
+            
+            onPlayerError(event) {
+                console.error('YouTube player error:', event.data);
+                const container = document.getElementById(this.containerId);
+                if (container) {
+                    this.showError(container, 'Video failed to load. Please check your internet connection.');
+                }
+            }
+            
+            onApiChange(event) {
+                // Handle API changes
+            }
+            
+            setupControls(container) {
+                // Play/Pause button
+                const playPauseBtn = container.querySelector('.play-pause-btn');
+                if (playPauseBtn) {
+                    playPauseBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+                                this.player.pauseVideo();
+                            } else {
+                                this.player.playVideo();
+                            }
+                        } catch (error) {
+                            console.error('Play/Pause error:', error);
+                        }
+                    });
+                }
+                
+                // Progress bar
+                const progressBar = container.querySelector('.top-progress-container');
+                if (progressBar) {
+                    progressBar.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            const rect = progressBar.getBoundingClientRect();
+                            const clickX = e.clientX - rect.left;
+                            const percentage = (clickX / rect.width) * 100;
+                            const duration = this.player.getDuration();
+                            const seekTime = (percentage / 100) * duration;
+                            this.player.seekTo(seekTime, true);
+                        } catch (error) {
+                            console.error('Seek error:', error);
+                        }
+                    });
+                }
+                
+                // Volume button
+                const volumeBtn = container.querySelector('.volume-btn');
+                if (volumeBtn) {
+                    volumeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            const currentVolume = this.player.getVolume();
+                            if (currentVolume > 0) {
+                                this.player.setVolume(0);
+                                volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                            } else {
+                                this.player.setVolume(100);
+                                volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                            }
+                        } catch (error) {
+                            console.error('Volume error:', error);
+                        }
+                    });
+                }
+                
+                // Chat button (new)
+                const chatBtn = container.querySelector('.chat-control-btn');
+                if (chatBtn) {
+                    chatBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Exit fullscreen if active
+                        if (document.fullscreenElement) {
+                            this.exitFullscreen();
+                        }
+                        // Focus on chat input
+                        if (this.appInstance) {
+                            this.appInstance.focusChatInput();
+                        }
+                    });
+                }
+                
+                // Fullscreen button
+                const fullscreenBtn = container.querySelector('.fullscreen-btn');
+                if (fullscreenBtn) {
+                    fullscreenBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleFullscreen(container);
+                    });
+                }
+                
+                // Speed control button
+                const speedBtn = container.querySelector('.speed-btn');
+                if (speedBtn) {
+                    speedBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            // Cycle to next playback rate
+                            const currentIndex = this.playbackRates.indexOf(this.currentPlaybackRate);
+                            const nextIndex = (currentIndex + 1) % this.playbackRates.length;
+                            this.currentPlaybackRate = this.playbackRates[nextIndex];
+                            
+                            // Apply to player
+                            this.player.setPlaybackRate(this.currentPlaybackRate);
+                            
+                            // Update button text
+                            speedBtn.textContent = `${this.currentPlaybackRate}x`;
+                        } catch (error) {
+                            console.error('Speed control error:', error);
+                        }
+                    });
+                }
+                
+                // Double tap for skipping
+                const overlay = container.querySelector('.video-overlay');
+                if (overlay) {
+                    let lastTapTime = 0;
+                    let tapCount = 0;
+                    let tapTimeout;
+                    
+                    overlay.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const currentTime = Date.now();
+                        const rect = overlay.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+                        const isLeftSide = clickX < rect.width / 2;
+                        
+                        // Check for double tap (within 300ms)
+                        if (currentTime - lastTapTime < 300) {
+                            tapCount++;
+                            clearTimeout(tapTimeout);
+                            
+                            if (tapCount === 2) {
+                                // Double tap detected
+                                this.handleDoubleTap(isLeftSide);
+                                tapCount = 0;
+                            }
+                        } else {
+                            tapCount = 1;
+                        }
+                        
+                        lastTapTime = currentTime;
+                        
+                        // Reset tap count after 300ms
+                        tapTimeout = setTimeout(() => {
+                            tapCount = 0;
+                        }, 300);
+                    });
+                }
+                
+                // Click overlay to toggle play/pause
+                if (overlay) {
+                    overlay.addEventListener('click', (e) => {
+                        // Don't toggle if clicking on control buttons or progress bar
+                        if (e.target.closest('.control-btn') || 
+                            e.target.closest('.top-progress-container') || 
+                            e.target.closest('.speed-btn') ||
+                            e.target.closest('.chat-control-btn')) {
+                            return;
+                        }
+                        
+                        if (!this.player) return;
+                        
+                        try {
+                            if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+                                this.player.pauseVideo();
+                            } else {
+                                this.player.playVideo();
+                            }
+                        } catch (error) {
+                            console.error('Overlay click error:', error);
+                        }
+                    });
+                    
+                    // Show controls on hover/touch
+                    let hideTimeout;
+                    const showControls = () => {
+                        const controlBar = container.querySelector('.modern-control-bar');
+                        if (controlBar) {
+                            controlBar.classList.add('visible');
+                            clearTimeout(hideTimeout);
+                        }
+                    };
+                    
+                    overlay.addEventListener('mouseenter', showControls);
+                    overlay.addEventListener('mousemove', showControls);
+                    overlay.addEventListener('mouseleave', () => {
+                        this.hideControlsAfterDelay(container);
+                    });
+                    
+                    overlay.addEventListener('touchstart', showControls);
+                    overlay.addEventListener('touchmove', showControls);
+                }
+            }
+            
+            hideControlsAfterDelay(container) {
+                const controlBar = container.querySelector('.modern-control-bar');
+                if (controlBar && this.player && this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+                    setTimeout(() => {
+                        controlBar.classList.remove('visible');
+                    }, 2000);
+                }
+            }
+            
+            handleDoubleTap(isLeftSide) {
+                if (!this.player) return;
+                
+                const container = document.getElementById(this.containerId);
+                const currentTime = this.player.getCurrentTime();
+                
+                // Show visual feedback with text
+                const indicator = container.querySelector(isLeftSide ? '.double-tap-left' : '.double-tap-right');
+                if (indicator) {
+                    indicator.classList.add('show');
+                    setTimeout(() => {
+                        indicator.classList.remove('show');
+                    }, 500);
+                }
+                
+                // Skip backward 10 seconds on left side, forward 20 seconds on right side
+                try {
+                    if (isLeftSide) {
+                        const newTime = Math.max(0, currentTime - 10);
+                        this.player.seekTo(newTime, true);
+                    } else {
+                        const duration = this.player.getDuration();
+                        const newTime = Math.min(duration, currentTime + 20);
+                        this.player.seekTo(newTime, true);
+                    }
+                } catch (error) {
+                    console.error('Double tap seek error:', error);
+                }
+            }
+            
+            startUpdateInterval() {
+                if (this.updateInterval) clearInterval(this.updateInterval);
+                
+                this.updateInterval = setInterval(() => {
+                    this.updateUI();
+                }, 500);
+            }
+            
+            updateUI() {
+                const container = document.getElementById(this.containerId);
+                if (!container || !this.player) return;
+                
+                try {
+                    const currentTime = this.player.getCurrentTime();
+                    const duration = this.player.getDuration();
+                    const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+                    
+                    // Update progress bar
+                    const progressTrack = container.querySelector('.progress-track');
+                    const progressThumb = container.querySelector('.progress-thumb');
+                    if (progressTrack && progressThumb) {
+                        progressTrack.style.width = `${progress}%`;
+                        progressThumb.style.left = `${progress}%`;
+                    }
+                    
+                    // Update time display
+                    const timeDisplay = container.querySelector('.time-display');
+                    if (timeDisplay) {
+                        const formatTime = (seconds) => {
+                            if (isNaN(seconds)) return '0:00';
+                            const mins = Math.floor(seconds / 60);
+                            const secs = Math.floor(seconds % 60);
+                            return `${mins}:${secs.toString().padStart(2, '0')}`;
+                        };
+                        timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                    }
+                    
+                    // Update volume icon
+                    const volumeBtn = container.querySelector('.volume-btn');
+                    if (volumeBtn) {
+                        const volume = this.player.getVolume();
+                        if (volume > 0) {
+                            volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                        } else {
+                            volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                        }
+                    }
+                } catch (error) {
+                    // Player might not be ready yet
+                }
+            }
+            
+            toggleFullscreen(container) {
+                const videoWrapper = container.closest('.video-wrapper');
+                if (!videoWrapper) return;
+                
+                if (!document.fullscreenElement) {
+                    if (videoWrapper.requestFullscreen) {
+                        videoWrapper.requestFullscreen();
+                    } else if (videoWrapper.webkitRequestFullscreen) {
+                        videoWrapper.webkitRequestFullscreen();
+                    } else if (videoWrapper.msRequestFullscreen) {
+                        videoWrapper.msRequestFullscreen();
+                    }
+                } else {
+                    this.exitFullscreen();
+                }
+                
+                // Update fullscreen button icon
+                const fullscreenBtn = container.querySelector('.fullscreen-btn i');
+                if (fullscreenBtn) {
+                    if (!document.fullscreenElement) {
+                        fullscreenBtn.className = 'fas fa-expand';
+                    } else {
+                        fullscreenBtn.className = 'fas fa-compress';
+                    }
+                }
+            }
+            
+            exitFullscreen() {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+            
+            showError(container, message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'player-error';
+                errorDiv.textContent = message;
+                
+                const existingError = container.querySelector('.player-error');
+                if (existingError) existingError.remove();
+                
+                container.appendChild(errorDiv);
+            }
+            
+            pause() {
+                if (this.player && this.player.pauseVideo) {
+                    try {
+                        this.player.pauseVideo();
+                    } catch (error) {
+                        console.error('Pause error:', error);
+                    }
+                }
+            }
+            
+            destroy() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                if (this.player && this.player.destroy) {
+                    try {
+                        this.player.destroy();
+                    } catch (error) {
+                        console.error('Destroy error:', error);
+                    }
+                }
+            }
+        }
+        
+        // Global player instances
+        const videoPlayers = new Map();
+        
+        // Initialize video players
+        function initVideoPlayers() {
+            document.querySelectorAll('.video-player-container').forEach(container => {
+                const containerId = container.id;
+                const videoId = container.dataset.videoId;
+                const isStreaming = container.dataset.isStreaming === 'true';
+                
+                if (!videoPlayers.has(containerId) && videoId) {
+                    const player = new SimpleYouTubePlayer(containerId, videoId, isStreaming);
+                    videoPlayers.set(containerId, player);
+                }
+            });
+        }
+        
+        // Clean up video players
+        function cleanupVideoPlayers() {
+            for (const [id, player] of videoPlayers) {
+                player.destroy();
+            }
+            videoPlayers.clear();
+        }
+        
+        // Pause all video players
+        function pauseAllVideoPlayers() {
+            for (const [id, player] of videoPlayers) {
+                player.pause();
+            }
+        }
+        
+        // ===== RENDER MANAGER =====
+        class RenderManager {
+            constructor() {
+                this.renderQueue = Promise.resolve();
+                this.isRendering = false;
+                this.katexOptions = {
+                    delimiters: [
+                        { left: '$$', right: '$$', display: true },
+                        { left: '$', right: '$', display: false },
+                        { left: '\\(', right: '\\)', display: false },
+                        { left: '\\[', right: '\\]', display: true },
+                        { left: '\\ce{', right: '}', display: false },
+                        { left: '\\chem{', right: '}', display: false }
+                    ],
+                    throwOnError: false,
+                    errorColor: '#cc0000',
+                    strict: false,
+                    trust: false,
+                    macros: {
+                        "\\ce": "\\text{\\ce{#1}}",
+                        "\\cf": "\\text{\\cf{#1}}",
+                        "\\cfright": "\\text{\\cfright{#1}{#2}}",
+                        "\\cfleft": "\\text{\\cfleft{#1}{#2}}"
+                    }
+                };
+                this.renderedElements = new WeakSet();
+                this.mutationObserver = null;
+                this.setupMutationObserver();
+            }
+            
+            setupMutationObserver() {
+                this.mutationObserver = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'childList') {
+                            mutation.addedNodes.forEach((node) => {
+                                if (node.nodeType === Node.ELEMENT_NODE) {
+                                    this.scheduleKaTeXRender(node);
+                                    
+                                    if (node.querySelector('.video-player-container') || 
+                                        node.classList?.contains('video-player-container')) {
+                                        setTimeout(initVideoPlayers, 100);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+            
+            observeContainer(container) {
+                if (this.mutationObserver) {
+                    this.mutationObserver.disconnect();
+                    this.mutationObserver.observe(container, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            }
+            
+            scheduleRender(renderFn) {
+                this.renderQueue = this.renderQueue
+                    .then(() => new Promise((resolve) => {
+                        this.isRendering = true;
+                        requestAnimationFrame(() => {
+                            try {
+                                renderFn();
+                            } catch (error) {
+                                console.error("Render error:", error);
+                            } finally {
+                                this.isRendering = false;
+                                resolve();
+                            }
+                        });
+                    }))
+                    .catch(error => {
+                        console.error("Render queue error:", error);
+                        this.isRendering = false;
+                    });
+                
+                return this.renderQueue;
+            }
+            
+            normalizeLaTeX(content) {
+                if (!content) return '';
+                
+                let normalized = content.replace(/\\n/g, '\n');
+                normalized = normalized.replace(/\\ce\{/g, '\\ce{');
+                normalized = normalized.replace(/\\chem\{/g, '\\chem{');
+                normalized = normalized.replace(/([^\\])\$(?!\s)/g, '$1 $');
+                normalized = normalized.replace(/([^\\])\$(?!\s)/g, '$1 $');
+                
+                return normalized;
+            }
+            
+            renderKaTeX(element) {
+                if (!element || typeof renderMathInElement === 'undefined') {
+                    return;
+                }
+                
+                if (this.renderedElements.has(element)) {
+                    return;
+                }
+                
+                try {
+                    renderMathInElement(element, this.katexOptions);
+                    
+                    if (typeof mhchem !== 'undefined') {
+                        element.querySelectorAll('.katex').forEach((katexEl) => {
+                            if (!katexEl.textContent.includes('\\ce') && 
+                                !katexEl.textContent.includes('\\chem')) {
+                                return;
+                            }
+                            
+                            try {
+                                const tex = katexEl.getAttribute('data-tex');
+                                if (tex && (tex.includes('\\ce') || tex.includes('\\chem'))) {
+                                    katex.render(tex, katexEl, {
+                                        ...this.katexOptions,
+                                        throwOnError: false
+                                    });
+                                }
+                            } catch (chemError) {
+                                console.warn("Chemistry rendering failed:", chemError);
+                            }
+                        });
+                    }
+                    
+                    this.renderedElements.add(element);
+                } catch (error) {
+                    console.error("KaTeX rendering failed:", error);
+                }
+            }
+            
+            scheduleKaTeXRender(element) {
+                if (!element) return;
+                
+                requestAnimationFrame(() => {
+                    this.renderKaTeX(element);
+                    
+                    element.querySelectorAll('.question-text, .option-text, .explanation-text, .latex-content, .message-bubble').forEach(child => {
+                        if (!this.renderedElements.has(child)) {
+                            this.renderKaTeX(child);
+                        }
+                    });
+                });
+            }
+            
+            clearRenderedCache() {
+                this.renderedElements = new WeakSet();
+            }
+        }
+        
+        // ===== STATE MANAGER =====
+        class StateManager {
+            constructor() {
+                this.liveQuestions = [];
+                this.activeQuestion = null;
+                this.streamingVideoUrl = null;
+                this.profileImageUrl = null;
+                this.userSelections = new Map();
+                this.submittedQuestions = new Set();
+                this.questionTimers = new Map();
+                this.userCounts = new Map();
+                this.questionStartTimes = new Map();
+                this.chatMessages = [];
+                this.currentUser = 'user_' + Math.random().toString(36).substr(2, 9);
+            }
+            
+            // Streaming video methods
+            setStreamingVideoUrl(url) {
+                this.streamingVideoUrl = url;
+            }
+            
+            getStreamingVideoUrl() {
+                return this.streamingVideoUrl;
+            }
+            
+            // Profile image
+            setProfileImageUrl(url) {
+                this.profileImageUrl = url;
+            }
+            
+            getProfileImageUrl() {
+                return this.profileImageUrl;
+            }
+            
+            // Active question methods
+            setActiveQuestion(question) {
+                this.activeQuestion = question;
+            }
+            
+            getActiveQuestion() {
+                return this.activeQuestion;
+            }
+            
+            // Questions methods
+            setLiveQuestions(questions) {
+                this.liveQuestions = questions.filter(q => q.status === true);
+                
+                // Find active question (most recent with status true)
+                if (this.liveQuestions.length > 0) {
+                    const sortedQuestions = [...this.liveQuestions].sort((a, b) => b.order - a.order);
+                    this.activeQuestion = sortedQuestions[0];
+                }
+                
+                // Calculate end times for each question
+                this.liveQuestions.forEach(question => {
+                    if (question.timer && question.timeLimit) {
+                        const startTime = question.timer.toDate ? question.timer.toDate().getTime() : question.timer;
+                        const endTime = startTime + (question.timeLimit * 1000);
+                        
+                        this.setQuestionTimer(question.id, {
+                            timestamp: question.timer,
+                            timeLimit: question.timeLimit,
+                            endTime: endTime
+                        });
+                        
+                        // Store when the question became active
+                        this.questionStartTimes.set(question.id, startTime);
+                    }
+                });
+            }
+            
+            getLiveQuestions() {
+                return this.liveQuestions;
+            }
+            
+            getQuestionById(id) {
+                return this.liveQuestions.find(q => q.id === id) || this.activeQuestion?.id === id ? this.activeQuestion : null;
+            }
+            
+            // User selections
+            setUserSelection(questionId, optionIndex) {
+                this.userSelections.set(questionId, optionIndex);
+            }
+            
+            getUserSelection(questionId) {
+                return this.userSelections.get(questionId);
+            }
+            
+            markSubmitted(questionId) {
+                this.submittedQuestions.add(questionId);
+            }
+            
+            isSubmitted(questionId) {
+                return this.submittedQuestions.has(questionId);
+            }
+            
+            // Timer methods
+            setQuestionTimer(questionId, timerData) {
+                this.questionTimers.set(questionId, timerData);
+            }
+            
+            getQuestionTimer(questionId) {
+                return this.questionTimers.get(questionId);
+            }
+            
+            // User counts
+            setUserCounts(questionId, counts) {
+                this.userCounts.set(questionId, counts);
+            }
+            
+            getUserCounts(questionId) {
+                return this.userCounts.get(questionId);
+            }
+            
+            // Question start time
+            getQuestionStartTime(questionId) {
+                return this.questionStartTimes.get(questionId);
+            }
+            
+            // Chat methods
+            addChatMessage(message) {
+                this.chatMessages.push(message);
+                // Keep only last 100 messages
+                if (this.chatMessages.length > 100) {
+                    this.chatMessages = this.chatMessages.slice(-100);
+                }
+            }
+            
+            getChatMessages() {
+                return this.chatMessages;
+            }
+            
+            getCurrentUser() {
+                return this.currentUser;
+            }
+        }
+        
+        // ===== MAIN APP =====
+        class ConceptBlitzLiveApp {
+            constructor() {
+                this.renderManager = new RenderManager();
+                this.stateManager = new StateManager();
+                this.isInitialized = false;
+                this.activeQuestionTimers = new Map();
+                this.fullscreenMode = false;
+                this.currentTab = 'chat';
+                
+                // DOM Elements
+                this.appWrapper = document.getElementById('app-wrapper');
+                this.activeQuestionOverlay = document.getElementById('active-question-overlay');
+                this.streamingVideoContainer = document.getElementById('streaming-video-container');
+                this.chatContainer = document.getElementById('chat-container');
+                this.questionsContainer = document.getElementById('questions-container');
+                this.fullscreenQuestionsOverlay = document.getElementById('fullscreen-questions-overlay');
+                this.profileImageContainer = document.getElementById('profile-image-container');
+                this.chatInput = document.querySelector('.search-box');
+                this.sendMessageBtn = document.getElementById('send-message-btn');
+                this.tabButtons = document.querySelectorAll('.tab-button');
+                
+                // Firebase
+                this.db = null;
+                this.firebaseConfig = {
+                    apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                    authDomain: "geobazarr.firebaseapp.com",
+                    databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                    projectId: "geobazarr",
+                    storageBucket: "geobazarr.firebasestorage.app",
+                    messagingSenderId: "679949247383",
+                    appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+                };
+                
+                // Bind methods
+                this.handleOptionClick = this.handleOptionClick.bind(this);
+                this.handleSubmitClick = this.handleSubmitClick.bind(this);
+                this.handleFullscreenChange = this.handleFullscreenChange.bind(this);
+                this.handleSendMessage = this.handleSendMessage.bind(this);
+                this.handleTabClick = this.handleTabClick.bind(this);
+                this.handleChatInputKeydown = this.handleChatInputKeydown.bind(this);
+                
+                this.initialize();
+            }
+            
+            initialize() {
+                if (this.isInitialized) return;
+                
+                try {
+                    firebase.initializeApp(this.firebaseConfig);
+                    this.db = firebase.firestore();
+                    console.log("Firebase initialized successfully");
+                    
+                    this.setupEventDelegation();
+                    this.setupFullscreenListener();
+                    this.setupChatListeners();
+                    this.isInitialized = true;
+                    
+                    // Load data
+                    this.loadStreamingVideo();
+                    this.loadProfileImage();
+                    this.loadLiveQuestions();
+                    this.loadChatMessages();
+                    
+                    // Set up real-time listeners
+                    this.setupRealtimeListeners();
+                    
+                    // Auto-resize chat input
+                    this.setupChatInputAutoResize();
+                } catch (error) {
+                    console.error("Firebase initialization error:", error);
+                    this.showError("Firebase initialization failed. Please refresh the page.");
+                }
+            }
+            
+            setupEventDelegation() {
+                document.addEventListener('click', (e) => {
+                    const target = e.target;
+                    
+                    // Option item click (in active question overlay)
+                    if (target.closest('.active-option-item')) {
+                        const optionItem = target.closest('.active-option-item');
+                        this.handleActiveOptionClick(optionItem);
+                    }
+                    
+                    // Submit button click (in active question overlay)
+                    if (target.closest('.active-submit-button')) {
+                        this.handleActiveSubmitClick();
+                    }
+                    
+                    // Option item click (in questions container)
+                    if (target.closest('.option-item')) {
+                        const optionItem = target.closest('.option-item');
+                        const questionSection = optionItem.closest('.question-section');
+                        if (questionSection && !questionSection.classList.contains('submitted')) {
+                            this.handleOptionClick(questionSection, optionItem);
+                        }
+                    }
+                    
+                    // Submit button click (in questions container)
+                    if (target.closest('.submit-button')) {
+                        const submitButton = target.closest('.submit-button');
+                        const questionSection = submitButton.closest('.question-section');
+                        if (questionSection) {
+                            this.handleSubmitClick(questionSection);
+                        }
+                    }
+                    
+                    // Tab button click
+                    if (target.closest('.tab-button')) {
+                        const tabButton = target.closest('.tab-button');
+                        this.handleTabClick(tabButton);
+                    }
+                });
+            }
+            
+            setupChatListeners() {
+                this.sendMessageBtn.addEventListener('click', this.handleSendMessage);
+                this.chatInput.addEventListener('keydown', this.handleChatInputKeydown);
+            }
+            
+            setupChatInputAutoResize() {
+                this.chatInput.addEventListener('input', () => {
+                    this.chatInput.style.height = 'auto';
+                    this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
+                });
+            }
+            
+            setupFullscreenListener() {
+                document.addEventListener('fullscreenchange', this.handleFullscreenChange);
+                document.addEventListener('webkitfullscreenchange', this.handleFullscreenChange);
+                document.addEventListener('mozfullscreenchange', this.handleFullscreenChange);
+                document.addEventListener('MSFullscreenChange', this.handleFullscreenChange);
+            }
+            
+            handleFullscreenChange() {
+                this.fullscreenMode = !!(document.fullscreenElement || 
+                                         document.webkitFullscreenElement || 
+                                         document.mozFullScreenElement || 
+                                         document.msFullscreenElement);
+                
+                if (this.fullscreenMode) {
+                    this.showQuestionsInFullscreen();
+                } else {
+                    this.hideQuestionsInFullscreen();
+                }
+            }
+            
+            showQuestionsInFullscreen() {
+                const questions = this.stateManager.getLiveQuestions();
+                let overlayHtml = '';
+                
+                questions.forEach(question => {
+                    const questionId = question.id;
+                    const userSelection = this.stateManager.getUserSelection(questionId);
+                    const isSubmitted = this.stateManager.isSubmitted(questionId);
+                    const timerData = this.stateManager.getQuestionTimer(questionId);
+                    const userCounts = this.stateManager.getUserCounts(questionId);
+                    const remainingTime = timerData ? this.calculateRemainingTime(timerData) : 0;
+                    const isExpired = remainingTime <= 0;
+                    
+                    overlayHtml += this.renderQuestion(question, userSelection, isSubmitted, timerData, userCounts, true);
+                });
+                
+                this.fullscreenQuestionsOverlay.innerHTML = overlayHtml;
+                this.fullscreenQuestionsOverlay.classList.add('active');
+            }
+            
+            hideQuestionsInFullscreen() {
+                this.fullscreenQuestionsOverlay.classList.remove('active');
+            }
+            
+            handleTabClick(tabButton) {
+                const tab = tabButton.dataset.tab;
+                this.currentTab = tab;
+                
+                // Update tab buttons
+                this.tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabButton.classList.add('active');
+                
+                // Update tab contents
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tab}-container`).classList.add('active');
+            }
+            
+            focusChatInput() {
+                this.chatInput.focus();
+                // Switch to chat tab if not already
+                if (this.currentTab !== 'chat') {
+                    document.querySelector('.tab-button[data-tab="chat"]').click();
+                }
+            }
+            
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'p-8 text-center';
+                errorDiv.innerHTML = `
+                    <p class="text-red-600">${message}</p>
+                    <button id="retry-load" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Retry
+                    </button>
+                `;
+                
+                this.questionsContainer.innerHTML = '';
+                this.questionsContainer.appendChild(errorDiv);
+                
+                document.getElementById('retry-load')?.addEventListener('click', () => {
+                    this.loadStreamingVideo();
+                    this.loadLiveQuestions();
+                }, { once: true });
+            }
+            
+            showLoading() {
+                this.questionsContainer.innerHTML = `
+                    <div class="single-loading-placeholder">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2">Loading past questions...</p>
+                    </div>
+                `;
+            }
+            
+            updateProfileImage() {
+                const profileUrl = this.stateManager.getProfileImageUrl();
+                if (profileUrl) {
+                    this.profileImageContainer.innerHTML = `
+                        <img src="${profileUrl}" alt="Profile" class="profile-image" onerror="this.src='https://placehold.co/40x40/3B82F6/FFFFFF?text=U'">
+                    `;
+                } else {
+                    this.profileImageContainer.innerHTML = `
+                        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;font-weight:600;">U</div>
+                    `;
+                }
+            }
+            
+            // ===== DATA METHODS =====
+            async loadStreamingVideo() {
+                if (!this.db) return;
+                
+                try {
+                    const streamingDoc = await this.db.collection('live_question').doc('live_streaming').get();
+                    
+                    if (streamingDoc.exists) {
+                        const data = streamingDoc.data();
+                        const videoUrl = data.live_videoUrl;
+                        
+                        if (videoUrl) {
+                            this.stateManager.setStreamingVideoUrl(videoUrl);
+                            this.renderStreamingVideo(videoUrl);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error loading streaming video:", error);
+                }
+            }
+            
+            async loadProfileImage() {
+                try {
+                    const bannerDoc = await this.db.collection('courses').doc('banner').get();
+                    
+                    if (bannerDoc.exists) {
+                        const bannerData = bannerDoc.data();
+                        if (bannerData.profile_imageUrl) {
+                            this.stateManager.setProfileImageUrl(bannerData.profile_imageUrl);
+                            this.updateProfileImage();
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error loading profile image:", error);
+                }
+            }
+            
+            async loadLiveQuestions() {
+                if (!this.db) {
+                    this.showError("Database not initialized");
+                    return;
+                }
+                
+                this.showLoading();
+                
+                try {
+                    const questionsSnapshot = await this.db.collection('live_questions')
+                        .orderBy('order')
+                        .get();
+                    
+                    if (questionsSnapshot.empty) {
+                        this.questionsContainer.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No live questions available.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    const questions = [];
+                    questionsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        const questionData = {
+                            id: doc.id,
+                            question: this.renderManager.normalizeLaTeX(data.question || ''),
+                            options: (data.options || []).map(opt => this.renderManager.normalizeLaTeX(opt || '')),
+                            correctIndex: data.correctIndex || 0,
+                            order: data.order || 0,
+                            status: data.status || false,
+                            timer: data.timer || null,
+                            timeLimit: data.timeLimit || 30
+                        };
+                        
+                        if (questionData.status) {
+                            questions.push(questionData);
+                        }
+                    });
+                    
+                    this.stateManager.setLiveQuestions(questions);
+                    
+                    await this.renderManager.scheduleRender(() => {
+                        this.renderActiveQuestion();
+                        this.renderPastQuestions();
+                    });
+                    
+                } catch (error) {
+                    console.error("Error loading live questions:", error);
+                    this.showError("Failed to load live questions. Please check your internet connection.");
+                }
+            }
+            
+            async loadChatMessages() {
+                if (!this.db) return;
+                
+                try {
+                    const messagesSnapshot = await this.db.collection('chat_messages')
+                        .orderBy('timestamp', 'desc')
+                        .limit(50)
+                        .get();
+                    
+                    const messages = [];
+                    messagesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        messages.push({
+                            id: doc.id,
+                            text: data.text || '',
+                            imageUrl: data.imageUrl || '',
+                            sender: data.sender || 'unknown',
+                            timestamp: data.timestamp?.toDate() || new Date(),
+                            isCurrentUser: data.sender === this.stateManager.getCurrentUser()
+                        });
+                    });
+                    
+                    // Reverse to show oldest first
+                    messages.reverse();
+                    this.stateManager.chatMessages = messages;
+                    this.renderChatMessages();
+                } catch (error) {
+                    console.error("Error loading chat messages:", error);
+                }
+            }
+            
+            async sendChatMessage(text, imageUrl = '') {
+                if (!this.db) return;
+                
+                if (!text.trim() && !imageUrl) return;
+                
+                const message = {
+                    text: text.trim(),
+                    imageUrl: imageUrl,
+                    sender: this.stateManager.getCurrentUser(),
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                try {
+                    await this.db.collection('chat_messages').add(message);
+                    this.chatInput.value = '';
+                    this.chatInput.style.height = 'auto';
+                } catch (error) {
+                    console.error("Error sending chat message:", error);
+                    alert("Failed to send message. Please try again.");
+                }
+            }
+            
+            setupRealtimeListeners() {
+                if (!this.db) return;
+                
+                // Listen for streaming video updates
+                this.db.collection('live_question').doc('live_streaming')
+                    .onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            const videoUrl = data.live_videoUrl;
+                            
+                            if (videoUrl && videoUrl !== this.stateManager.getStreamingVideoUrl()) {
+                                this.stateManager.setStreamingVideoUrl(videoUrl);
+                                this.renderStreamingVideo(videoUrl);
+                            }
+                        }
+                    });
+                
+                // Listen for live questions updates
+                this.db.collection('live_questions')
+                    .onSnapshot((snapshot) => {
+                        const questions = [];
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            const questionData = {
+                                id: doc.id,
+                                question: this.renderManager.normalizeLaTeX(data.question || ''),
+                                options: (data.options || []).map(opt => this.renderManager.normalizeLaTeX(opt || '')),
+                                correctIndex: data.correctIndex || 0,
+                                order: data.order || 0,
+                                status: data.status || false,
+                                timer: data.timer || null,
+                                timeLimit: data.timeLimit || 30
+                            };
+                            
+                            if (questionData.status) {
+                                questions.push(questionData);
+                            }
+                        });
+                        
+                        this.stateManager.setLiveQuestions(questions);
+                        this.renderActiveQuestion();
+                        this.renderPastQuestions();
+                    });
+                
+                // Listen for chat messages
+                this.db.collection('chat_messages')
+                    .orderBy('timestamp', 'desc')
+                    .limit(50)
+                    .onSnapshot((snapshot) => {
+                        const messages = [];
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            messages.push({
+                                id: doc.id,
+                                text: data.text || '',
+                                imageUrl: data.imageUrl || '',
+                                sender: data.sender || 'unknown',
+                                timestamp: data.timestamp?.toDate() || new Date(),
+                                isCurrentUser: data.sender === this.stateManager.getCurrentUser()
+                            });
+                        });
+                        
+                        // Reverse to show oldest first
+                        messages.reverse();
+                        this.stateManager.chatMessages = messages;
+                        this.renderChatMessages();
+                    });
+            }
+            
+            // ===== RENDER METHODS =====
+            renderStreamingVideo(videoUrl) {
+                let videoId = '';
+                
+                if (videoUrl.includes('youtube.com/watch?v=')) {
+                    videoId = videoUrl.split('v=')[1];
+                    const ampersandPosition = videoId.indexOf('&');
+                    if (ampersandPosition !== -1) {
+                        videoId = videoId.substring(0, ampersandPosition);
+                    }
+                } else if (videoUrl.includes('youtu.be/')) {
+                    videoId = videoUrl.split('youtu.be/')[1];
+                    const questionMarkPosition = videoId.indexOf('?');
+                    if (questionMarkPosition !== -1) {
+                        videoId = videoId.substring(0, questionMarkPosition);
+                    }
+                } else if (videoUrl.includes('youtube.com/embed/')) {
+                    videoId = videoUrl.split('embed/')[1];
+                    const slashPosition = videoId.indexOf('/');
+                    if (slashPosition !== -1) {
+                        videoId = videoId.substring(0, slashPosition);
+                    }
+                } else {
+                    videoId = videoUrl.trim();
+                }
+                
+                const uniqueId = `streaming-video-${Date.now()}`;
+                const videoHtml = this.renderSingleVideoPlayer(videoId, uniqueId, true);
+                
+                this.streamingVideoContainer.innerHTML = videoHtml;
+                
+                // Initialize video player
+                setTimeout(() => {
+                    initVideoPlayers();
+                }, 500);
+            }
+            
+            renderSingleVideoPlayer(videoId, uniqueId, isStreaming = false) {
+                return `
+                    <div class="video-wrapper">
+                        <div class="video-player-container" id="${uniqueId}" data-video-id="${videoId}" data-is-streaming="${isStreaming}">
+                            <div class="double-tap-indicator double-tap-left">
+                                <div class="double-tap-text">10 sec</div>
+                            </div>
+                            <div class="double-tap-indicator double-tap-right">
+                                <div class="double-tap-text">20 sec</div>
+                            </div>
+                            
+                            <div class="youtube-iframe-wrapper">
+                                <!-- YouTube iframe will be inserted here -->
+                            </div>
+                            <div class="video-overlay">
+                                <div class="modern-control-bar">
+                                    <div class="top-progress-container" title="Progress">
+                                        <div class="progress-track"></div>
+                                        <div class="progress-thumb"></div>
+                                    </div>
+                                    
+                                    <div class="controls-row">
+                                        <div class="left-controls">
+                                            <button class="control-btn play-pause-btn" title="Play/Pause">
+                                                <svg class="play-icon" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                                                    <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zM188.3 147.1c7.6-4.2 16.8-4.1 24.3 .5l144 88c7.1 4.4 11.5 12.1 11.5 20.5s-4.4 16.1-11.5 20.5l-144 88c-7.4 4.5-16.7 4.7-24.3 .5s-12.3-12.2-12.3-20.9V168c0-8.7 4.7-16.7 12.3-20.9z"/>
+                                                </svg>
+                                                <svg class="pause-icon" style="display:none;" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                                                    <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm224-72V328c0 13.3-10.7 24-24 24s-24-10.7-24-24V184c0-13.3 10.7-24 24-24s24 10.7 24 24zm112 0V328c0 13.3-10.7 24-24 24s-24-10.7-24-24V184c0-13.3 10.7-24 24-24s24 10.7 24 24z"/>
+                                                </svg>
+                                            </button>
+                                            
+                                            <button class="control-btn chat-control-btn" title="Chat">
+                                                <i class="fas fa-comment"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="center-controls">
+                                            <span class="time-display">0:00 / 0:00</span>
+                                        </div>
+                                        
+                                        <div class="right-controls">
+                                            <div class="speed-control">
+                                                <button class="control-btn speed-btn" title="Playback Speed">1x</button>
+                                            </div>
+                                            
+                                            <button class="control-btn volume-btn" title="Volume">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                            
+                                            <button class="control-btn fullscreen-btn" title="Fullscreen">
+                                                <i class="fas fa-expand"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="video-loading">
+                                    <div class="video-loading-spinner"></div>
+                                    <span>Loading live stream...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderActiveQuestion() {
+                const activeQuestion = this.stateManager.getActiveQuestion();
+                
+                if (!activeQuestion) {
+                    this.activeQuestionOverlay.classList.remove('active');
+                    return;
+                }
+                
+                const questionId = activeQuestion.id;
+                const userSelection = this.stateManager.getUserSelection(questionId);
+                const isSubmitted = this.stateManager.isSubmitted(questionId);
+                const timerData = this.stateManager.getQuestionTimer(questionId);
+                const remainingTime = timerData ? this.calculateRemainingTime(timerData) : 0;
+                const isExpired = remainingTime <= 0;
+                const timerText = isExpired ? 'Time Up' : this.formatTime(remainingTime);
+                const showWarning = remainingTime > 0 && remainingTime <= 10;
+                
+                let optionsHtml = '';
+                if (activeQuestion.options && activeQuestion.options.length > 0) {
+                    optionsHtml = activeQuestion.options.map((option, optionIndex) => {
+                        const isSelected = userSelection === optionIndex;
+                        const isCorrect = isExpired && optionIndex === activeQuestion.correctIndex;
+                        const isIncorrect = isExpired && isSelected && optionIndex !== activeQuestion.correctIndex;
+                        
+                        let classes = 'active-option-item';
+                        if (isSelected) classes += ' selected';
+                        if (isCorrect) classes += ' correct';
+                        if (isIncorrect) classes += ' incorrect';
+                        
+                        return `
+                            <div class="${classes}" data-option-index="${optionIndex}">
+                                <div class="active-option-marker">${String.fromCharCode(65 + optionIndex)}</div>
+                                <div class="active-option-text">${option || ''}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                
+                const html = `
+                    <div class="active-question-header">
+                        <div class="active-question-number">Question ${activeQuestion.order}</div>
+                        <div class="active-question-timer ${isExpired ? 'expired' : ''} ${showWarning ? 'warning' : ''}">${timerText}</div>
+                    </div>
+                    <div class="active-question-text latex-content">${activeQuestion.question || ''}</div>
+                    <div class="active-options-container">
+                        ${optionsHtml}
+                    </div>
+                    <button class="active-submit-button" ${userSelection === undefined || isSubmitted || isExpired ? 'disabled' : ''}>
+                        ${isSubmitted ? 'Submitted' : (isExpired ? 'Time Up' : 'Submit Answer')}
+                    </button>
+                `;
+                
+                this.activeQuestionOverlay.innerHTML = html;
+                this.activeQuestionOverlay.classList.add('active');
+                
+                // Start timer for active question
+                this.startActiveQuestionTimer(questionId, timerData);
+                
+                // Schedule KaTeX rendering
+                this.renderManager.scheduleKaTeXRender(this.activeQuestionOverlay);
+            }
+            
+            renderPastQuestions() {
+                const questions = this.stateManager.getLiveQuestions();
+                const activeQuestion = this.stateManager.getActiveQuestion();
+                
+                // Filter out active question from past questions
+                const pastQuestions = questions.filter(q => !activeQuestion || q.id !== activeQuestion.id);
+                
+                if (pastQuestions.length === 0) {
+                    this.questionsContainer.innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-gray-600">No past questions available.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let questionsHtml = '';
+                
+                pastQuestions.forEach(question => {
+                    const questionId = question.id;
+                    const userSelection = this.stateManager.getUserSelection(questionId);
+                    const isSubmitted = this.stateManager.isSubmitted(questionId);
+                    const timerData = this.stateManager.getQuestionTimer(questionId);
+                    const userCounts = this.stateManager.getUserCounts(questionId);
+                    
+                    questionsHtml += this.renderQuestion(question, userSelection, isSubmitted, timerData, userCounts, false);
+                });
+                
+                this.questionsContainer.innerHTML = questionsHtml;
+                this.renderManager.observeContainer(this.questionsContainer);
+                this.renderManager.scheduleKaTeXRender(this.questionsContainer);
+            }
+            
+            renderChatMessages() {
+                const messages = this.stateManager.getChatMessages();
+                
+                let chatHtml = '';
+                
+                messages.forEach(message => {
+                    const isCurrentUser = message.isCurrentUser;
+                    const senderClass = isCurrentUser ? 'sender' : 'receiver';
+                    const time = message.timestamp ? this.formatTimeForChat(message.timestamp) : 'Just now';
+                    
+                    let messageContent = '';
+                    if (message.text) {
+                        messageContent += `<div class="message-text">${this.escapeHtml(message.text)}</div>`;
+                    }
+                    if (message.imageUrl) {
+                        messageContent += `<img src="${message.imageUrl}" alt="Chat image" class="message-image" onerror="this.style.display='none'">`;
+                    }
+                    
+                    chatHtml += `
+                        <div class="chat-message ${senderClass}">
+                            <div class="message-bubble">
+                                ${messageContent}
+                                <div class="message-time">${time}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                this.chatContainer.innerHTML = chatHtml;
+                
+                // Scroll to bottom
+                setTimeout(() => {
+                    this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+                }, 100);
+                
+                // Schedule KaTeX rendering
+                this.renderManager.scheduleKaTeXRender(this.chatContainer);
+            }
+            
+            renderQuestion(question, userSelection, isSubmitted, timerData, userCounts, isFullscreen = false) {
+                const questionId = question.id;
+                const questionNumber = question.order;
+                const remainingTime = timerData ? this.calculateRemainingTime(timerData) : 0;
+                const isExpired = remainingTime <= 0;
+                const timerText = isExpired ? 'Time Up' : this.formatTime(remainingTime);
+                const showWarning = remainingTime > 0 && remainingTime <= 10;
+                
+                const questionClass = isSubmitted ? 'question-section submitted' : 'question-section';
+                
+                return `
+                    <div class="${questionClass}" data-question-id="${questionId}" data-question-number="${questionNumber}">
+                        <div class="question-number-timer-container">
+                            <div class="question-number-box">Question ${questionNumber}</div>
+                            <div class="question-timer-box ${isExpired ? 'expired' : ''} ${showWarning ? 'warning' : ''}">${timerText}</div>
+                        </div>
+                        
+                        <div class="question-text latex-content">${question.question || 'No question text'}</div>
+                        
+                        <div class="options-container">
+                            ${question.options && question.options.length > 0 ? 
+                                question.options.map((option, optionIndex) => {
+                                    const isSelected = userSelection === optionIndex;
+                                    const isCorrect = isExpired && optionIndex === question.correctIndex;
+                                    const isIncorrect = isExpired && isSelected && optionIndex !== question.correctIndex;
+                                    const userCount = userCounts ? userCounts[optionIndex] || 0 : 0;
+                                    
+                                    let classes = 'option-item';
+                                    if (isSelected) classes += ' selected';
+                                    if (isCorrect) classes += ' correct';
+                                    if (isIncorrect) classes += ' incorrect';
+                                    
+                                    return `
+                                        <div class="${classes}" data-option-index="${optionIndex}">
+                                            <input type="radio" 
+                                                   class="option-radio" 
+                                                   name="question-${questionId}" 
+                                                   id="option-${questionId}-${optionIndex}" 
+                                                   value="${optionIndex}"
+                                                   ${isSelected ? 'checked' : ''}
+                                                   ${isSubmitted || isExpired ? 'disabled' : ''}>
+                                            <label for="option-${questionId}-${optionIndex}" style="display: flex; align-items: flex-start; gap: 1rem; width: 100%;">
+                                                <div class="option-marker">${String.fromCharCode(65 + optionIndex)}</div>
+                                                <div class="option-text latex-content">${option || 'No option text'}</div>
+                                                ${isExpired ? `<div class="user-count ${optionIndex === question.correctIndex ? 'correct' : 'incorrect'}">${userCount}</div>` : ''}
+                                            </label>
+                                        </div>
+                                    `;
+                                }).join('') : 
+                                '<p>No options available</p>'
+                            }
+                        </div>
+                        
+                        <button class="submit-button" ${userSelection === undefined || isSubmitted || isExpired ? 'disabled' : ''}>
+                            ${isSubmitted ? 'Submitted' : (isExpired ? 'Time Up' : 'Submit Answer')}
+                        </button>
+                        
+                        ${isExpired ? `
+                            <div class="explanation-section show">
+                                <div class="explanation-title">Explanation</div>
+                                <div class="explanation-text">
+                                    The correct answer is ${String.fromCharCode(65 + question.correctIndex)}.
+                                    ${question.explanation ? `<br>${question.explanation}` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            startActiveQuestionTimer(questionId, timerData) {
+                if (!timerData || !timerData.endTime) return;
+                
+                const updateTimer = () => {
+                    const remainingTime = this.calculateRemainingTime(timerData);
+                    
+                    const timerBox = this.activeQuestionOverlay.querySelector('.active-question-timer');
+                    const submitButton = this.activeQuestionOverlay.querySelector('.active-submit-button');
+                    
+                    if (timerBox) {
+                        const timerText = remainingTime <= 0 ? 'Time Up' : this.formatTime(remainingTime);
+                        const showWarning = remainingTime > 0 && remainingTime <= 10;
+                        
+                        timerBox.textContent = timerText;
+                        timerBox.classList.toggle('expired', remainingTime <= 0);
+                        timerBox.classList.toggle('warning', showWarning);
+                        
+                        if (remainingTime <= 0 && submitButton) {
+                            submitButton.disabled = true;
+                            submitButton.textContent = 'Time Up';
+                            
+                            // Show correct/incorrect options after time up
+                            const question = this.stateManager.getActiveQuestion();
+                            if (question) {
+                                const options = this.activeQuestionOverlay.querySelectorAll('.active-option-item');
+                                options.forEach((option, index) => {
+                                    if (index === question.correctIndex) {
+                                        option.classList.add('correct');
+                                    } else if (option.classList.contains('selected') && index !== question.correctIndex) {
+                                        option.classList.add('incorrect');
+                                    }
+                                });
+                            }
+                        }
+                    }
+                };
+                
+                // Update immediately
+                updateTimer();
+                
+                // Update every second
+                const timerId = setInterval(updateTimer, 1000);
+                this.activeQuestionTimers.set(questionId, timerId);
+            }
+            
+            startQuestionTimers() {
+                // Clear existing timers
+                this.activeQuestionTimers.forEach((timerId, questionId) => {
+                    clearInterval(timerId);
+                });
+                this.activeQuestionTimers.clear();
+                
+                const questions = this.stateManager.getLiveQuestions();
+                
+                questions.forEach(question => {
+                    const questionId = question.id;
+                    const timerData = this.stateManager.getQuestionTimer(questionId);
+                    
+                    if (timerData && timerData.endTime) {
+                        const updateTimer = () => {
+                            const remainingTime = this.calculateRemainingTime(timerData);
+                            this.activeQuestionTimers.set(questionId, remainingTime);
+                            
+                            const questionElement = document.querySelector(`.question-section[data-question-id="${questionId}"]`);
+                            if (questionElement) {
+                                const timerBox = questionElement.querySelector('.question-timer-box');
+                                const submitButton = questionElement.querySelector('.submit-button');
+                                const options = questionElement.querySelectorAll('.option-item');
+                                const radioButtons = questionElement.querySelectorAll('.option-radio');
+                                
+                                if (timerBox) {
+                                    const timerText = remainingTime <= 0 ? 'Time Up' : this.formatTime(remainingTime);
+                                    const showWarning = remainingTime > 0 && remainingTime <= 10;
+                                    
+                                    timerBox.textContent = timerText;
+                                    
+                                    // Update classes
+                                    timerBox.classList.toggle('expired', remainingTime <= 0);
+                                    timerBox.classList.toggle('warning', showWarning);
+                                    
+                                    if (remainingTime <= 0) {
+                                        // Time's up - disable submit button and radio buttons
+                                        if (submitButton) {
+                                            submitButton.disabled = true;
+                                            submitButton.textContent = 'Time Up';
+                                        }
+                                        
+                                        // Disable all radio buttons
+                                        radioButtons.forEach(radio => {
+                                            radio.disabled = true;
+                                        });
+                                        
+                                        // Show user counts (simulated for now)
+                                        const userCounts = [Math.floor(Math.random() * 50) + 10, 
+                                                          Math.floor(Math.random() * 50) + 10,
+                                                          Math.floor(Math.random() * 50) + 10,
+                                                          Math.floor(Math.random() * 50) + 10];
+                                        this.stateManager.setUserCounts(questionId, userCounts);
+                                        
+                                        options.forEach((option, index) => {
+                                            const userCountDiv = option.querySelector('.user-count');
+                                            if (!userCountDiv && userCounts[index] !== undefined) {
+                                                const countDiv = document.createElement('div');
+                                                countDiv.className = `user-count ${index === question.correctIndex ? 'correct' : 'incorrect'}`;
+                                                countDiv.textContent = userCounts[index];
+                                                option.querySelector('label').appendChild(countDiv);
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+                            
+                            // Update fullscreen overlay if active
+                            if (this.fullscreenMode && this.fullscreenQuestionsOverlay.classList.contains('active')) {
+                                const fullscreenQuestion = this.fullscreenQuestionsOverlay.querySelector(`.question-section[data-question-id="${questionId}"]`);
+                                if (fullscreenQuestion) {
+                                    const fsTimerBox = fullscreenQuestion.querySelector('.question-timer-box');
+                                    const fsSubmitButton = fullscreenQuestion.querySelector('.submit-button');
+                                    
+                                    if (fsTimerBox) {
+                                        const timerText = remainingTime <= 0 ? 'Time Up' : this.formatTime(remainingTime);
+                                        const showWarning = remainingTime > 0 && remainingTime <= 10;
+                                        
+                                        fsTimerBox.textContent = timerText;
+                                        fsTimerBox.classList.toggle('expired', remainingTime <= 0);
+                                        fsTimerBox.classList.toggle('warning', showWarning);
+                                        
+                                        if (remainingTime <= 0 && fsSubmitButton) {
+                                            fsSubmitButton.disabled = true;
+                                            fsSubmitButton.textContent = 'Time Up';
+                                        }
+                                    }
+                                }
+                            }
+                        };
+                        
+                        // Update immediately
+                        updateTimer();
+                        
+                        // Set interval for updates
+                        const timerId = setInterval(updateTimer, 1000);
+                        this.activeQuestionTimers.set(questionId, timerId);
+                    }
+                });
+            }
+            
+            // ===== UTILITY METHODS =====
+            calculateRemainingTime(timerData) {
+                if (!timerData || !timerData.endTime) return 0;
+                
+                const now = Date.now();
+                const remaining = timerData.endTime - now;
+                
+                return Math.floor(remaining / 1000); // Convert to seconds
+            }
+            
+            formatTime(seconds) {
+                if (seconds <= 0) return '00:00';
+                
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            formatTimeForChat(date) {
+                const now = new Date();
+                const messageDate = new Date(date);
+                const diffMs = now - messageDate;
+                const diffMins = Math.floor(diffMs / 60000);
+                
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+                return messageDate.toLocaleDateString();
+            }
+            
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // ===== EVENT HANDLERS =====
+            handleActiveOptionClick(optionItem) {
+                const question = this.stateManager.getActiveQuestion();
+                if (!question) return;
+                
+                const questionId = question.id;
+                const selectedIndex = parseInt(optionItem.dataset.optionIndex);
+                
+                // Don't allow selection if already submitted or timer expired
+                const timerData = this.stateManager.getQuestionTimer(questionId);
+                if (timerData) {
+                    const remainingTime = this.calculateRemainingTime(timerData);
+                    if (remainingTime <= 0) return;
+                }
+                
+                if (this.stateManager.isSubmitted(questionId)) return;
+                
+                // Update state
+                this.stateManager.setUserSelection(questionId, selectedIndex);
+                
+                // Update UI
+                this.activeQuestionOverlay.querySelectorAll('.active-option-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                optionItem.classList.add('selected');
+                
+                const submitButton = this.activeQuestionOverlay.querySelector('.active-submit-button');
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Submit Answer';
+                }
+            }
+            
+            handleActiveSubmitClick() {
+                const question = this.stateManager.getActiveQuestion();
+                if (!question) return;
+                
+                const questionId = question.id;
+                const selectedIndex = this.stateManager.getUserSelection(questionId);
+                
+                if (selectedIndex === undefined) return;
+                
+                // Check if timer hasn't expired
+                const timerData = this.stateManager.getQuestionTimer(questionId);
+                if (timerData) {
+                    const remainingTime = this.calculateRemainingTime(timerData);
+                    if (remainingTime <= 0) return;
+                }
+                
+                // Mark as submitted
+                this.stateManager.markSubmitted(questionId);
+                
+                // Disable submit button
+                const submitButton = this.activeQuestionOverlay.querySelector('.active-submit-button');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Submitted';
+                }
+                
+                // Note: Correct/incorrect options are shown only after time up
+                // They will be shown in the timer update function when time reaches 0
+            }
+            
+            handleOptionClick(questionSection, optionItem) {
+                const questionId = questionSection.dataset.questionId;
+                const selectedIndex = parseInt(optionItem.dataset.optionIndex);
+                
+                // Don't allow selection if already submitted or timer expired
+                if (questionSection.classList.contains('submitted')) {
+                    return;
+                }
+                
+                const timerData = this.stateManager.getQuestionTimer(questionId);
+                if (timerData) {
+                    const remainingTime = this.calculateRemainingTime(timerData);
+                    if (remainingTime <= 0) return;
+                }
+                
+                // Update state
+                this.stateManager.setUserSelection(questionId, selectedIndex);
+                
+                // Update UI
+                questionSection.querySelectorAll('.option-radio').forEach(radio => {
+                    radio.checked = false;
+                });
+                
+                const radioButton = optionItem.querySelector('.option-radio');
+                if (radioButton) {
+                    radioButton.checked = true;
+                }
+                
+                questionSection.querySelectorAll('.option-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                optionItem.classList.add('selected');
+                
+                const submitButton = questionSection.querySelector('.submit-button');
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Submit Answer';
+                }
+            }
+            
+            handleSubmitClick(questionSection) {
+                const questionId = questionSection.dataset.questionId;
+                const selectedIndex = this.stateManager.getUserSelection(questionId);
+                const question = this.stateManager.getQuestionById(questionId);
+                
+                if (!question || selectedIndex === undefined) {
+                    return;
+                }
+                
+                // Check if timer hasn't expired
+                const timerData = this.stateManager.getQuestionTimer(questionId);
+                if (timerData) {
+                    const remainingTime = this.calculateRemainingTime(timerData);
+                    if (remainingTime <= 0) return;
+                }
+                
+                // Mark as submitted
+                this.stateManager.markSubmitted(questionId);
+                questionSection.classList.add('submitted');
+                
+                // Disable all radio buttons
+                questionSection.querySelectorAll('.option-radio').forEach(radio => {
+                    radio.disabled = true;
+                });
+                
+                // Disable submit button
+                const submitButton = questionSection.querySelector('.submit-button');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Submitted';
+                }
+                
+                // Note: Correct/incorrect options are shown only after time up
+                // They will be shown in the timer update function when time reaches 0
+            }
+            
+            handleSendMessage() {
+                const text = this.chatInput.value.trim();
+                if (text) {
+                    this.sendChatMessage(text);
+                }
+            }
+            
+            handleChatInputKeydown(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.handleSendMessage();
+                }
+            }
+        }
+        
+        // ===== INITIALIZE APP =====
+        let app;
+        
+        window.addEventListener('load', () => {
+            app = new ConceptBlitzLiveApp();
+            window.conceptBlitzApp = app; // Make available globally
+        });
+        
+        // Make app available globally for debugging
+        window.ConceptBlitzLiveApp = ConceptBlitzLiveApp;
+    </script>
+</body>
+</html>
