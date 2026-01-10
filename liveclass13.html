@@ -1,0 +1,2611 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>ConceptBlitz - Live Streaming</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Anton for brand and Merriweather for body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- KaTeX for LaTeX Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Use the Merriweather font family as default */
+        body {
+            font-family: 'Merriweather', serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-variation-settings: "wdth" 100;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            
+            /* Light mode: Black text */
+            color: #000000;
+            
+            /* CRITICAL: Prevent the main body from scrolling at all */
+            overflow: hidden !important; 
+            
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            
+            /* Prevents elastic scrolling on iOS */
+            overscroll-behavior: none;
+            
+            /* Make body a fixed container occupying full screen */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Dark mode: White text */
+        body.dark {
+            color: #ffffff;
+        }
+
+        /* App wrapper - uses dynamic viewport height for mobile keyboard stability */
+        #app-wrapper {
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height (best for mobile keyboard) */
+            width: 100%;
+            position: absolute; /* Relative to fixed body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+        
+        /* Style for the ConceptBlitz logo font - USING ANTON */
+        .conceptblitz-logo {
+            font-family: 'Anton', sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+        
+        /* REVERSED: Brand font colors - Light mode: White and Orange */
+        .concept-text {
+            color: #ffffff; /* White for light mode - REVERSED */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .blitz-text {
+            color: #F97316; /* Orange */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* REVERSED: Brand font colors - Dark mode: Black and Orange */
+        .dark .concept-text {
+            color: #000000; /* Black for dark mode - REVERSED */
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.1);
+        }
+        
+        .dark .blitz-text {
+            color: #F97316; /* Orange (same for dark mode) */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Improve KaTeX readability on mobile */
+        .katex {
+            font-size: 1.1em !important;
+            text-align: left !important;
+        }
+        .katex-display {
+            /* Allow display math to be scrollable if too wide */
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 4px;
+        }
+
+        /* Hide Scrollbar */
+        #videos-container {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #videos-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ===== VIDEO GRID LAYOUT ===== */
+        #videos-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Desktop: Multiple columns */
+        @media (min-width: 768px) {
+            #videos-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 24px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            #videos-container {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 28px;
+            }
+        }
+
+        /* Video Card Container */
+        .video-card {
+            width: 100%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .dark .video-card {
+            background: #374151;
+        }
+
+        /* Video Player Container */
+        .video-player-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            background: #000;
+        }
+
+        /* Video Info Row - CRITICAL HEIGHT ALIGNMENT */
+        .video-info-row {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            gap: 12px;
+            width: 100%;
+            min-height: 64px; /* Matches profile image height */
+            box-sizing: border-box;
+        }
+
+        /* PROFILE VIEWER - Perfect Square */
+        .profile-viewer {
+            width: 56px;
+            height: 56px;
+            flex-shrink: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dark .profile-viewer {
+            background: #4b5563;
+        }
+
+        .profile-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* TEXT CONTAINER - Must match profile image height */
+        .video-text-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 56px; /* Must match profile-viewer height */
+            max-height: 56px; /* CRITICAL: Prevent vertical overflow */
+            overflow: hidden;
+            padding-right: 8px;
+            box-sizing: border-box;
+        }
+
+        /* VIDEO TITLE - 2 lines max with ellipsis */
+        .video-title {
+            font-family: 'Merriweather', serif;
+            font-weight: 600; /* Semi-bold */
+            font-size: 14px;
+            line-height: 1.3;
+            color: #1f2937;
+            margin: 0 0 4px 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Limit to 2 lines */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: 36px; /* 2 lines * line-height */
+        }
+
+        .dark .video-title {
+            color: #f9fafb;
+        }
+
+        /* MENTOR NAME - Single line with ellipsis */
+        .mentor-name {
+            font-family: 'Merriweather', serif;
+            font-size: 12px;
+            color: #6b7280;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+
+        .dark .mentor-name {
+            color: #d1d5db;
+        }
+
+        /* Live indicator animation */
+        @keyframes livePulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        
+        .live-indicator {
+            width: 40px;
+            height: 40px;
+            background: #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: livePulse 2s infinite;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .live-indicator i {
+            color: white;
+            font-size: 18px;
+        }
+        
+        /* Top bar with menu, search and profile */
+        .top-bar {
+            width: 100%;
+            background: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e5e7eb;
+            height: 60px;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .dark .top-bar {
+            background: #1f2937;
+            border-bottom-color: #374151;
+        }
+        
+        /* Search box - longer and centered */
+        .search-container {
+            flex: 1;
+            max-width: 700px; /* Increased width */
+            margin: 0 16px;
+            position: relative;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 10px 16px;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            font-family: 'Merriweather', serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            cursor: default; /* Indicates non-editable */
+            user-select: none; /* Prevent text selection */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        /* Placeholder style - bold, dark, opaque */
+        .search-box::placeholder {
+            color: #1f2937 !important; /* Dark color */
+            font-weight: 600 !important; /* Bold */
+            opacity: 1 !important; /* Fully opaque */
+        }
+        
+        .dark .search-box {
+            background: #374151;
+            border-color: #4b5563;
+            color: white;
+        }
+        
+        .dark .search-box::placeholder {
+            color: #f9fafb !important; /* White in dark mode */
+            font-weight: 600 !important;
+            opacity: 1 !important;
+        }
+        
+        .search-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Profile image container */
+        .profile-container {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: 4px !important;
+            overflow: hidden;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .dark .profile-container {
+            background: #374151;
+            border-color: #4b5563;
+        }
+        
+        /* Jitsi Audio Chat Container - REDUCED MARGIN/SPACING */
+        #jitsi-audio-chat-container {
+            width: 100%;
+            height: 350px; /* Reduced from 400px */
+            background: #1c1c1c;
+            border-top: 1px solid #333;
+            position: relative;
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        /* Jitsi Header - COMPACT */
+        .jitsi-header {
+            background: #2d2d2d;
+            padding: 8px 12px; /* Reduced padding */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #444;
+            min-height: 40px; /* Reduced height */
+        }
+
+        .jitsi-header-title {
+            color: white;
+            font-weight: 600;
+            font-size: 14px; /* Smaller font */
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .jitsi-header-title i {
+            color: #F97316;
+            font-size: 14px; /* Smaller icon */
+        }
+
+        .jitsi-controls {
+            display: flex;
+            gap: 4px; /* Reduced gap */
+        }
+
+        .jitsi-control-btn {
+            background: #444;
+            border: none;
+            color: white;
+            width: 32px; /* Smaller button */
+            height: 32px; /* Smaller button */
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 12px; /* Smaller icon */
+        }
+
+        .jitsi-control-btn:hover {
+            background: #555;
+        }
+
+        .jitsi-control-btn.active {
+            background: #F97316;
+        }
+
+        /* Jitsi Main Container */
+        #jitsi-container {
+            flex: 1;
+            width: 100%;
+            height: calc(100% - 40px); /* Adjusted for smaller header */
+            position: relative;
+            background: #1c1c1c;
+        }
+
+        /* Jitsi minimized state */
+        #jitsi-audio-chat-container.minimized {
+            height: 40px; /* Reduced from 60px */
+        }
+
+        #jitsi-audio-chat-container.minimized #jitsi-container {
+            display: none;
+        }
+
+        /* Loading indicator styles */
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Audio status indicator */
+        .audio-status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 100;
+            display: none;
+        }
+        
+        .audio-status-indicator.active {
+            display: block;
+        }
+        
+        .audio-status-indicator.connected {
+            background: rgba(16, 185, 129, 0.8);
+        }
+        
+        .audio-status-indicator.disconnected {
+            background: rgba(239, 68, 68, 0.8);
+        }
+        
+        /* Audio permission prompt */
+        .audio-permission-prompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            z-index: 100;
+            max-width: 300px;
+            display: none;
+        }
+        
+        .audio-permission-prompt.active {
+            display: block;
+        }
+        
+        .audio-permission-prompt button {
+            margin-top: 15px;
+            background: #F97316;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* ===== UPDATED: Modern YouTube Player Control Bar Styles ===== */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 0;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: none;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .youtube-iframe-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .youtube-iframe-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            pointer-events: none;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        /* New Modern Control Bar */
+        .modern-control-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.7) 60%, transparent 100%);
+            color: white;
+            padding: 12px 16px 8px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 20;
+            font-family: 'Merriweather', serif;
+            pointer-events: auto;
+        }
+        
+        .video-overlay:hover .modern-control-bar,
+        .modern-control-bar.visible {
+            opacity: 1;
+        }
+        
+        /* Thin Progress Bar - RED COLOR */
+        .top-progress-container {
+            width: 100%;
+            height: 3px;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            position: relative;
+            margin-bottom: 2px;
+        }
+        
+        .progress-track {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: #ef4444;
+            transition: width 0.1s linear;
+        }
+        
+        .progress-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: #ef4444;
+            border: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            cursor: pointer;
+            pointer-events: none;
+        }
+        
+        .top-progress-container:hover .progress-thumb {
+            opacity: 1;
+        }
+        
+        /* Bottom Controls Row - ALL ELEMENTS IN ONE LINE */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            min-height: 36px;
+            flex-wrap: nowrap;
+        }
+        
+        /* Left Controls */
+        .left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+            min-width: 0;
+        }
+        
+        /* Right Controls */
+        .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+            min-width: 0;
+            flex-wrap: nowrap;
+        }
+        
+        /* Center Controls (for time display) */
+        .center-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        /* Control Buttons - Dark black square boxes with white icons */
+        .control-btn {
+            background: rgba(0, 0, 0, 0); /* Fully transparent background */
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            min-height: 40px;
+            font-size: 16px;
+            transition: background-color 0.15s ease;
+            flex-shrink: 0;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* SVG Icons for buttons */
+        .control-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        .play-pause-btn {
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .play-pause-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* Time Display */
+        .time-display {
+            font-family: 'Merriweather', serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            min-width: 100px;
+            text-align: center;
+            color: rgba(255,255,255,0.95);
+            flex-shrink: 0;
+        }
+        
+        /* Volume button - fully transparent */
+        .volume-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .volume-btn i {
+            font-size: 18px;
+        }
+        
+        /* Speed Control */
+        .speed-control {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .speed-btn {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 4px 8px;
+            min-width: 40px;
+            text-align: center;
+            white-space: nowrap;
+            background: rgba(0, 0, 0, 0);
+        }
+        
+        /* Fullscreen Button - fully transparent */
+        .fullscreen-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fullscreen-btn i {
+            font-size: 18px;
+        }
+        
+        /* Video Loading */
+        .video-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 5;
+        }
+        
+        .video-loading-spinner {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        .player-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            font-size: 12px;
+            text-align: center;
+            z-index: 5;
+        }
+        
+        /* Double tap indicators */
+        .double-tap-indicator {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .double-tap-left {
+            left: 0;
+            background: linear-gradient(to right, rgba(239, 68, 68, 0.7), transparent);
+        }
+        
+        .double-tap-right {
+            right: 0;
+            background: linear-gradient(to left, rgba(239, 68, 68, 0.7), transparent);
+        }
+        
+        .double-tap-indicator.show {
+            opacity: 1;
+        }
+        
+        .double-tap-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-family: 'Merriweather', serif;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 4px;
+        }
+        
+        .dark .loading-content {
+            background: #1f2937;
+            color: white;
+        }
+        
+        /* Video loading placeholder */
+        .video-loading-placeholder {
+            width: 100%;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .video-loading-placeholder .loading-spinner {
+            margin: 0 auto;
+        }
+        
+        .video-loading-placeholder p {
+            margin-top: 1rem;
+            color: #6b7280;
+        }
+        
+        .dark .video-loading-placeholder p {
+            color: #9ca3af;
+        }
+
+        /* Mobile Touch-Friendly Adjustments */
+        @media (max-width: 640px) {
+            #videos-container {
+                padding: 12px;
+                gap: 16px;
+            }
+            
+            .video-info-row {
+                padding: 10px;
+                gap: 10px;
+                min-height: 56px;
+            }
+            
+            .profile-viewer {
+                width: 48px;
+                height: 48px;
+            }
+            
+            .video-text-container {
+                min-height: 48px;
+                max-height: 48px;
+            }
+            
+            .video-title {
+                font-size: 13px;
+                max-height: 34px;
+            }
+            
+            .mentor-name {
+                font-size: 11px;
+            }
+            
+            .modern-control-bar {
+                padding: 10px 12px 6px 12px;
+            }
+            
+            .control-btn {
+                min-width: 36px;
+                min-height: 36px;
+                padding: 6px;
+            }
+            
+            .play-pause-btn {
+                min-width: 40px;
+                min-height: 40px;
+            }
+            
+            .time-display {
+                font-size: 11px;
+                min-width: 90px;
+            }
+            
+            .left-controls {
+                gap: 6px;
+            }
+            
+            .right-controls {
+                gap: 6px;
+            }
+            
+            .speed-btn {
+                min-width: 36px;
+                padding: 4px 6px;
+                font-size: 13px;
+            }
+            
+            #jitsi-audio-chat-container {
+                height: 280px;
+            }
+            
+            .jitsi-header {
+                padding: 6px 10px;
+                min-height: 36px;
+            }
+            
+            .jitsi-header-title {
+                font-size: 13px;
+            }
+            
+            .jitsi-control-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 11px;
+            }
+        }
+
+        /* Ensure all text elements inherit the body font */
+        h1, h2, h3, h4, h5, h6, p, span, div, button, input, textarea, label, a {
+            font-family: 'Merriweather', serif;
+        }
+
+        /* Exception for logo only */
+        .conceptblitz-logo {
+            font-family: 'Anton', sans-serif !important;
+        }
+
+        /* Buttons should also use Merriweather */
+        button, .submit-button {
+            font-family: 'Merriweather', serif !important;
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg">
+        <!-- Top bar -->
+        <div class="top-bar">
+            <!-- Live indicator (replaces menu button) -->
+            <div id="left-button-container">
+                <a href="https://dilshadalmm.github.io/TutorUp/exam17.html" target="_self">
+                    <button class="live-indicator">
+                        <i class="fas fa-broadcast-tower"></i>
+                    </button>
+                </a>
+            </div>
+            
+            <!-- Search box -->
+            <div class="search-container">
+                <input type="text" class="search-box" placeholder="Search contents..." readonly>
+            </div>
+            
+            <!-- Profile image -->
+            <div class="profile-container">
+                <div id="profile-image-container">
+                    <!-- Profile image will be loaded here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Videos Grid Section -->
+        <main id="videos-container" class="flex-1 overflow-y-auto">
+            <!-- Live streaming videos will be dynamically loaded here -->
+        </main>
+        
+        <!-- Jitsi Audio Chat Section -->
+        <div id="jitsi-audio-chat-container">
+            <!-- Audio status indicator -->
+            <div id="audio-status-indicator" class="audio-status-indicator">
+                <i class="fas fa-microphone-slash"></i> Audio Disconnected
+            </div>
+            
+            <!-- Audio permission prompt -->
+            <div id="audio-permission-prompt" class="audio-permission-prompt">
+                <h3>Microphone Access Required</h3>
+                <p>Please allow microphone access to join the audio chat.</p>
+                <button id="request-audio-permission">
+                    <i class="fas fa-microphone"></i> Allow Microphone
+                </button>
+            </div>
+            
+            <div class="jitsi-header">
+                <div class="jitsi-header-title">
+                    <i class="fas fa-headphones"></i>
+                    <span>Live Audio Chat</span>
+                </div>
+                <div class="jitsi-controls">
+                    <button id="jitsi-mute-btn" class="jitsi-control-btn" title="Mute/Unmute">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button id="jitsi-chat-btn" class="jitsi-control-btn active" title="Toggle Chat">
+                        <i class="fas fa-comment"></i>
+                    </button>
+                    <button id="jitsi-participants-btn" class="jitsi-control-btn" title="Participants">
+                        <i class="fas fa-users"></i>
+                    </button>
+                    <button id="jitsi-hand-btn" class="jitsi-control-btn" title="Raise Hand">
+                        <i class="fas fa-hand-paper"></i>
+                    </button>
+                    <button id="jitsi-minimize-btn" class="jitsi-control-btn" title="Minimize">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="jitsi-container">
+                <!-- Jitsi Meet will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Jitsi Meet External API -->
+    <script src="https://meet.jit.si/external_api.js"></script>
+
+    <script>
+        // ===== JITSI MEET MANAGER =====
+        class JitsiMeetManager {
+            constructor() {
+                this.api = null;
+                this.isInitialized = false;
+                this.isAudioMuted = false;
+                this.isChatOpen = true;
+                this.isParticipantsOpen = false;
+                this.isHandRaised = false;
+                this.isMinimized = false;
+                this.container = document.getElementById('jitsi-container');
+                this.jitsiContainer = document.getElementById('jitsi-audio-chat-container');
+                this.hasUserInteracted = false;
+                this.isLocalParticipantJoined = false;
+                this.audioPermissionGranted = false;
+                this.audioStream = null;
+                this.userInteractionListener = null;
+                this.audioPermissionPrompt = document.getElementById('audio-permission-prompt');
+                this.audioStatusIndicator = document.getElementById('audio-status-indicator');
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.checkAudioPermissions();
+            }
+            
+            setupEventListeners() {
+                // Mute/Unmute button
+                document.getElementById('jitsi-mute-btn').addEventListener('click', () => {
+                    this.toggleAudioMute();
+                });
+                
+                // Chat toggle button
+                document.getElementById('jitsi-chat-btn').addEventListener('click', () => {
+                    this.toggleChat();
+                });
+                
+                // Participants toggle button
+                document.getElementById('jitsi-participants-btn').addEventListener('click', () => {
+                    this.toggleParticipants();
+                });
+                
+                // Raise hand button
+                document.getElementById('jitsi-hand-btn').addEventListener('click', () => {
+                    this.toggleRaiseHand();
+                });
+                
+                // Minimize button
+                document.getElementById('jitsi-minimize-btn').addEventListener('click', () => {
+                    this.toggleMinimize();
+                });
+                
+                // Audio permission request button
+                document.getElementById('request-audio-permission').addEventListener('click', () => {
+                    this.requestAudioPermission();
+                });
+                
+                // Listen for clicks anywhere in the Jitsi container to trigger audio
+                this.userInteractionListener = () => {
+                    if (!this.hasUserInteracted) {
+                        this.hasUserInteracted = true;
+                        console.log('User interacted with Jitsi container');
+                        this.attemptAudioActivation();
+                    }
+                };
+                
+                this.container.addEventListener('click', this.userInteractionListener);
+                this.container.addEventListener('touchstart', this.userInteractionListener);
+            }
+            
+            checkAudioPermissions() {
+                // Check if we already have microphone permission
+                navigator.permissions && navigator.permissions.query({ name: 'microphone' })
+                    .then(permissionStatus => {
+                        console.log('Microphone permission status:', permissionStatus.state);
+                        this.audioPermissionGranted = permissionStatus.state === 'granted';
+                        
+                        if (this.audioPermissionGranted) {
+                            this.hidePermissionPrompt();
+                            this.generateAndJoinRoom();
+                        } else {
+                            this.showPermissionPrompt();
+                        }
+                        
+                        // Listen for permission changes
+                        permissionStatus.onchange = () => {
+                            console.log('Microphone permission changed to:', permissionStatus.state);
+                            this.audioPermissionGranted = permissionStatus.state === 'granted';
+                            if (this.audioPermissionGranted) {
+                                this.hidePermissionPrompt();
+                                if (!this.api) {
+                                    this.generateAndJoinRoom();
+                                }
+                            }
+                        };
+                    })
+                    .catch(() => {
+                        // Fallback for browsers that don't support permissions API
+                        console.log('Permissions API not supported, attempting direct access');
+                        this.generateAndJoinRoom();
+                    });
+            }
+            
+            requestAudioPermission() {
+                // Request microphone access directly
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        console.log('Microphone access granted');
+                        this.audioPermissionGranted = true;
+                        this.audioStream = stream;
+                        this.hidePermissionPrompt();
+                        this.generateAndJoinRoom();
+                        
+                        // Stop the stream immediately since Jitsi will create its own
+                        stream.getTracks().forEach(track => track.stop());
+                    })
+                    .catch(error => {
+                        console.error('Microphone access denied:', error);
+                        this.audioPermissionGranted = false;
+                        this.showPermissionPrompt('Microphone access is required for audio chat.');
+                    });
+            }
+            
+            showPermissionPrompt(message = 'Please allow microphone access to join the audio chat.') {
+                this.audioPermissionPrompt.querySelector('p').textContent = message;
+                this.audioPermissionPrompt.classList.add('active');
+            }
+            
+            hidePermissionPrompt() {
+                this.audioPermissionPrompt.classList.remove('active');
+            }
+            
+            updateAudioStatus(connected) {
+                if (connected) {
+                    this.audioStatusIndicator.className = 'audio-status-indicator active connected';
+                    this.audioStatusIndicator.innerHTML = '<i class="fas fa-microphone"></i> Audio Connected';
+                } else {
+                    this.audioStatusIndicator.className = 'audio-status-indicator active disconnected';
+                    this.audioStatusIndicator.innerHTML = '<i class="fas fa-microphone-slash"></i> Audio Disconnected';
+                }
+            }
+            
+            generateAndJoinRoom() {
+                // Fixed room name for all users in the live session
+                const roomName = "ConceptsBlitz";
+                const domain = 'meet.jit.si';
+                
+                // Generate a unique display name
+                const displayName = 'Student_' + Math.floor(Math.random() * 10000);
+                
+                const options = {
+                    roomName: roomName,
+                    width: '100%',
+                    height: '100%',
+                    parentNode: this.container,
+                    configOverwrite: {
+                        // CRITICAL: Audio configuration for reliable transmission
+                        startWithAudioMuted: false, // Start unmuted for better audio transmission
+                        startWithVideoMuted: true,
+                        constraints: {
+                            video: false,
+                            audio: {
+                                autoGainControl: true,
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                sampleRate: 48000,
+                                channelCount: 1,
+                                volume: 1.0
+                            }
+                        },
+                        disableSimulcast: false,
+                        enableNoisyMicDetection: true,
+                        enableTalkWhileMuted: false,
+                        enableNoAudioDetection: true,
+                        enableAutomaticUrl: true,
+                        disableInitialGUM: false,
+                        enableClosePage: false,
+                        enableWelcomePage: false,
+                        prejoinPageEnabled: false,
+                        prejoinConfig: {
+                            enabled: false
+                        },
+                        // Audio quality settings
+                        startBitrate: '800',
+                        stereo: false,
+                        opusMaxAverageBitrate: 510000,
+                        enableLayerSuspension: true,
+                        // Connection settings
+                        enableIceRestart: true,
+                        useStunTurn: true,
+                        p2p: {
+                            enabled: true,
+                            preferH264: true,
+                            disabledCodec: '',
+                            preferredCodec: 'H264'
+                        },
+                        // Bandwidth settings for audio
+                        videoQuality: {
+                            preferredCodec: 'H264',
+                            maxBitratesVideo: {
+                                low: 200000,
+                                standard: 500000,
+                                high: 1500000
+                            }
+                        },
+                        disableAudioLevels: false,
+                        enableLipSync: true,
+                        // Toolbar buttons
+                        toolbarButtons: [
+                            'microphone', 'camera', 'chat', 'participants-pane', 'raisehand', 'tileview', 'hangup'
+                        ]
+                    },
+                    interfaceConfigOverwrite: {
+                        DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+                        DISABLE_DOMINANT_SPEAKER_INDICATOR: false,
+                        DISABLE_FOCUS_INDICATOR: true,
+                        DISABLE_VIDEO_BACKGROUND: true,
+                        MOBILE_APP_PROMO: false,
+                        SHOW_CHROME_EXTENSION_BANNER: false,
+                        SHOW_JITSI_WATERMARK: false,
+                        SHOW_WATERMARK_FOR_GUESTS: false,
+                        TOOLBAR_BUTTONS: [
+                            'microphone', 'camera', 'chat', 'participants-pane', 'raisehand', 'tileview', 'hangup'
+                        ],
+                        VIDEO_QUALITY_LABEL_DISABLED: true,
+                        SHOW_PROMOTIONAL_CLOSE_PAGE: false,
+                        DEFAULT_BACKGROUND: '#1c1c1c',
+                        DEFAULT_REMOTE_DISPLAY_NAME: 'Student',
+                        DEFAULT_LOCAL_DISPLAY_NAME: displayName,
+                        SHOW_DISPLAYNAME_IN_TOOLBAR: true,
+                        HIDE_INVITE_MORE_HEADER: true,
+                        SHOW_POWERED_BY: false,
+                        // Audio focused UI
+                        TOOLBAR_TIMEOUT: 15000,
+                        SETTINGS_SECTIONS: ['devices', 'language', 'moderator', 'profile', 'calendar'],
+                        AUDIO_LEVEL_PRIMARY_COLOR: 'rgba(255,255,255,0.4)',
+                        AUDIO_LEVEL_SECONDARY_COLOR: 'rgba(255,255,255,0.2)'
+                    },
+                    userInfo: {
+                        displayName: displayName,
+                        email: '',
+                        avatarUrl: ''
+                    },
+                    devices: {
+                        audioInput: '<deviceLabel>',
+                        audioOutput: '<deviceLabel>',
+                        videoInput: '<deviceLabel>'
+                    }
+                };
+                
+                try {
+                    this.api = new JitsiMeetExternalAPI(domain, options);
+                    this.isInitialized = true;
+                    
+                    // Set up event listeners
+                    this.setupJitsiEventListeners();
+                    
+                    // Ensure iframe permissions
+                    this.ensureIframePermissions();
+                    
+                    console.log('Jitsi Meet initialized in room:', roomName, 'with display name:', displayName);
+                    
+                    // Attempt audio activation after a short delay
+                    setTimeout(() => this.attemptAudioActivation(), 1000);
+                    
+                } catch (error) {
+                    console.error('Failed to initialize Jitsi Meet:', error);
+                    this.showError('Failed to initialize audio chat. Please refresh the page.');
+                }
+            }
+            
+            ensureIframePermissions() {
+                if (!this.api) return;
+                
+                setTimeout(() => {
+                    const iframe = this.container.querySelector('iframe');
+                    if (iframe) {
+                        // CRITICAL: Comprehensive permissions for WebRTC audio
+                        iframe.setAttribute('allow', 'microphone; camera; autoplay; display-capture;');
+                        iframe.setAttribute('allowfullscreen', 'true');
+                        iframe.setAttribute('allowpaymentrequest', 'false');
+                        iframe.setAttribute('allowtransparency', 'true');
+                        
+                        iframe.allow = 'microphone; camera; autoplay; display-capture;';
+                        iframe.allowFullscreen = true;
+                        
+                        iframe.style.pointerEvents = 'auto';
+                        
+                        console.log('Jitsi iframe permissions ensured');
+                    }
+                }, 1000);
+            }
+            
+            setupJitsiEventListeners() {
+                if (!this.api) return;
+                
+                // Conference joined
+                this.api.on('videoConferenceJoined', (data) => {
+                    console.log('LOCAL USER JOINED conference:', data);
+                    this.isLocalParticipantJoined = true;
+                    this.updateAudioStatus(true);
+                    
+                    // Try to ensure audio is working
+                    setTimeout(() => {
+                        this.ensureAudioTransmission();
+                    }, 2000);
+                });
+                
+                // Participant joined
+                this.api.on('participantJoined', (data) => {
+                    console.log('Participant joined:', data);
+                });
+                
+                // Audio mute status changed
+                this.api.on('audioMuteStatusChanged', (data) => {
+                    this.isAudioMuted = data.muted;
+                    this.updateMuteButton();
+                    console.log('Audio mute status changed:', data.muted);
+                    
+                    if (!data.muted) {
+                        this.updateAudioStatus(true);
+                    }
+                });
+                
+                // Track added (WebRTC audio track)
+                this.api.on('trackAdded', (data) => {
+                    console.log('WebRTC track added:', data);
+                    if (data.track && data.track.kind === 'audio') {
+                        this.updateAudioStatus(true);
+                    }
+                });
+                
+                // Connection established
+                this.api.on('connectionEstablished', (data) => {
+                    console.log('WebRTC connection established:', data);
+                    this.updateAudioStatus(true);
+                });
+                
+                // Connection failed
+                this.api.on('connectionFailed', (data) => {
+                    console.log('WebRTC connection failed:', data);
+                    this.updateAudioStatus(false);
+                });
+                
+                // Participant left
+                this.api.on('participantLeft', (data) => {
+                    console.log('Participant left:', data.displayName);
+                });
+                
+                // Incoming message
+                this.api.on('incomingMessage', (data) => {
+                    console.log('Incoming message:', data);
+                });
+                
+                // Ready to close
+                this.api.on('readyToClose', () => {
+                    console.log('Jitsi ready to close');
+                    this.dispose();
+                });
+                
+                // Device list changed
+                this.api.on('deviceListChanged', (data) => {
+                    console.log('Device list changed:', data);
+                });
+                
+                // Audio availability changed
+                this.api.on('audioAvailabilityChanged', (data) => {
+                    console.log('Audio availability changed:', data);
+                    this.updateAudioStatus(data.available);
+                });
+            }
+            
+            attemptAudioActivation() {
+                if (!this.api) {
+                    console.log('Jitsi API not available yet');
+                    return;
+                }
+                
+                if (!this.isLocalParticipantJoined) {
+                    console.log('Local participant not joined yet');
+                    return;
+                }
+                
+                try {
+                    console.log('Attempting to activate audio...');
+                    
+                    // First, check if we're muted and unmute if needed
+                    this.api.isAudioMuted().then(isMuted => {
+                        if (isMuted) {
+                            console.log('Audio is muted, unmuting...');
+                            this.api.executeCommand('unmuteAudio');
+                            this.isAudioMuted = false;
+                            this.updateMuteButton();
+                        } else {
+                            console.log('Audio is already unmuted');
+                        }
+                        
+                        // Try to select audio devices
+                        this.api.getAudioInputDevices().then(devices => {
+                            console.log('Available audio input devices:', devices);
+                            if (devices && devices.length > 0) {
+                                // Select the first available device
+                                this.api.setAudioInputDevice(devices[0].deviceId)
+                                    .then(() => console.log('Audio input device set successfully'))
+                                    .catch(err => console.warn('Could not set audio input device:', err));
+                            }
+                        }).catch(err => {
+                            console.warn('Could not enumerate audio devices:', err);
+                        });
+                        
+                        // Force audio transmission
+                        this.ensureAudioTransmission();
+                        
+                    }).catch(error => {
+                        console.error('Error checking audio mute status:', error);
+                    });
+                    
+                } catch (error) {
+                    console.error('Error activating audio:', error);
+                }
+            }
+            
+            ensureAudioTransmission() {
+                if (!this.api) return;
+                
+                // Multiple strategies to ensure audio works
+                setTimeout(() => {
+                    try {
+                        // Strategy 1: Force audio unmute
+                        this.api.executeCommand('unmuteAudio');
+                        
+                        // Strategy 2: Send dummy audio packet
+                        this.api.executeCommand('sendEndpointTextMessage', {
+                            to: '',
+                            message: JSON.stringify({ type: 'audio_check', timestamp: Date.now() })
+                        });
+                        
+                        // Strategy 3: Check audio levels
+                        this.api.getAudioInputLevel().then(level => {
+                            console.log('Audio input level:', level);
+                            if (level > 0) {
+                                console.log('Audio is being captured');
+                                this.updateAudioStatus(true);
+                            } else {
+                                console.warn('No audio input detected');
+                                this.updateAudioStatus(false);
+                            }
+                        }).catch(err => {
+                            console.warn('Could not get audio input level:', err);
+                        });
+                        
+                        console.log('Audio transmission ensured');
+                        
+                    } catch (error) {
+                        console.error('Error ensuring audio transmission:', error);
+                    }
+                }, 1000);
+            }
+            
+            toggleAudioMute() {
+                if (!this.api) return;
+                
+                try {
+                    if (this.isAudioMuted) {
+                        this.api.executeCommand('unmuteAudio');
+                        this.isAudioMuted = false;
+                        this.updateAudioStatus(true);
+                    } else {
+                        this.api.executeCommand('muteAudio');
+                        this.isAudioMuted = true;
+                        this.updateAudioStatus(false);
+                    }
+                    this.updateMuteButton();
+                } catch (error) {
+                    console.error('Error toggling audio mute:', error);
+                }
+            }
+            
+            updateMuteButton() {
+                const muteBtn = document.getElementById('jitsi-mute-btn');
+                const icon = muteBtn.querySelector('i');
+                
+                if (this.isAudioMuted) {
+                    icon.className = 'fas fa-microphone-slash';
+                    muteBtn.classList.remove('active');
+                    this.updateAudioStatus(false);
+                } else {
+                    icon.className = 'fas fa-microphone';
+                    muteBtn.classList.add('active');
+                    this.updateAudioStatus(true);
+                }
+            }
+            
+            toggleChat() {
+                if (!this.api) return;
+                
+                this.isChatOpen = !this.isChatOpen;
+                const chatBtn = document.getElementById('jitsi-chat-btn');
+                
+                if (this.isChatOpen) {
+                    this.api.executeCommand('toggleChat');
+                    chatBtn.classList.add('active');
+                } else {
+                    this.api.executeCommand('toggleChat');
+                    chatBtn.classList.remove('active');
+                }
+            }
+            
+            toggleParticipants() {
+                if (!this.api) return;
+                
+                this.isParticipantsOpen = !this.isParticipantsOpen;
+                const participantsBtn = document.getElementById('jitsi-participants-btn');
+                
+                if (this.isParticipantsOpen) {
+                    this.api.executeCommand('toggleParticipantsPane');
+                    participantsBtn.classList.add('active');
+                } else {
+                    this.api.executeCommand('toggleParticipantsPane');
+                    participantsBtn.classList.remove('active');
+                }
+            }
+            
+            toggleRaiseHand() {
+                if (!this.api) return;
+                
+                this.isHandRaised = !this.isHandRaised;
+                const handBtn = document.getElementById('jitsi-hand-btn');
+                
+                if (this.isHandRaised) {
+                    this.api.executeCommand('toggleRaiseHand');
+                    handBtn.classList.add('active');
+                } else {
+                    this.api.executeCommand('toggleRaiseHand');
+                    handBtn.classList.remove('active');
+                }
+            }
+            
+            toggleMinimize() {
+                this.isMinimized = !this.isMinimized;
+                const minimizeBtn = document.getElementById('jitsi-minimize-btn');
+                const icon = minimizeBtn.querySelector('i');
+                
+                if (this.isMinimized) {
+                    this.jitsiContainer.classList.add('minimized');
+                    icon.className = 'fas fa-chevron-up';
+                    minimizeBtn.title = 'Maximize';
+                } else {
+                    this.jitsiContainer.classList.remove('minimized');
+                    icon.className = 'fas fa-chevron-down';
+                    minimizeBtn.title = 'Minimize';
+                }
+            }
+            
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'p-4 text-center text-red-400 bg-red-900 bg-opacity-50';
+                errorDiv.innerHTML = `
+                    <p>${message}</p>
+                    <button id="retry-jitsi" class="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                        Retry Connection
+                    </button>
+                `;
+                
+                this.container.innerHTML = '';
+                this.container.appendChild(errorDiv);
+                
+                document.getElementById('retry-jitsi').addEventListener('click', () => {
+                    this.container.innerHTML = '';
+                    this.generateAndJoinRoom();
+                }, { once: true });
+            }
+            
+            dispose() {
+                // Remove interaction listener
+                if (this.userInteractionListener) {
+                    this.container.removeEventListener('click', this.userInteractionListener);
+                    this.container.removeEventListener('touchstart', this.userInteractionListener);
+                }
+                
+                // Stop audio stream if exists
+                if (this.audioStream) {
+                    this.audioStream.getTracks().forEach(track => track.stop());
+                    this.audioStream = null;
+                }
+                
+                if (this.api) {
+                    this.api.dispose();
+                    this.api = null;
+                }
+            }
+        }
+        
+        // ===== FIXED YOUTUBE PLAYER MANAGER =====
+        class SimpleYouTubePlayer {
+            constructor(containerId, videoId, isStreaming = false) {
+                this.containerId = containerId;
+                this.videoId = videoId;
+                this.player = null;
+                this.updateInterval = null;
+                this.controlsVisible = true;
+                this.playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+                this.currentPlaybackRate = 1;
+                this.lastTapTime = 0;
+                this.tapCount = 0;
+                this.isYouTubeAPIReady = false;
+                this.isStreaming = isStreaming;
+                this.init();
+            }
+            
+            init() {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                // Create YouTube iframe with proper parameters for streaming
+                const iframe = document.createElement('iframe');
+                iframe.id = `yt-iframe-${this.containerId}`;
+                iframe.width = '100%';
+                iframe.height = '100%';
+                iframe.src = `https://www.youtube.com/embed/${this.videoId}?enablejsapi=1&origin=${window.location.origin}&controls=0&disablekb=1&modestbranding=1&fs=0&rel=0&iv_load_policy=3&playsinline=1&autoplay=0&widget_referrer=${window.location.href}`;
+                iframe.frameBorder = '0';
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                iframe.allowFullscreen = true;
+                iframe.style.pointerEvents = 'none';
+                
+                const iframeWrapper = container.querySelector('.youtube-iframe-wrapper');
+                if (iframeWrapper) {
+                    iframeWrapper.innerHTML = '';
+                    iframeWrapper.appendChild(iframe);
+                }
+                
+                // Load YouTube API
+                this.loadYouTubeAPI().then(() => {
+                    this.initializePlayer();
+                }).catch(error => {
+                    console.error('Failed to load YouTube API:', error);
+                    this.showError(container, 'Failed to load video');
+                });
+            }
+            
+            loadYouTubeAPI() {
+                return new Promise((resolve, reject) => {
+                    if (window.YT && window.YT.Player) {
+                        this.isYouTubeAPIReady = true;
+                        resolve();
+                        return;
+                    }
+                    
+                    // Check if script is already loading
+                    if (window.youtubeAPILoading) {
+                        const checkInterval = setInterval(() => {
+                            if (window.YT && window.YT.Player) {
+                                clearInterval(checkInterval);
+                                this.isYouTubeAPIReady = true;
+                                resolve();
+                            }
+                        }, 100);
+                        setTimeout(() => {
+                            clearInterval(checkInterval);
+                            if (!window.YT) reject('Timeout loading YouTube API');
+                        }, 10000);
+                        return;
+                    }
+                    
+                    window.youtubeAPILoading = true;
+                    
+                    // Create a more robust YouTube API loading
+                    const tag = document.createElement('script');
+                    tag.src = 'https://www.youtube.com/iframe_api';
+                    
+                    // Add error handling for script loading
+                    tag.onerror = () => {
+                        window.youtubeAPILoading = false;
+                        reject('Failed to load YouTube API script');
+                    };
+                    
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                    
+                    // Set a timeout for API ready
+                    const apiReadyTimeout = setTimeout(() => {
+                        if (!window.YT) {
+                            window.youtubeAPILoading = false;
+                            reject('YouTube API ready timeout');
+                        }
+                    }, 15000);
+                    
+                    window.onYouTubeIframeAPIReady = () => {
+                        clearTimeout(apiReadyTimeout);
+                        window.youtubeAPILoading = false;
+                        this.isYouTubeAPIReady = true;
+                        resolve();
+                    };
+                });
+            }
+            
+            initializePlayer() {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                // Hide loading
+                const loadingEl = container.querySelector('.video-loading');
+                if (loadingEl) loadingEl.style.display = 'none';
+                
+                try {
+                    this.player = new YT.Player(`yt-iframe-${this.containerId}`, {
+                        events: {
+                            'onReady': (event) => this.onPlayerReady(event),
+                            'onStateChange': (event) => this.onPlayerStateChange(event),
+                            'onError': (event) => this.onPlayerError(event),
+                            'onApiChange': (event) => this.onApiChange(event)
+                        },
+                        playerVars: {
+                            'autoplay': this.isStreaming ? 1 : 0,
+                            'controls': 0,
+                            'disablekb': 1,
+                            'enablejsapi': 1,
+                            'fs': 0,
+                            'iv_load_policy': 3,
+                            'modestbranding': 1,
+                            'playsinline': 1,
+                            'rel': 0,
+                            'origin': window.location.origin
+                        }
+                    });
+                    
+                    // Setup controls
+                    this.setupControls(container);
+                } catch (error) {
+                    console.error('Failed to create YouTube player:', error);
+                    // Retry initialization after delay
+                    setTimeout(() => {
+                        this.initializePlayer();
+                    }, 1000);
+                }
+            }
+            
+            onPlayerReady(event) {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                // Set initial volume and playback rate
+                try {
+                    event.target.setVolume(100);
+                    event.target.setPlaybackRate(this.currentPlaybackRate);
+                    
+                    // Update speed button text
+                    const speedBtn = container.querySelector('.speed-btn');
+                    if (speedBtn) {
+                        speedBtn.textContent = `${this.currentPlaybackRate}x`;
+                    }
+                    
+                    // Start update interval
+                    this.startUpdateInterval();
+                    
+                    console.log('YouTube player ready for:', this.videoId);
+                } catch (error) {
+                    console.error('Error in onPlayerReady:', error);
+                }
+            }
+            
+            onPlayerStateChange(event) {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                const playPauseBtn = container.querySelector('.play-pause-btn');
+                if (!playPauseBtn) return;
+                
+                const playIcon = playPauseBtn.querySelector('.play-icon');
+                const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+                
+                if (event.data === YT.PlayerState.PLAYING) {
+                    if (playIcon) playIcon.style.display = 'none';
+                    if (pauseIcon) pauseIcon.style.display = 'block';
+                } else {
+                    if (playIcon) playIcon.style.display = 'block';
+                    if (pauseIcon) pauseIcon.style.display = 'none';
+                }
+                
+                // Auto-hide controls when playing
+                if (event.data === YT.PlayerState.PLAYING) {
+                    this.hideControlsAfterDelay(container);
+                }
+            }
+            
+            onPlayerError(event) {
+                console.error('YouTube player error:', event.data);
+                const container = document.getElementById(this.containerId);
+                if (container) {
+                    this.showError(container, 'Video failed to load. Please check your internet connection.');
+                }
+            }
+            
+            onApiChange(event) {
+                // Handle API changes
+            }
+            
+            setupControls(container) {
+                // Play/Pause button
+                const playPauseBtn = container.querySelector('.play-pause-btn');
+                if (playPauseBtn) {
+                    playPauseBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+                                this.player.pauseVideo();
+                            } else {
+                                this.player.playVideo();
+                            }
+                        } catch (error) {
+                            console.error('Play/Pause error:', error);
+                        }
+                    });
+                }
+                
+                // Progress bar
+                const progressBar = container.querySelector('.top-progress-container');
+                if (progressBar) {
+                    progressBar.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            const rect = progressBar.getBoundingClientRect();
+                            const clickX = e.clientX - rect.left;
+                            const percentage = (clickX / rect.width) * 100;
+                            const duration = this.player.getDuration();
+                            const seekTime = (percentage / 100) * duration;
+                            this.player.seekTo(seekTime, true);
+                        } catch (error) {
+                            console.error('Seek error:', error);
+                        }
+                    });
+                }
+                
+                // Volume button
+                const volumeBtn = container.querySelector('.volume-btn');
+                if (volumeBtn) {
+                    volumeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            const currentVolume = this.player.getVolume();
+                            if (currentVolume > 0) {
+                                this.player.setVolume(0);
+                                volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                            } else {
+                                this.player.setVolume(100);
+                                volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                            }
+                        } catch (error) {
+                            console.error('Volume error:', error);
+                        }
+                    });
+                }
+                
+                // Fullscreen button
+                const fullscreenBtn = container.querySelector('.fullscreen-btn');
+                if (fullscreenBtn) {
+                    fullscreenBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleFullscreen(container);
+                    });
+                }
+                
+                // Speed control button
+                const speedBtn = container.querySelector('.speed-btn');
+                if (speedBtn) {
+                    speedBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            // Cycle to next playback rate
+                            const currentIndex = this.playbackRates.indexOf(this.currentPlaybackRate);
+                            const nextIndex = (currentIndex + 1) % this.playbackRates.length;
+                            this.currentPlaybackRate = this.playbackRates[nextIndex];
+                            
+                            // Apply to player
+                            this.player.setPlaybackRate(this.currentPlaybackRate);
+                            
+                            // Update button text
+                            speedBtn.textContent = `${this.currentPlaybackRate}x`;
+                        } catch (error) {
+                            console.error('Speed control error:', error);
+                        }
+                    });
+                }
+                
+                // Double tap for skipping
+                const overlay = container.querySelector('.video-overlay');
+                if (overlay) {
+                    let lastTapTime = 0;
+                    let tapCount = 0;
+                    let tapTimeout;
+                    
+                    overlay.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const currentTime = Date.now();
+                        const rect = overlay.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+                        const isLeftSide = clickX < rect.width / 2;
+                        
+                        // Check for double tap (within 300ms)
+                        if (currentTime - lastTapTime < 300) {
+                            tapCount++;
+                            clearTimeout(tapTimeout);
+                            
+                            if (tapCount === 2) {
+                                // Double tap detected
+                                this.handleDoubleTap(isLeftSide);
+                                tapCount = 0;
+                            }
+                        } else {
+                            tapCount = 1;
+                        }
+                        
+                        lastTapTime = currentTime;
+                        
+                        // Reset tap count after 300ms
+                        tapTimeout = setTimeout(() => {
+                            tapCount = 0;
+                        }, 300);
+                    });
+                }
+                
+                // Click overlay to toggle play/pause
+                if (overlay) {
+                    overlay.addEventListener('click', (e) => {
+                        // Don't toggle if clicking on control buttons or progress bar
+                        if (e.target.closest('.control-btn') || 
+                            e.target.closest('.top-progress-container') || 
+                            e.target.closest('.speed-btn')) {
+                            return;
+                        }
+                        
+                        if (!this.player) return;
+                        
+                        try {
+                            if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+                                this.player.pauseVideo();
+                            } else {
+                                this.player.playVideo();
+                            }
+                        } catch (error) {
+                            console.error('Overlay click error:', error);
+                        }
+                    });
+                    
+                    // Show controls on hover/touch
+                    let hideTimeout;
+                    const showControls = () => {
+                        const controlBar = container.querySelector('.modern-control-bar');
+                        if (controlBar) {
+                            controlBar.classList.add('visible');
+                            clearTimeout(hideTimeout);
+                        }
+                    };
+                    
+                    overlay.addEventListener('mouseenter', showControls);
+                    overlay.addEventListener('mousemove', showControls);
+                    overlay.addEventListener('mouseleave', () => {
+                        this.hideControlsAfterDelay(container);
+                    });
+                    
+                    overlay.addEventListener('touchstart', showControls);
+                    overlay.addEventListener('touchmove', showControls);
+                }
+            }
+            
+            hideControlsAfterDelay(container) {
+                const controlBar = container.querySelector('.modern-control-bar');
+                if (controlBar && this.player && this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+                    setTimeout(() => {
+                        controlBar.classList.remove('visible');
+                    }, 2000);
+                }
+            }
+            
+            handleDoubleTap(isLeftSide) {
+                if (!this.player) return;
+                
+                const container = document.getElementById(this.containerId);
+                const currentTime = this.player.getCurrentTime();
+                
+                // Show visual feedback with text
+                const indicator = container.querySelector(isLeftSide ? '.double-tap-left' : '.double-tap-right');
+                if (indicator) {
+                    indicator.classList.add('show');
+                    setTimeout(() => {
+                        indicator.classList.remove('show');
+                    }, 500);
+                }
+                
+                // Skip backward 10 seconds on left side, forward 20 seconds on right side
+                try {
+                    if (isLeftSide) {
+                        const newTime = Math.max(0, currentTime - 10);
+                        this.player.seekTo(newTime, true);
+                    } else {
+                        const duration = this.player.getDuration();
+                        const newTime = Math.min(duration, currentTime + 20);
+                        this.player.seekTo(newTime, true);
+                    }
+                } catch (error) {
+                    console.error('Double tap seek error:', error);
+                }
+            }
+            
+            startUpdateInterval() {
+                if (this.updateInterval) clearInterval(this.updateInterval);
+                
+                this.updateInterval = setInterval(() => {
+                    this.updateUI();
+                }, 500);
+            }
+            
+            updateUI() {
+                const container = document.getElementById(this.containerId);
+                if (!container || !this.player) return;
+                
+                try {
+                    const currentTime = this.player.getCurrentTime();
+                    const duration = this.player.getDuration();
+                    const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+                    
+                    // Update progress bar
+                    const progressTrack = container.querySelector('.progress-track');
+                    const progressThumb = container.querySelector('.progress-thumb');
+                    if (progressTrack && progressThumb) {
+                        progressTrack.style.width = `${progress}%`;
+                        progressThumb.style.left = `${progress}%`;
+                    }
+                    
+                    // Update time display
+                    const timeDisplay = container.querySelector('.time-display');
+                    if (timeDisplay) {
+                        const formatTime = (seconds) => {
+                            if (isNaN(seconds)) return '0:00';
+                            const mins = Math.floor(seconds / 60);
+                            const secs = Math.floor(seconds % 60);
+                            return `${mins}:${secs.toString().padStart(2, '0')}`;
+                        };
+                        timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                    }
+                    
+                    // Update volume icon
+                    const volumeBtn = container.querySelector('.volume-btn');
+                    if (volumeBtn) {
+                        const volume = this.player.getVolume();
+                        if (volume > 0) {
+                            volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                        } else {
+                            volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                        }
+                    }
+                } catch (error) {
+                    // Player might not be ready yet
+                }
+            }
+            
+            toggleFullscreen(container) {
+                const videoWrapper = container.closest('.video-wrapper');
+                if (!videoWrapper) return;
+                
+                if (!document.fullscreenElement) {
+                    if (videoWrapper.requestFullscreen) {
+                        videoWrapper.requestFullscreen();
+                    } else if (videoWrapper.webkitRequestFullscreen) {
+                        videoWrapper.webkitRequestFullscreen();
+                    } else if (videoWrapper.msRequestFullscreen) {
+                        videoWrapper.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+                
+                // Update fullscreen button icon
+                const fullscreenBtn = container.querySelector('.fullscreen-btn i');
+                if (fullscreenBtn) {
+                    if (!document.fullscreenElement) {
+                        fullscreenBtn.className = 'fas fa-expand';
+                    } else {
+                        fullscreenBtn.className = 'fas fa-compress';
+                    }
+                }
+            }
+            
+            showError(container, message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'player-error';
+                errorDiv.textContent = message;
+                
+                const existingError = container.querySelector('.player-error');
+                if (existingError) existingError.remove();
+                
+                container.appendChild(errorDiv);
+            }
+            
+            pause() {
+                if (this.player && this.player.pauseVideo) {
+                    try {
+                        this.player.pauseVideo();
+                    } catch (error) {
+                        console.error('Pause error:', error);
+                    }
+                }
+            }
+            
+            destroy() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                if (this.player && this.player.destroy) {
+                    try {
+                        this.player.destroy();
+                    } catch (error) {
+                        console.error('Destroy error:', error);
+                    }
+                }
+            }
+        }
+        
+        // Global player instances
+        const videoPlayers = new Map();
+        
+        // Initialize video players
+        function initVideoPlayers() {
+            document.querySelectorAll('.video-player-container').forEach(container => {
+                const containerId = container.id;
+                const videoId = container.dataset.videoId;
+                const isStreaming = container.dataset.isStreaming === 'true';
+                
+                if (!videoPlayers.has(containerId) && videoId) {
+                    const player = new SimpleYouTubePlayer(containerId, videoId, isStreaming);
+                    videoPlayers.set(containerId, player);
+                }
+            });
+        }
+        
+        // Clean up video players
+        function cleanupVideoPlayers() {
+            for (const [id, player] of videoPlayers) {
+                player.destroy();
+            }
+            videoPlayers.clear();
+        }
+        
+        // Pause all video players
+        function pauseAllVideoPlayers() {
+            for (const [id, player] of videoPlayers) {
+                player.pause();
+            }
+        }
+        
+        // ===== MAIN APP =====
+        class ConceptBlitzVideosApp {
+            constructor() {
+                this.jitsiManager = null;
+                this.isInitialized = false;
+                
+                // DOM Elements
+                this.appWrapper = document.getElementById('app-wrapper');
+                this.videosContainer = document.getElementById('videos-container');
+                this.profileImageContainer = document.getElementById('profile-image-container');
+                this.searchBox = document.querySelector('.search-box');
+                
+                // Firebase
+                this.db = null;
+                this.firebaseConfig = {
+                    apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                    authDomain: "geobazarr.firebaseapp.com",
+                    databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                    projectId: "geobazarr",
+                    storageBucket: "geobazarr.firebasestorage.app",
+                    messagingSenderId: "679949247383",
+                    appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+                };
+                
+                this.videosData = [];
+                
+                this.initialize();
+            }
+            
+            initialize() {
+                if (this.isInitialized) return;
+                
+                try {
+                    firebase.initializeApp(this.firebaseConfig);
+                    this.db = firebase.firestore();
+                    console.log("Firebase initialized successfully");
+                    
+                    // Initialize Jitsi
+                    this.jitsiManager = new JitsiMeetManager();
+                    
+                    this.isInitialized = true;
+                    
+                    // Load data
+                    this.loadProfileImage();
+                    this.loadVideos();
+                    
+                    // Set up real-time listeners
+                    this.setupRealtimeListeners();
+                } catch (error) {
+                    console.error("Firebase initialization error:", error);
+                    this.showError("Firebase initialization failed. Please refresh the page.");
+                }
+            }
+            
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'p-8 text-center';
+                errorDiv.innerHTML = `
+                    <p class="text-red-600">${message}</p>
+                    <button id="retry-load" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Retry
+                    </button>
+                `;
+                
+                this.videosContainer.innerHTML = '';
+                this.videosContainer.appendChild(errorDiv);
+                
+                document.getElementById('retry-load')?.addEventListener('click', () => {
+                    this.loadVideos();
+                }, { once: true });
+            }
+            
+            showLoading() {
+                this.videosContainer.innerHTML = `
+                    <div class="video-loading-placeholder">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2">Loading videos...</p>
+                    </div>
+                `;
+            }
+            
+            updateProfileImage() {
+                // Profile image loading remains the same
+                // This function can be called from loadProfileImage
+            }
+            
+            // ===== DATA METHODS =====
+            async loadProfileImage() {
+                try {
+                    const bannerDoc = await this.db.collection('courses').doc('banner').get();
+                    
+                    if (bannerDoc.exists) {
+                        const bannerData = bannerDoc.data();
+                        if (bannerData.profile_imageUrl) {
+                            this.profileImageContainer.innerHTML = `
+                                <img src="${bannerData.profile_imageUrl}" alt="Profile" class="profile-image" onerror="this.src='https://placehold.co/40x40/3B82F6/FFFFFF?text=U'">
+                            `;
+                        } else {
+                            this.profileImageContainer.innerHTML = `
+                                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;font-weight:600;">U</div>
+                            `;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error loading profile image:", error);
+                }
+            }
+            
+            async loadVideos() {
+                if (!this.db) {
+                    this.showError("Database not initialized");
+                    return;
+                }
+                
+                this.showLoading();
+                
+                try {
+                    // Load videos from live_question collection
+                    const videosSnapshot = await this.db.collection('live_question')
+                        .orderBy('order')
+                        .get();
+                    
+                    if (videosSnapshot.empty) {
+                        this.videosContainer.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No videos available.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    const videos = [];
+                    videosSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        const videoData = {
+                            id: doc.id,
+                            videoUrl: data.live_videoUrl || '',
+                            videoTitle: data.videoTitle || 'Untitled Video',
+                            mentorName: data.mentorName || 'Unknown Mentor',
+                            mentorImage: data.mentorImage || '',
+                            title: data.title || 'No Title',
+                            order: data.order || 0
+                        };
+                        
+                        videos.push(videoData);
+                    });
+                    
+                    // Sort by order
+                    videos.sort((a, b) => a.order - b.order);
+                    
+                    this.videosData = videos;
+                    
+                    // Render videos
+                    this.renderVideos(videos);
+                    
+                    // Update search box placeholder with first video's title
+                    if (videos.length > 0 && this.searchBox) {
+                        this.searchBox.placeholder = videos[0].title || 'Search contents...';
+                    }
+                    
+                    // Initialize video players after rendering
+                    setTimeout(() => {
+                        initVideoPlayers();
+                    }, 500);
+                    
+                } catch (error) {
+                    console.error("Error loading videos:", error);
+                    this.showError("Failed to load videos. Please check your internet connection.");
+                }
+            }
+            
+            setupRealtimeListeners() {
+                if (!this.db) return;
+                
+                // Listen for video updates
+                this.db.collection('live_question')
+                    .onSnapshot((snapshot) => {
+                        const videos = [];
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            const videoData = {
+                                id: doc.id,
+                                videoUrl: data.live_videoUrl || '',
+                                videoTitle: data.videoTitle || 'Untitled Video',
+                                mentorName: data.mentorName || 'Unknown Mentor',
+                                mentorImage: data.mentorImage || '',
+                                title: data.title || 'No Title',
+                                order: data.order || 0
+                            };
+                            
+                            videos.push(videoData);
+                        });
+                        
+                        // Sort by order
+                        videos.sort((a, b) => a.order - b.order);
+                        
+                        this.videosData = videos;
+                        this.renderVideos(videos);
+                        
+                        // Update search box placeholder with first video's title
+                        if (videos.length > 0 && this.searchBox) {
+                            this.searchBox.placeholder = videos[0].title || 'Search contents...';
+                        }
+                    });
+            }
+            
+            // ===== RENDER METHODS =====
+            renderVideos(videos) {
+                if (videos.length === 0) {
+                    this.videosContainer.innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-gray-600">No videos available.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let videosHtml = '';
+                
+                videos.forEach((video, index) => {
+                    const videoId = this.extractYouTubeId(video.videoUrl);
+                    const uniqueId = `video-${video.id}-${Date.now()}`;
+                    
+                    videosHtml += `
+                        <!-- Video Card ${index + 1} -->
+                        <div class="video-card">
+                            <!-- Video Player Section -->
+                            <div class="video-wrapper">
+                                <div class="video-player-container" id="${uniqueId}" data-video-id="${videoId}" data-is-streaming="false">
+                                    <div class="double-tap-indicator double-tap-left">
+                                        <div class="double-tap-text">10 sec</div>
+                                    </div>
+                                    <div class="double-tap-indicator double-tap-right">
+                                        <div class="double-tap-text">20 sec</div>
+                                    </div>
+                                    
+                                    <div class="youtube-iframe-wrapper">
+                                        <!-- YouTube iframe will be inserted here -->
+                                    </div>
+                                    <div class="video-overlay">
+                                        <div class="modern-control-bar">
+                                            <div class="top-progress-container" title="Progress">
+                                                <div class="progress-track"></div>
+                                                <div class="progress-thumb"></div>
+                                            </div>
+                                            
+                                            <div class="controls-row">
+                                                <div class="left-controls">
+                                                    <button class="control-btn play-pause-btn" title="Play/Pause">
+                                                        <svg class="play-icon" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                                                            <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zM188.3 147.1c7.6-4.2 16.8-4.1 24.3 .5l144 88c7.1 4.4 11.5 12.1 11.5 20.5s-4.4 16.1-11.5 20.5l-144 88c-7.4 4.5-16.7 4.7-24.3 .5s-12.3-12.2-12.3-20.9V168c0-8.7 4.7-16.7 12.3-20.9z"/>
+                                                        </svg>
+                                                        <svg class="pause-icon" style="display:none;" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                                                            <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm224-72V328c0 13.3-10.7 24-24 24s-24-10.7-24-24V184c0-13.3 10.7-24 24-24s24 10.7 24 24zm112 0V328c0 13.3-10.7 24-24 24s-24-10.7-24-24V184c0-13.3 10.7-24 24-24s24 10.7 24 24z"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                
+                                                <div class="center-controls">
+                                                    <span class="time-display">0:00 / 0:00</span>
+                                                </div>
+                                                
+                                                <div class="right-controls">
+                                                    <div class="speed-control">
+                                                        <button class="control-btn speed-btn" title="Playback Speed">1x</button>
+                                                    </div>
+                                                    
+                                                    <button class="control-btn volume-btn" title="Volume">
+                                                        <i class="fas fa-volume-up"></i>
+                                                    </button>
+                                                    
+                                                    <button class="control-btn fullscreen-btn" title="Fullscreen">
+                                                        <i class="fas fa-expand"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="video-loading">
+                                            <div class="video-loading-spinner"></div>
+                                            <span>Loading video...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Video Info Row - CRITICAL HEIGHT ALIGNMENT -->
+                            <div class="video-info-row">
+                                <!-- Profile Viewer - Perfect Square -->
+                                <div class="profile-viewer">
+                                    ${video.mentorImage ? 
+                                        `<img src="${video.mentorImage}" alt="${video.mentorName}" class="profile-image" onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;\\'>${video.mentorName.charAt(0)}</div>'">` :
+                                        `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;font-weight:600;">${video.mentorName.charAt(0)}</div>`
+                                    }
+                                </div>
+                                
+                                <!-- Text Container - Height MUST match profile viewer -->
+                                <div class="video-text-container">
+                                    <!-- Video Title - 2 lines max with ellipsis -->
+                                    <h3 class="video-title" title="${video.videoTitle}">
+                                        ${video.videoTitle}
+                                    </h3>
+                                    
+                                    <!-- Mentor Name - Single line with ellipsis -->
+                                    <p class="mentor-name" title="${video.mentorName}">
+                                        ${video.mentorName}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                this.videosContainer.innerHTML = videosHtml;
+            }
+            
+            extractYouTubeId(url) {
+                if (!url) return '';
+                
+                let videoId = '';
+                
+                if (url.includes('youtube.com/watch?v=')) {
+                    videoId = url.split('v=')[1];
+                    const ampersandPosition = videoId.indexOf('&');
+                    if (ampersandPosition !== -1) {
+                        videoId = videoId.substring(0, ampersandPosition);
+                    }
+                } else if (url.includes('youtu.be/')) {
+                    videoId = url.split('youtu.be/')[1];
+                    const questionMarkPosition = videoId.indexOf('?');
+                    if (questionMarkPosition !== -1) {
+                        videoId = videoId.substring(0, questionMarkPosition);
+                    }
+                } else if (url.includes('youtube.com/embed/')) {
+                    videoId = url.split('embed/')[1];
+                    const slashPosition = videoId.indexOf('/');
+                    if (slashPosition !== -1) {
+                        videoId = videoId.substring(0, slashPosition);
+                    }
+                } else {
+                    videoId = url.trim();
+                }
+                
+                return videoId;
+            }
+        }
+        
+        // ===== INITIALIZE APP =====
+        let app;
+        
+        window.addEventListener('load', () => {
+            app = new ConceptBlitzVideosApp();
+        });
+        
+        // Make app available globally for debugging
+        window.ConceptBlitzVideosApp = ConceptBlitzVideosApp;
+    </script>
+</body>
+</html>
