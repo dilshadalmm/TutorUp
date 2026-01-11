@@ -1,0 +1,2504 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0">
+    <title>ConceptBlitz - Lectures</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Anton for brand and Merriweather for body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+    <style>
+        /* CRITICAL: Ensure HTML and BODY are full height and non-scrollable */
+        html {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Use the Merriweather font family as default */
+        body {
+            font-family: 'Merriweather', serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-variation-settings: "wdth" 100;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            
+            /* Light mode: Black text */
+            color: #000000;
+            
+            /* CRITICAL: Prevent the main body from scrolling at all */
+            overflow: hidden !important; 
+            
+            user-select: none;
+            -webkit-user-select: none; 
+            -moz-user-select: none;
+            -ms-user-select: none; 
+            
+            /* Prevents elastic scrolling on iOS */
+            overscroll-behavior: none;
+            
+            /* Make body a fixed container occupying full screen */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Dark mode: White text */
+        body.dark {
+            color: #ffffff;
+        }
+
+        /* App wrapper - uses dynamic viewport height for mobile keyboard stability */
+        #app-wrapper {
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport height (best for mobile keyboard) */
+            width: 100%;
+            position: absolute; /* Relative to fixed body */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden; /* Ensures only the chat container can scroll */
+        }
+        
+        /* Style for the ConceptBlitz logo font - USING ANTON */
+        .conceptblitz-logo {
+            font-family: 'Anton', sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+        
+        /* REVERSED: Brand font colors - Light mode: White and Orange */
+        .concept-text {
+            color: #ffffff; /* White for light mode - REVERSED */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .blitz-text {
+            color: #F97316; /* Orange */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* REVERSED: Brand font colors - Dark mode: Black and Orange */
+        .dark .concept-text {
+            color: #000000; /* Black for dark mode - REVERSED */
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.1);
+        }
+        
+        .dark .blitz-text {
+            color: #F97316; /* Orange (same for dark mode) */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* --- Hide Scrollbar on Chat Container --- */
+        #chat-container {
+            /* Scroll is now always auto (default of overflow-y-auto is active) */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        #chat-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Strict No-Oval/No-Round Policy */
+        * {
+            border-radius: 0 !important;
+        }
+
+        /* Except for dropdown container */
+        .dropdown-container {
+            border-radius: 5% !important;
+        }
+        
+        .cancel-btn {
+            border-radius: 9999px !important;
+        }
+
+        .input-border {
+            border: 1px solid #e2e8f0;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-border:focus {
+            outline: none;
+            border-color: #000000;
+        }
+
+        .btn-black {
+            background-color: #000000;
+            color: #ffffff;
+            transition: opacity 0.2s ease;
+        }
+
+        .btn-black:hover {
+            opacity: 0.85;
+        }
+
+        .hidden {
+            display: none;
+        }
+        
+        /* Auth Feedback Message */
+        #auth-error {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #000000;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: none;
+            z-index: 101;
+            white-space: nowrap;
+        }
+        
+        /* Dark mode adjustments for auth */
+        .dark #auth-wrapper {
+            background-color: #1f2937;
+        }
+        
+        .dark .auth-card {
+            background: #1f2937;
+            color: #ffffff;
+        }
+        
+        .dark .input-border {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #ffffff;
+        }
+        
+        .dark .input-border:focus {
+            border-color: #ffffff;
+        }
+        
+        .dark .text-gray-500 {
+            color: #9ca3af;
+        }
+        
+        .dark .border-gray-100 {
+            border-color: #374151;
+        }
+
+        /* ===== HOME PAGE STYLES ===== */
+        .home-container {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Top bar with menu, search and profile */
+        .top-bar {
+            width: 100%;
+            background: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e5e7eb;
+            height: 60px;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .dark .top-bar {
+            background: #1f2937;
+            border-bottom-color: #374151;
+        }
+        
+        /* Back button */
+        .back-button {
+            width: 40px;
+            height: 40px;
+            background: #f3f4f6;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .dark .back-button {
+            background: #374151;
+        }
+        
+        .back-button img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        /* Search box - long and centered */
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 16px;
+            position: relative;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 10px 16px;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            font-family: 'Merriweather', serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        
+        .dark .search-box {
+            background: #374151;
+            border-color: #4b5563;
+            color: white;
+        }
+        
+        .search-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        
+        .search-box::placeholder {
+            color: #6b7280;
+        }
+        
+        .dark .search-box::placeholder {
+            color: #9ca3af;
+        }
+        
+        /* Profile image container */
+        .profile-container {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: 0 !important;
+            overflow: hidden;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .dark .profile-container {
+            background: #374151;
+            border-color: #4b5563;
+        }
+        
+        .profile-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        /* Top image container */
+        .top-image-container {
+            width: 100%;
+            margin: 0 auto 0 auto;
+            padding: 0;
+            max-width: 100%;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background: white;
+            position: relative;
+        }
+        
+        .dark .top-image-container {
+            background: #1f2937;
+        }
+        
+        .top-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            max-height: 250px;
+        }
+        
+        /* Banner shower - 97% width */
+        .banner-shower {
+            width: 97%;
+            margin: 16px auto;
+            overflow: hidden;
+            position: relative;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark .banner-shower {
+            background: #1f2937;
+        }
+        
+        .banner-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+        
+        /* Single banner */
+        .single-banner {
+            width: 97%;
+            margin: 16px auto;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark .single-banner {
+            background: #1f2937;
+        }
+        
+        /* ===== LECTURE CARD PAGE STYLES ===== */
+        .lecture-card-container {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Page numbers navigation */
+        .page-numbers-container {
+            width: 100%;
+            background: white;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .page-numbers-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .page-numbers {
+            display: inline-flex;
+            gap: 12px;
+            padding: 0 4px;
+        }
+        
+        .page-number-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #f3f4f6;
+            border: 2px solid #d1d5db;
+            border-radius: 0;
+            font-weight: 600;
+            font-size: 16px;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .page-number-box:hover {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+        
+        .page-number-box.active {
+            background: #3b82f6;
+            border-color: #2563eb;
+            color: white;
+        }
+        
+        /* Lecture Cards Container - NO MARGIN BELOW PAGE NUMBERS */
+        .lecture-cards-wrapper {
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        
+        /* Individual Lecture Card - 100% width */
+        .lecture-card {
+            width: 100%;
+            padding: 16px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        
+        .lecture-card:hover {
+            background: #f9fafb;
+        }
+        
+        .dark .lecture-card {
+            background: #1f2937;
+            border-bottom-color: #374151;
+        }
+        
+        .dark .lecture-card:hover {
+            background: #374151;
+        }
+        
+        /* Order Tag - Square box like page number */
+        .order-tag {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            background: #f3f4f6;
+            border: 2px solid #d1d5db;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: #374151;
+        }
+        
+        .dark .order-tag {
+            background: #374151;
+            border-color: #4b5563;
+            color: #f9fafb;
+        }
+        
+        /* Title Container */
+        .title-container {
+            flex: 1;
+            min-width: 0; /* Allows text truncation */
+        }
+        
+        .lecture-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: calc(2 * 1.4em); /* 2 lines max */
+        }
+        
+        .dark .lecture-title {
+            color: #f9fafb;
+        }
+        
+        /* ===== LECTURE DETAIL PAGE STYLES ===== */
+        .lecture-detail-container {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Video Player - 100% width */
+        .video-player-full {
+            width: 100%;
+            margin: 0;
+            background: #000;
+        }
+        
+        /* Mentor Info Container - Horizontal Row */
+        .mentor-info-container {
+            width: 100%;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .dark .mentor-info-container {
+            background: #1f2937;
+            border-bottom-color: #374151;
+        }
+        
+        /* Profile Image - Perfect Square */
+        .mentor-profile-image {
+            width: 64px;
+            height: 64px;
+            flex-shrink: 0;
+            border-radius: 0 !important;
+            overflow: hidden;
+            background: #f3f4f6;
+        }
+        
+        .dark .mentor-profile-image {
+            background: #374151;
+        }
+        
+        .mentor-profile-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        /* Text Container - Must match profile image height */
+        .mentor-text-container {
+            flex: 1;
+            height: 64px; /* Match profile image height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0; /* Allows text truncation */
+        }
+        
+        /* Video Title - Max 2 lines */
+        .video-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: calc(2 * 1.3em); /* 2 lines max */
+            margin-bottom: 4px;
+        }
+        
+        .dark .video-title {
+            color: #f9fafb;
+        }
+        
+        /* Mentor Name - Single line */
+        .mentor-name {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .dark .mentor-name {
+            color: #9ca3af;
+        }
+        
+        /* Dark mode adjustments */
+        .dark .page-numbers-container {
+            background: #1f2937;
+            border-bottom-color: #374151;
+        }
+        
+        .dark .page-number-box {
+            background: #374151;
+            border-color: #4b5563;
+            color: #f9fafb;
+        }
+        
+        .dark .page-number-box:hover {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+        
+        .dark .page-number-box.active {
+            background: #3b82f6;
+            border-color: #2563eb;
+            color: white;
+        }
+        
+        /* Loading indicator styles */
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .dark .loading-content {
+            background: #1f2937;
+            color: white;
+        }
+        
+        /* Page containers */
+        .page-container {
+            display: none;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        .page-container.active {
+            display: block;
+        }
+
+        /* ===== UPDATED: Modern YouTube Player Control Bar Styles ===== */
+        .video-player-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            background: #000;
+        }
+        
+        /* Ensure video player controls are visible in fullscreen */
+        .video-wrapper:fullscreen .video-player-container,
+        .video-wrapper:-webkit-full-screen .video-player-container,
+        .video-wrapper:-moz-full-screen .video-player-container,
+        .video-wrapper:-ms-fullscreen .video-player-container {
+            height: 100vh;
+            padding-bottom: 0;
+        }
+        
+        .video-wrapper:fullscreen .modern-control-bar,
+        .video-wrapper:-webkit-full-screen .modern-control-bar,
+        .video-wrapper:-moz-full-screen .modern-control-bar,
+        .video-wrapper:-ms-fullscreen .modern-control-bar {
+            z-index: 2147483647; /* Maximum z-index for fullscreen */
+        }
+        
+        .youtube-iframe-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .youtube-iframe-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            pointer-events: none;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        /* New Modern Control Bar */
+        .modern-control-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.7) 60%, transparent 100%);
+            color: white;
+            padding: 12px 16px 8px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 20;
+            font-family: 'Merriweather', serif;
+            pointer-events: auto;
+        }
+        
+        .video-overlay:hover .modern-control-bar,
+        .modern-control-bar.visible {
+            opacity: 1;
+        }
+        
+        /* Thin Progress Bar - RED COLOR */
+        .top-progress-container {
+            width: 100%;
+            height: 3px;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            position: relative;
+            margin-bottom: 2px;
+        }
+        
+        .progress-track {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: #ef4444; /* RED COLOR */
+            transition: width 0.1s linear;
+        }
+        
+        .progress-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: #ef4444; /* RED COLOR */
+            border: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            cursor: pointer;
+            pointer-events: none;
+        }
+        
+        .top-progress-container:hover .progress-thumb {
+            opacity: 1;
+        }
+        
+        /* Bottom Controls Row - ALL ELEMENTS IN ONE LINE */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            min-height: 36px;
+            flex-wrap: nowrap;
+        }
+        
+        /* Left Controls */
+        .left-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+            min-width: 0;
+        }
+        
+        /* Right Controls */
+        .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 1 auto;
+            min-width: 0;
+            flex-wrap: nowrap;
+        }
+        
+        /* Center Controls (for time display) */
+        .center-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        /* Control Buttons - Dark black square boxes with white icons */
+        .control-btn {
+            background: #000000; /* Dark black background */
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            min-height: 40px;
+            font-size: 16px;
+            transition: background-color 0.15s ease;
+            flex-shrink: 0;
+        }
+        
+        .control-btn:hover {
+            background: #333333;
+        }
+        
+        .control-btn:active {
+            background: #666666;
+        }
+        
+        /* SVG Icons for buttons */
+        .control-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        
+        .play-pause-btn {
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .play-pause-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* Time Display */
+        .time-display {
+            font-family: 'Merriweather', serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            min-width: 100px;
+            text-align: center;
+            color: rgba(255,255,255,0.95);
+            flex-shrink: 0;
+        }
+        
+        /* Volume button - dark black square box */
+        .volume-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .volume-btn i {
+            font-size: 18px;
+        }
+        
+        /* Speed Control */
+        .speed-control {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .speed-btn {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 4px 8px;
+            min-width: 40px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        /* Fullscreen Button - dark black square box */
+        .fullscreen-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fullscreen-btn i {
+            font-size: 18px;
+        }
+        
+        /* Video Loading */
+        .video-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 5;
+        }
+        
+        .video-loading-spinner {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        .player-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            font-size: 12px;
+            text-align: center;
+            z-index: 5;
+        }
+        
+        /* Double tap indicators */
+        .double-tap-indicator {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .double-tap-left {
+            left: 0;
+            background: linear-gradient(to right, rgba(239, 68, 68, 0.7), transparent);
+        }
+        
+        .double-tap-right {
+            right: 0;
+            background: linear-gradient(to left, rgba(239, 68, 68, 0.7), transparent);
+        }
+        
+        .double-tap-indicator.show {
+            opacity: 1;
+        }
+        
+        .double-tap-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-family: 'Merriweather', serif;
+        }
+        
+        /* Mobile Touch-Friendly Adjustments */
+        @media (max-width: 640px) {
+            .modern-control-bar {
+                padding: 10px 12px 6px 12px;
+            }
+            
+            .control-btn {
+                min-width: 36px;
+                min-height: 36px;
+                padding: 6px;
+            }
+            
+            .play-pause-btn {
+                min-width: 40px;
+                min-height: 40px;
+            }
+            
+            .time-display {
+                font-size: 11px;
+                min-width: 90px;
+            }
+            
+            .left-controls {
+                gap: 6px;
+            }
+            
+            .right-controls {
+                gap: 6px;
+            }
+            
+            .speed-btn {
+                min-width: 36px;
+                padding: 4px 6px;
+                font-size: 13px;
+            }
+            
+            .top-bar {
+                padding: 10px 12px;
+                height: 56px;
+            }
+            
+            .search-box {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+        
+        /* Ensure all text elements inherit the body font */
+        h1, h2, h3, h4, h5, h6, p, span, div, button, input, textarea, label, a {
+            font-family: 'Merriweather', serif;
+        }
+
+        /* Exception for logo only */
+        .conceptblitz-logo,
+        #header-title .conceptblitz-logo,
+        .auth-card .conceptblitz-logo {
+            font-family: 'Anton', sans-serif !important;
+        }
+
+        /* Buttons should also use Merriweather */
+        button, .auth-button, .google-signin-btn {
+            font-family: 'Merriweather', serif !important;
+        }
+
+        /* Input fields */
+        input, textarea {
+            font-family: 'Merriweather', serif !important;
+        }
+    </style>
+</head>
+
+<body class="h-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+
+    <!-- NEW Authentication Page -->
+    <div id="auth-wrapper">
+        <div class="auth-card">
+            <!-- Logo/Header -->
+            <div class="mb-12">
+                <div class="conceptblitz-logo text-4xl inline-block px-4 py-2 mb-4">
+                    <span class="concept-text">Concept</span><span class="blitz-text">Blitz</span>
+                </div>
+                <h1 id="auth-title" class="text-2xl font-bold tracking-tight">Sign In</h1>
+                <p id="auth-subtitle" class="text-gray-500 text-sm mt-1">Please enter your account details.</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="signin-form" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Email</label>
+                    <input type="email" id="signin-email" placeholder="email@domain.com" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Password</label>
+                    <input type="password" id="signin-password" placeholder="••••••••" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <button type="submit" id="signin-button" class="w-full py-3 btn-black font-semibold text-sm">
+                    <span id="signin-button-text">Sign In</span>
+                    <div id="signin-button-spinner" class="loading-spinner ml-2 hidden inline-block"></div>
+                </button>
+                
+                <!-- Google Sign In Button -->
+                <div class="divider">
+                    <span class="text-xs text-gray-500">Or continue with</span>
+                </div>
+                
+                <button type="button" id="google-signin-button" class="w-full py-3 bg-white border border-gray-300 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-gray-50">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="signup-form" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Full Name</label>
+                    <input type="text" id="signup-name" placeholder="John Doe" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Email</label>
+                    <input type="email" id="signup-email" placeholder="email@domain.com" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2">Password</label>
+                    <input type="password" id="signup-password" placeholder="••••••••" class="w-full p-3 input-border text-sm" required>
+                </div>
+                <button type="submit" id="signup-button" class="w-full py-3 btn-black font-semibold text-sm">
+                    <span id="signup-button-text">Create Account</span>
+                    <div id="signup-button-spinner" class="loading-spinner ml-2 hidden inline-block"></div>
+                </button>
+                
+                <!-- Google Sign Up Button -->
+                <div class="divider">
+                    <span class="text-xs text-gray-500">Or continue with</span>
+                </div>
+                
+                <button type="button" id="google-signup-button" class="w-full py-3 bg-white border border-gray-300 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-gray-50">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </form>
+
+            <!-- Toggle Link -->
+            <div class="mt-8 text-center border-t pt-8 border-gray-100">
+                <button id="toggle-auth-btn" class="text-sm font-semibold hover:underline">
+                    New here? Create an account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Error Message -->
+    <div id="auth-error" class="fixed"></div>
+
+    <!-- Mobile App Container (Flex Column) -->
+    <div id="app-wrapper" class="bg-white dark:bg-gray-800 flex flex-col overflow-hidden rounded-none md:rounded-lg hidden">
+        <!-- Top bar (common for all pages) -->
+        <div class="top-bar">
+            <!-- Left button (back) -->
+            <div id="left-button-container"></div>
+            
+            <!-- Search box -->
+            <div class="search-container">
+                <input type="text" class="search-box" placeholder="Search lectures...">
+            </div>
+            
+            <!-- Profile image -->
+            <div class="profile-container">
+                <div id="profile-image-container"></div>
+            </div>
+        </div>
+        
+        <!-- Main content area - different pages will be loaded here -->
+        <main id="chat-container" class="flex-1 overflow-y-auto">
+            <!-- Pages will be dynamically loaded here -->
+        </main>
+    </div>
+
+    <script>
+        // ===== FIXED YOUTUBE PLAYER MANAGER =====
+        class SimpleYouTubePlayer {
+            constructor(containerId, videoId) {
+                this.containerId = containerId;
+                this.videoId = videoId;
+                this.player = null;
+                this.updateInterval = null;
+                this.controlsVisible = true;
+                this.playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+                this.currentPlaybackRate = 1;
+                this.lastTapTime = 0;
+                this.tapCount = 0;
+                this.isYouTubeAPIReady = false;
+                this.init();
+            }
+            
+            init() {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                // Create YouTube iframe with proper parameters for streaming
+                const iframe = document.createElement('iframe');
+                iframe.id = `yt-iframe-${this.containerId}`;
+                iframe.width = '100%';
+                iframe.height = '100%';
+                // FIXED: Updated YouTube embed URL with proper parameters for streaming
+                iframe.src = `https://www.youtube.com/embed/${this.videoId}?enablejsapi=1&origin=${window.location.origin}&controls=0&disablekb=1&modestbranding=1&fs=0&rel=0&iv_load_policy=3&playsinline=1&autoplay=0&widget_referrer=${window.location.href}`;
+                iframe.frameBorder = '0';
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                iframe.allowFullscreen = true;
+                iframe.style.pointerEvents = 'none';
+                
+                const iframeWrapper = container.querySelector('.youtube-iframe-wrapper');
+                if (iframeWrapper) {
+                    iframeWrapper.innerHTML = '';
+                    iframeWrapper.appendChild(iframe);
+                }
+                
+                // Load YouTube API
+                this.loadYouTubeAPI().then(() => {
+                    this.initializePlayer();
+                }).catch(error => {
+                    console.error('Failed to load YouTube API:', error);
+                    this.showError(container, 'Failed to load video');
+                });
+            }
+            
+            loadYouTubeAPI() {
+                return new Promise((resolve, reject) => {
+                    if (window.YT && window.YT.Player) {
+                        this.isYouTubeAPIReady = true;
+                        resolve();
+                        return;
+                    }
+                    
+                    // Check if script is already loading
+                    if (window.youtubeAPILoading) {
+                        const checkInterval = setInterval(() => {
+                            if (window.YT && window.YT.Player) {
+                                clearInterval(checkInterval);
+                                this.isYouTubeAPIReady = true;
+                                resolve();
+                            }
+                        }, 100);
+                        setTimeout(() => {
+                            clearInterval(checkInterval);
+                            if (!window.YT) reject('Timeout loading YouTube API');
+                        }, 10000);
+                        return;
+                    }
+                    
+                    window.youtubeAPILoading = true;
+                    
+                    // Create a more robust YouTube API loading
+                    const tag = document.createElement('script');
+                    tag.src = 'https://www.youtube.com/iframe_api';
+                    
+                    // Add error handling for script loading
+                    tag.onerror = () => {
+                        window.youtubeAPILoading = false;
+                        reject('Failed to load YouTube API script');
+                    };
+                    
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                    
+                    // Set a timeout for API ready
+                    const apiReadyTimeout = setTimeout(() => {
+                        if (!window.YT) {
+                            window.youtubeAPILoading = false;
+                            reject('YouTube API ready timeout');
+                        }
+                    }, 15000);
+                    
+                    window.onYouTubeIframeAPIReady = () => {
+                        clearTimeout(apiReadyTimeout);
+                        window.youtubeAPILoading = false;
+                        this.isYouTubeAPIReady = true;
+                        resolve();
+                    };
+                });
+            }
+            
+            initializePlayer() {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                // Hide loading
+                const loadingEl = container.querySelector('.video-loading');
+                if (loadingEl) loadingEl.style.display = 'none';
+                
+                try {
+                    // FIXED: Added proper error handling and retry mechanism
+                    this.player = new YT.Player(`yt-iframe-${this.containerId}`, {
+                        events: {
+                            'onReady': (event) => this.onPlayerReady(event),
+                            'onStateChange': (event) => this.onPlayerStateChange(event),
+                            'onError': (event) => this.onPlayerError(event),
+                            'onApiChange': (event) => this.onApiChange(event)
+                        },
+                        playerVars: {
+                            'autoplay': 0,
+                            'controls': 0,
+                            'disablekb': 1,
+                            'enablejsapi': 1,
+                            'fs': 0,
+                            'iv_load_policy': 3,
+                            'modestbranding': 1,
+                            'playsinline': 1,
+                            'rel': 0,
+                            'origin': window.location.origin
+                        }
+                    });
+                    
+                    // Setup controls
+                    this.setupControls(container);
+                } catch (error) {
+                    console.error('Failed to create YouTube player:', error);
+                    // Retry initialization after delay
+                    setTimeout(() => {
+                        this.initializePlayer();
+                    }, 1000);
+                }
+            }
+            
+            onPlayerReady(event) {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                // Set initial volume and playback rate
+                try {
+                    event.target.setVolume(100);
+                    event.target.setPlaybackRate(this.currentPlaybackRate);
+                    
+                    // Update speed button text
+                    const speedBtn = container.querySelector('.speed-btn');
+                    if (speedBtn) {
+                        speedBtn.textContent = `${this.currentPlaybackRate}x`;
+                    }
+                    
+                    // Start update interval
+                    this.startUpdateInterval();
+                    
+                    console.log('YouTube player ready for:', this.videoId);
+                } catch (error) {
+                    console.error('Error in onPlayerReady:', error);
+                }
+            }
+            
+            onPlayerStateChange(event) {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+                
+                const playPauseBtn = container.querySelector('.play-pause-btn');
+                if (!playPauseBtn) return;
+                
+                const playIcon = playPauseBtn.querySelector('.play-icon');
+                const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+                
+                if (event.data === YT.PlayerState.PLAYING) {
+                    if (playIcon) playIcon.style.display = 'none';
+                    if (pauseIcon) pauseIcon.style.display = 'block';
+                } else {
+                    if (playIcon) playIcon.style.display = 'block';
+                    if (pauseIcon) pauseIcon.style.display = 'none';
+                }
+                
+                // Auto-hide controls when playing
+                if (event.data === YT.PlayerState.PLAYING) {
+                    this.hideControlsAfterDelay(container);
+                }
+            }
+            
+            onPlayerError(event) {
+                console.error('YouTube player error:', event.data);
+                const container = document.getElementById(this.containerId);
+                if (container) {
+                    this.showError(container, 'Video failed to load. Please check your internet connection.');
+                }
+            }
+            
+            onApiChange(event) {
+                // Handle API changes
+            }
+            
+            setupControls(container) {
+                // Play/Pause button
+                const playPauseBtn = container.querySelector('.play-pause-btn');
+                if (playPauseBtn) {
+                    playPauseBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+                                this.player.pauseVideo();
+                            } else {
+                                this.player.playVideo();
+                            }
+                        } catch (error) {
+                            console.error('Play/Pause error:', error);
+                        }
+                    });
+                }
+                
+                // Progress bar
+                const progressBar = container.querySelector('.top-progress-container');
+                if (progressBar) {
+                    progressBar.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            const rect = progressBar.getBoundingClientRect();
+                            const clickX = e.clientX - rect.left;
+                            const percentage = (clickX / rect.width) * 100;
+                            const duration = this.player.getDuration();
+                            const seekTime = (percentage / 100) * duration;
+                            this.player.seekTo(seekTime, true);
+                        } catch (error) {
+                            console.error('Seek error:', error);
+                        }
+                    });
+                }
+                
+                // Volume button
+                const volumeBtn = container.querySelector('.volume-btn');
+                if (volumeBtn) {
+                    volumeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            const currentVolume = this.player.getVolume();
+                            if (currentVolume > 0) {
+                                this.player.setVolume(0);
+                                volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                            } else {
+                                this.player.setVolume(100);
+                                volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                            }
+                        } catch (error) {
+                            console.error('Volume error:', error);
+                        }
+                    });
+                }
+                
+                // Fullscreen button
+                const fullscreenBtn = container.querySelector('.fullscreen-btn');
+                if (fullscreenBtn) {
+                    fullscreenBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleFullscreen(container);
+                    });
+                }
+                
+                // Speed control button
+                const speedBtn = container.querySelector('.speed-btn');
+                if (speedBtn) {
+                    speedBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!this.player) return;
+                        
+                        try {
+                            // Cycle to next playback rate
+                            const currentIndex = this.playbackRates.indexOf(this.currentPlaybackRate);
+                            const nextIndex = (currentIndex + 1) % this.playbackRates.length;
+                            this.currentPlaybackRate = this.playbackRates[nextIndex];
+                            
+                            // Apply to player
+                            this.player.setPlaybackRate(this.currentPlaybackRate);
+                            
+                            // Update button text
+                            speedBtn.textContent = `${this.currentPlaybackRate}x`;
+                        } catch (error) {
+                            console.error('Speed control error:', error);
+                        }
+                    });
+                }
+                
+                // Double tap for skipping
+                const overlay = container.querySelector('.video-overlay');
+                if (overlay) {
+                    let lastTapTime = 0;
+                    let tapCount = 0;
+                    let tapTimeout;
+                    
+                    overlay.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const currentTime = Date.now();
+                        const rect = overlay.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+                        const isLeftSide = clickX < rect.width / 2;
+                        
+                        // Check for double tap (within 300ms)
+                        if (currentTime - lastTapTime < 300) {
+                            tapCount++;
+                            clearTimeout(tapTimeout);
+                            
+                            if (tapCount === 2) {
+                                // Double tap detected
+                                this.handleDoubleTap(isLeftSide);
+                                tapCount = 0;
+                            }
+                        } else {
+                            tapCount = 1;
+                        }
+                        
+                        lastTapTime = currentTime;
+                        
+                        // Reset tap count after 300ms
+                        tapTimeout = setTimeout(() => {
+                            tapCount = 0;
+                        }, 300);
+                    });
+                }
+                
+                // Click overlay to toggle play/pause
+                if (overlay) {
+                    overlay.addEventListener('click', (e) => {
+                        // Don't toggle if clicking on control buttons or progress bar
+                        if (e.target.closest('.control-btn') || 
+                            e.target.closest('.top-progress-container') || 
+                            e.target.closest('.speed-btn')) {
+                            return;
+                        }
+                        
+                        if (!this.player) return;
+                        
+                        try {
+                            if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+                                this.player.pauseVideo();
+                            } else {
+                                this.player.playVideo();
+                            }
+                        } catch (error) {
+                            console.error('Overlay click error:', error);
+                        }
+                    });
+                    
+                    // Show controls on hover/touch
+                    let hideTimeout;
+                    const showControls = () => {
+                        const controlBar = container.querySelector('.modern-control-bar');
+                        if (controlBar) {
+                            controlBar.classList.add('visible');
+                            clearTimeout(hideTimeout);
+                        }
+                    };
+                    
+                    overlay.addEventListener('mouseenter', showControls);
+                    overlay.addEventListener('mousemove', showControls);
+                    overlay.addEventListener('mouseleave', () => {
+                        this.hideControlsAfterDelay(container);
+                    });
+                    
+                    overlay.addEventListener('touchstart', showControls);
+                    overlay.addEventListener('touchmove', showControls);
+                }
+            }
+            
+            hideControlsAfterDelay(container) {
+                const controlBar = container.querySelector('.modern-control-bar');
+                if (controlBar && this.player && this.player.getPlayerState() === YT.PlayerState.PLAYING) {
+                    setTimeout(() => {
+                        controlBar.classList.remove('visible');
+                    }, 2000);
+                }
+            }
+            
+            handleDoubleTap(isLeftSide) {
+                if (!this.player) return;
+                
+                const container = document.getElementById(this.containerId);
+                const currentTime = this.player.getCurrentTime();
+                
+                // Show visual feedback with text
+                const indicator = container.querySelector(isLeftSide ? '.double-tap-left' : '.double-tap-right');
+                if (indicator) {
+                    indicator.classList.add('show');
+                    setTimeout(() => {
+                        indicator.classList.remove('show');
+                    }, 500);
+                }
+                
+                // Skip backward 10 seconds on left side, forward 20 seconds on right side
+                try {
+                    if (isLeftSide) {
+                        const newTime = Math.max(0, currentTime - 10);
+                        this.player.seekTo(newTime, true);
+                    } else {
+                        const duration = this.player.getDuration();
+                        const newTime = Math.min(duration, currentTime + 20);
+                        this.player.seekTo(newTime, true);
+                    }
+                } catch (error) {
+                    console.error('Double tap seek error:', error);
+                }
+            }
+            
+            startUpdateInterval() {
+                if (this.updateInterval) clearInterval(this.updateInterval);
+                
+                this.updateInterval = setInterval(() => {
+                    this.updateUI();
+                }, 500);
+            }
+            
+            updateUI() {
+                const container = document.getElementById(this.containerId);
+                if (!container || !this.player) return;
+                
+                try {
+                    const currentTime = this.player.getCurrentTime();
+                    const duration = this.player.getDuration();
+                    const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+                    
+                    // Update progress bar
+                    const progressTrack = container.querySelector('.progress-track');
+                    const progressThumb = container.querySelector('.progress-thumb');
+                    if (progressTrack && progressThumb) {
+                        progressTrack.style.width = `${progress}%`;
+                        progressThumb.style.left = `${progress}%`;
+                    }
+                    
+                    // Update time display
+                    const timeDisplay = container.querySelector('.time-display');
+                    if (timeDisplay) {
+                        const formatTime = (seconds) => {
+                            if (isNaN(seconds)) return '0:00';
+                            const mins = Math.floor(seconds / 60);
+                            const secs = Math.floor(seconds % 60);
+                            return `${mins}:${secs.toString().padStart(2, '0')}`;
+                        };
+                        timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                    }
+                    
+                    // Update volume icon
+                    const volumeBtn = container.querySelector('.volume-btn');
+                    if (volumeBtn) {
+                        const volume = this.player.getVolume();
+                        if (volume > 0) {
+                            volumeBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                        } else {
+                            volumeBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                        }
+                    }
+                } catch (error) {
+                    // Player might not be ready yet
+                }
+            }
+            
+            toggleFullscreen(container) {
+                const videoWrapper = container.closest('.video-wrapper');
+                if (!videoWrapper) return;
+                
+                if (!document.fullscreenElement) {
+                    if (videoWrapper.requestFullscreen) {
+                        videoWrapper.requestFullscreen();
+                    } else if (videoWrapper.webkitRequestFullscreen) {
+                        videoWrapper.webkitRequestFullscreen();
+                    } else if (videoWrapper.msRequestFullscreen) {
+                        videoWrapper.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+                
+                // Update fullscreen button icon
+                const fullscreenBtn = container.querySelector('.fullscreen-btn i');
+                if (fullscreenBtn) {
+                    if (!document.fullscreenElement) {
+                        fullscreenBtn.className = 'fas fa-expand';
+                    } else {
+                        fullscreenBtn.className = 'fas fa-compress';
+                    }
+                }
+            }
+            
+            showError(container, message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'player-error';
+                errorDiv.textContent = message;
+                
+                const existingError = container.querySelector('.player-error');
+                if (existingError) existingError.remove();
+                
+                container.appendChild(errorDiv);
+            }
+            
+            pause() {
+                if (this.player && this.player.pauseVideo) {
+                    try {
+                        this.player.pauseVideo();
+                    } catch (error) {
+                        console.error('Pause error:', error);
+                    }
+                }
+            }
+            
+            destroy() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                if (this.player && this.player.destroy) {
+                    try {
+                        this.player.destroy();
+                    } catch (error) {
+                        console.error('Destroy error:', error);
+                    }
+                }
+            }
+        }
+        
+        // Global player instances
+        const videoPlayers = new Map();
+        
+        // Initialize video players when page is loaded
+        function initVideoPlayers() {
+            document.querySelectorAll('.video-player-container').forEach(container => {
+                const containerId = container.id;
+                const videoId = container.dataset.videoId;
+                
+                if (!videoPlayers.has(containerId) && videoId) {
+                    const player = new SimpleYouTubePlayer(containerId, videoId);
+                    videoPlayers.set(containerId, player);
+                }
+            });
+        }
+        
+        // Clean up video players
+        function cleanupVideoPlayers() {
+            for (const [id, player] of videoPlayers) {
+                player.destroy();
+            }
+            videoPlayers.clear();
+        }
+        
+        // Pause all video players
+        function pauseAllVideoPlayers() {
+            for (const [id, player] of videoPlayers) {
+                player.pause();
+            }
+        }
+        
+        // ===== STATE MANAGER =====
+        class StateManager {
+            constructor() {
+                // Home page data
+                this.bannerUrls = [];
+                this.banner2Url = null;
+                this.banner3Url = null;
+                this.profileUrl = null;
+                
+                // Lectures data
+                this.allLectures = [];
+                this.currentPage = 0;
+                this.lecturesPerPage = 8; // 8 lectures per page as requested
+                this.currentLecture = null;
+                this.totalPages = 0;
+                
+                // Current page
+                this.currentPageName = 'lectures'; // 'lectures', 'lecture-detail'
+            }
+            
+            // Home page methods
+            setBannerUrls(urls) {
+                this.bannerUrls = urls;
+            }
+            
+            setBanner2Url(url) {
+                this.banner2Url = url;
+            }
+            
+            setBanner3Url(url) {
+                this.banner3Url = url;
+            }
+            
+            setProfileUrl(url) {
+                this.profileUrl = url;
+            }
+            
+            // Lectures methods
+            setAllLectures(lectures) {
+                // Sort lectures by order
+                lectures.sort((a, b) => (a.lectureOrder || 0) - (b.lectureOrder || 0));
+                this.allLectures = lectures;
+                this.totalPages = Math.ceil(lectures.length / this.lecturesPerPage);
+            }
+            
+            getCurrentPageLectures() {
+                const start = this.currentPage * this.lecturesPerPage;
+                const end = start + this.lecturesPerPage;
+                return this.allLectures.slice(start, end);
+            }
+            
+            getLectureById(lectureId) {
+                return this.allLectures.find(l => l.id === lectureId);
+            }
+            
+            setCurrentLecture(lecture) {
+                this.currentLecture = lecture;
+            }
+            
+            getCurrentLecture() {
+                return this.currentLecture;
+            }
+            
+            // Page navigation
+            setCurrentPageName(pageName) {
+                this.currentPageName = pageName;
+            }
+            
+            getCurrentPageName() {
+                return this.currentPageName;
+            }
+            
+            // Pagination
+            setCurrentPage(page) {
+                this.currentPage = page;
+            }
+            
+            getCurrentPage() {
+                return this.currentPage;
+            }
+        }
+        
+        // ===== MAIN APP =====
+        class ConceptBlitzApp {
+            constructor() {
+                this.stateManager = new StateManager();
+                this.authPending = false;
+                this.isInitialized = false;
+                this.bannerInterval = null;
+                this.currentBannerIndex = 0;
+                
+                // DOM Elements
+                this.authWrapper = document.getElementById('auth-wrapper');
+                this.appWrapper = document.getElementById('app-wrapper');
+                this.chatContainer = document.getElementById('chat-container');
+                this.authError = document.getElementById('auth-error');
+                this.leftButtonContainer = document.getElementById('left-button-container');
+                this.profileImageContainer = document.getElementById('profile-image-container');
+                
+                // Auth form elements
+                this.signinForm = document.getElementById('signin-form');
+                this.signupForm = document.getElementById('signup-form');
+                this.signinButton = document.getElementById('signin-button');
+                this.signinButtonText = document.getElementById('signin-button-text');
+                this.signinButtonSpinner = document.getElementById('signin-button-spinner');
+                this.signupButton = document.getElementById('signup-button');
+                this.signupButtonText = document.getElementById('signup-button-text');
+                this.signupButtonSpinner = document.getElementById('signup-button-spinner');
+                this.googleSigninButton = document.getElementById('google-signin-button');
+                this.googleSignupButton = document.getElementById('google-signup-button');
+                this.toggleAuthBtn = document.getElementById('toggle-auth-btn');
+                this.authTitle = document.getElementById('auth-title');
+                this.authSubtitle = document.getElementById('auth-subtitle');
+                
+                // Firebase
+                this.db = null;
+                this.auth = null;
+                this.firebaseConfig = {
+                    apiKey: "AIzaSyBJ_G5o4otg7riemfJDMOcPoHoIVH7emsc",
+                    authDomain: "geobazarr.firebaseapp.com",
+                    databaseURL: "https://geobazarr-default-rtdb.firebaseio.com",
+                    projectId: "geobazarr",
+                    storageBucket: "geobazarr.firebasestorage.app",
+                    messagingSenderId: "679949247383",
+                    appId: "1:679949247383:web:036d4f32038422ebb89ad2"
+                };
+                
+                // Bind methods
+                this.handlePageNumberClick = this.handlePageNumberClick.bind(this);
+                this.handleLectureCardClick = this.handleLectureCardClick.bind(this);
+                this.handleBackButtonClick = this.handleBackButtonClick.bind(this);
+                
+                this.initialize();
+            }
+            
+            initialize() {
+                if (this.isInitialized) return;
+                
+                try {
+                    firebase.initializeApp(this.firebaseConfig);
+                    this.db = firebase.firestore();
+                    this.auth = firebase.auth();
+                    console.log("Firebase initialized successfully");
+                    
+                    this.setupAuthListeners();
+                    this.setupEventDelegation();
+                    this.isInitialized = true;
+                } catch (error) {
+                    console.error("Firebase initialization error:", error);
+                    this.showError("Firebase initialization failed. Please refresh the page.");
+                }
+            }
+            
+            setupEventDelegation() {
+                // Use event delegation for dynamic content - attach to document body
+                document.addEventListener('click', (e) => {
+                    const target = e.target;
+                    
+                    // Page number click
+                    if (target.closest('.page-number-box')) {
+                        const pageBox = target.closest('.page-number-box');
+                        const page = parseInt(pageBox.dataset.page);
+                        if (!isNaN(page)) {
+                            this.handlePageNumberClick(page);
+                        }
+                    }
+                    
+                    // Lecture card click
+                    if (target.closest('.lecture-card')) {
+                        const lectureCard = target.closest('.lecture-card');
+                        const lectureId = lectureCard.dataset.lectureId;
+                        this.handleLectureCardClick(lectureId);
+                    }
+                    
+                    // Back button click
+                    if (target.closest('.back-button')) {
+                        this.handleBackButtonClick();
+                    }
+                });
+                
+                // Auth form submissions
+                this.signinForm.addEventListener('submit', (e) => this.handleSigninSubmit(e));
+                this.signupForm.addEventListener('submit', (e) => this.handleSignupSubmit(e));
+                this.toggleAuthBtn.addEventListener('click', () => this.toggleAuthForms());
+                this.googleSigninButton.addEventListener('click', () => this.handleGoogleSignIn());
+                this.googleSignupButton.addEventListener('click', () => this.handleGoogleSignIn());
+            }
+            
+            // ===== AUTH METHODS =====
+            setupAuthListeners() {
+                this.auth.onAuthStateChanged(async (user) => {
+                    if (this.authPending) return;
+                    
+                    if (user) {
+                        await this.setupUserDocument(user);
+                        this.hideAuthPage();
+                        
+                        // Load lectures data
+                        await this.loadLectures();
+                        this.renderLecturesPage();
+                    } else {
+                        this.showAuthPage();
+                    }
+                });
+            }
+            
+            async setupUserDocument(user) {
+                if (!this.db) return;
+                
+                try {
+                    const userRef = this.db.collection('users').doc(user.uid);
+                    const userDoc = await userRef.get();
+                    
+                    if (!userDoc.exists) {
+                        await userRef.set({
+                            email: user.email,
+                            displayName: user.displayName || document.getElementById('signup-name')?.value || 'User',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("New user document created");
+                    } else {
+                        await userRef.update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log("User document updated with last login");
+                    }
+                } catch (error) {
+                    console.error("Error setting up user document:", error);
+                }
+            }
+            
+            async handleSigninSubmit(e) {
+                e.preventDefault();
+                if (this.authPending) return;
+                
+                const email = document.getElementById('signin-email').value;
+                const password = document.getElementById('signin-password').value;
+                
+                if (!email || !password) {
+                    this.showError("Please fill in all fields");
+                    return;
+                }
+                
+                this.authPending = true;
+                this.signinButtonText.classList.add('hidden');
+                this.signinButtonSpinner.classList.remove('hidden');
+                this.signinButton.disabled = true;
+                
+                try {
+                    await this.auth.signInWithEmailAndPassword(email, password);
+                } catch (error) {
+                    console.error("Sign in error:", error);
+                    this.showError(this.getAuthErrorMessage(error));
+                } finally {
+                    this.signinButtonText.classList.remove('hidden');
+                    this.signinButtonSpinner.classList.add('hidden');
+                    this.signinButton.disabled = false;
+                    this.authPending = false;
+                }
+            }
+            
+            async handleSignupSubmit(e) {
+                e.preventDefault();
+                if (this.authPending) return;
+                
+                const name = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                
+                if (!name || !email || !password) {
+                    this.showError("Please fill in all fields");
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    this.showError("Password should be at least 6 characters");
+                    return;
+                }
+                
+                this.authPending = true;
+                this.signupButtonText.classList.add('hidden');
+                this.signupButtonSpinner.classList.remove('hidden');
+                this.signupButton.disabled = true;
+                
+                try {
+                    const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
+                    await userCredential.user.updateProfile({ displayName: name });
+                } catch (error) {
+                    console.error("Sign up error:", error);
+                    this.showError(this.getAuthErrorMessage(error));
+                } finally {
+                    this.signupButtonText.classList.remove('hidden');
+                    this.signupButtonSpinner.classList.add('hidden');
+                    this.signupButton.disabled = false;
+                    this.authPending = false;
+                }
+            }
+            
+            async handleGoogleSignIn() {
+                if (this.authPending) return;
+                
+                this.authPending = true;
+                const provider = new firebase.auth.GoogleAuthProvider();
+                
+                try {
+                    await this.auth.signInWithPopup(provider);
+                } catch (error) {
+                    console.error("Google sign in error:", error);
+                    this.showError(this.getAuthErrorMessage(error));
+                    this.authPending = false;
+                }
+            }
+            
+            toggleAuthForms() {
+                const isLogin = !this.signinForm.classList.contains('hidden');
+                
+                if (isLogin) {
+                    this.signinForm.classList.add('hidden');
+                    this.signupForm.classList.remove('hidden');
+                    this.authTitle.innerText = 'Sign Up';
+                    this.authSubtitle.innerText = 'Enter your details to register.';
+                    this.toggleAuthBtn.innerText = 'Back to Sign In';
+                } else {
+                    this.signupForm.classList.add('hidden');
+                    this.signinForm.classList.remove('hidden');
+                    this.authTitle.innerText = 'Sign In';
+                    this.authSubtitle.innerText = 'Please enter your account details.';
+                    this.toggleAuthBtn.innerText = 'New here? Create an account';
+                }
+            }
+            
+            // ===== UI METHODS =====
+            showAuthPage() {
+                this.authWrapper.classList.add('visible');
+                this.appWrapper.classList.add('hidden');
+            }
+            
+            hideAuthPage() {
+                this.authWrapper.classList.remove('visible');
+                this.appWrapper.classList.remove('hidden');
+            }
+            
+            showError(message) {
+                this.authError.textContent = message;
+                this.authError.style.display = 'block';
+                setTimeout(() => {
+                    this.authError.style.display = 'none';
+                }, 5000);
+            }
+            
+            showLoading() {
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.innerHTML = `
+                    <div class="loading-content">
+                        <div class="loading-spinner mx-auto mb-4"></div>
+                        <p>Loading...</p>
+                    </div>
+                `;
+                document.body.appendChild(loadingOverlay);
+                return loadingOverlay;
+            }
+            
+            hideLoading(loadingOverlay) {
+                if (loadingOverlay && loadingOverlay.parentNode) {
+                    loadingOverlay.parentNode.removeChild(loadingOverlay);
+                }
+            }
+            
+            updateTopBar() {
+                const pageName = this.stateManager.getCurrentPageName();
+                
+                // Update left button - show back button only on lecture detail page
+                if (pageName === 'lecture-detail') {
+                    // Show back icon image on lecture detail page
+                    this.leftButtonContainer.innerHTML = `
+                        <button class="back-button">
+                            <img src="https://i.postimg.cc/y8rgbFFm/Concept_20260108_212537_0000.png" alt="Back">
+                        </button>
+                    `;
+                } else {
+                    // Show menu button on lectures page
+                    this.leftButtonContainer.innerHTML = `
+                        <button class="back-button">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    `;
+                }
+                
+                // Update profile image
+                if (this.stateManager.profileUrl) {
+                    this.profileImageContainer.innerHTML = `
+                        <img src="${this.stateManager.profileUrl}" alt="Profile" class="profile-image" onerror="this.src='https://placehold.co/40x40/3B82F6/FFFFFF?text=U'">
+                    `;
+                } else {
+                    this.profileImageContainer.innerHTML = `
+                        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#6b7280;font-weight:600;">U</div>
+                    `;
+                }
+            }
+            
+            // ===== DATA METHODS =====
+            async loadLectures() {
+                if (!this.db) {
+                    this.showError("Database not initialized");
+                    return;
+                }
+                
+                // Show loading
+                this.chatContainer.innerHTML = `
+                    <div class="single-loading-placeholder" style="padding: 3rem 1rem; text-align: center;">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="mt-2">Loading lectures...</p>
+                    </div>
+                `;
+                
+                try {
+                    // Fetch lectures from live_questions collection
+                    const lecturesSnapshot = await this.db.collection('live_questions').get();
+                    
+                    if (lecturesSnapshot.empty) {
+                        this.chatContainer.innerHTML = `
+                            <div class="p-8 text-center">
+                                <p class="text-gray-600">No lectures available.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Process lectures
+                    const lectures = [];
+                    lecturesSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        lectures.push({
+                            id: doc.id,
+                            lectureTitle: data.lectureTitle || 'Untitled Lecture',
+                            lectureOrder: data.lectureOrder || 0,
+                            lectureUrl: data.lectureUrl || '',
+                            mentorProfile: data.mentorProfile || '',
+                            mentorName: data.mentorName || 'Unknown Mentor'
+                        });
+                    });
+                    
+                    this.stateManager.setAllLectures(lectures);
+                    
+                } catch (error) {
+                    console.error("Error loading lectures:", error);
+                    this.chatContainer.innerHTML = `
+                        <div class="p-8 text-center">
+                            <p class="text-red-600">Failed to load lectures.</p>
+                            <button id="retry-load-lectures" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                Retry
+                            </button>
+                        </div>
+                    `;
+                    
+                    document.getElementById('retry-load-lectures')?.addEventListener('click', () => {
+                        this.loadLectures();
+                    }, { once: true });
+                }
+            }
+            
+            // ===== RENDER METHODS =====
+            renderLecturesPage() {
+                this.stateManager.setCurrentPageName('lectures');
+                this.updateTopBar();
+                
+                const pageNumber = this.stateManager.getCurrentPage();
+                const totalLectures = this.stateManager.allLectures.length;
+                const currentLectures = this.stateManager.getCurrentPageLectures();
+                
+                let lecturesHtml = '<div class="lecture-card-container">';
+                
+                // Add page numbers navigation
+                lecturesHtml += `
+                    <div class="page-numbers-container">
+                        <div class="page-numbers">
+                `;
+                
+                // Generate page number boxes
+                for (let i = 0; i < this.stateManager.totalPages; i++) {
+                    const pageNumberDisplay = i + 1;
+                    const isActive = i === pageNumber;
+                    lecturesHtml += `
+                        <div class="page-number-box ${isActive ? 'active' : ''}" data-page="${i}">
+                            ${pageNumberDisplay}
+                        </div>
+                    `;
+                }
+                
+                lecturesHtml += `
+                        </div>
+                    </div>
+                    
+                    <!-- Lecture Cards Container - NO MARGIN BELOW PAGE NUMBERS -->
+                    <div class="lecture-cards-wrapper">
+                `;
+                
+                // Render lecture cards
+                if (currentLectures.length === 0) {
+                    lecturesHtml += `
+                        <div class="p-8 text-center">
+                            <p class="text-gray-600">No lectures found on this page.</p>
+                        </div>
+                    `;
+                } else {
+                    currentLectures.forEach((lecture, index) => {
+                        const globalIndex = (pageNumber * this.stateManager.lecturesPerPage) + index + 1;
+                        
+                        lecturesHtml += `
+                            <div class="lecture-card" data-lecture-id="${lecture.id}">
+                                <div class="order-tag">${globalIndex}</div>
+                                <div class="title-container">
+                                    <div class="lecture-title">${lecture.lectureTitle}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                lecturesHtml += `
+                    </div>
+                </div>
+                `;
+                
+                // Update DOM
+                this.chatContainer.innerHTML = lecturesHtml;
+                
+                // Scroll to top
+                this.chatContainer.scrollTop = 0;
+            }
+            
+            renderLectureDetailPage() {
+                this.stateManager.setCurrentPageName('lecture-detail');
+                this.updateTopBar();
+                
+                const lecture = this.stateManager.getCurrentLecture();
+                if (!lecture) {
+                    this.renderLecturesPage();
+                    return;
+                }
+                
+                // Extract video ID from URL
+                let videoId = '';
+                const lectureUrl = lecture.lectureUrl || '';
+                
+                if (lectureUrl.includes('youtube.com/watch?v=')) {
+                    videoId = lectureUrl.split('v=')[1];
+                    const ampersandPosition = videoId.indexOf('&');
+                    if (ampersandPosition !== -1) {
+                        videoId = videoId.substring(0, ampersandPosition);
+                    }
+                } else if (lectureUrl.includes('youtu.be/')) {
+                    videoId = lectureUrl.split('youtu.be/')[1];
+                    const questionMarkPosition = videoId.indexOf('?');
+                    if (questionMarkPosition !== -1) {
+                        videoId = videoId.substring(0, questionMarkPosition);
+                    }
+                } else if (lectureUrl.includes('youtube.com/embed/')) {
+                    videoId = lectureUrl.split('embed/')[1];
+                    const slashPosition = videoId.indexOf('/');
+                    if (slashPosition !== -1) {
+                        videoId = videoId.substring(0, slashPosition);
+                    }
+                } else {
+                    videoId = lectureUrl.trim();
+                }
+                
+                const uniqueId = `video-${lecture.id}-${Date.now()}`;
+                
+                let detailHtml = `
+                    <div class="lecture-detail-container">
+                        <!-- Video Player - 100% width -->
+                        <div class="video-player-full">
+                            ${this.renderSingleVideoPlayer(videoId, uniqueId)}
+                        </div>
+                        
+                        <!-- Mentor Info Container - Horizontal Row -->
+                        <div class="mentor-info-container">
+                            <!-- Profile Image - Perfect Square -->
+                            <div class="mentor-profile-image">
+                                <img src="${lecture.mentorProfile || 'https://placehold.co/64x64/3B82F6/FFFFFF?text=M'}" 
+                                     alt="${lecture.mentorName}" 
+                                     onerror="this.src='https://placehold.co/64x64/3B82F6/FFFFFF?text=M'">
+                            </div>
+                            
+                            <!-- Text Container - Must match profile image height -->
+                            <div class="mentor-text-container">
+                                <!-- Video Title - Max 2 lines -->
+                                <div class="video-title">${lecture.lectureTitle}</div>
+                                
+                                <!-- Mentor Name - Single line -->
+                                <div class="mentor-name">${lecture.mentorName}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Update DOM
+                this.chatContainer.innerHTML = detailHtml;
+                
+                // Initialize video player
+                setTimeout(initVideoPlayers, 500);
+                
+                // Scroll to top
+                this.chatContainer.scrollTop = 0;
+            }
+            
+            renderSingleVideoPlayer(videoId, uniqueId) {
+                // UI UPDATE: Modern OTT/YouTube-style control bar with all buttons in one line
+                return `
+                    <div class="video-wrapper" style="width: 100%; margin: 0;">
+                        <div class="video-player-container" id="${uniqueId}" data-video-id="${videoId}">
+                            <!-- Double tap indicators -->
+                            <div class="double-tap-indicator double-tap-left">
+                                <div class="double-tap-text">10 sec</div>
+                            </div>
+                            <div class="double-tap-indicator double-tap-right">
+                                <div class="double-tap-text">20 sec</div>
+                            </div>
+                            
+                            <div class="youtube-iframe-wrapper">
+                                <!-- YouTube iframe will be inserted here -->
+                            </div>
+                            <div class="video-overlay">
+                                <div class="modern-control-bar">
+                                    <!-- Thin progress bar at top - RED COLOR -->
+                                    <div class="top-progress-container" title="Progress">
+                                        <div class="progress-track"></div>
+                                        <div class="progress-thumb"></div>
+                                    </div>
+                                    
+                                    <!-- Bottom controls row - ALL IN ONE LINE -->
+                                    <div class="controls-row">
+                                        <!-- Left controls -->
+                                        <div class="left-controls">
+                                            <button class="control-btn play-pause-btn" title="Play/Pause">
+                                                <!-- Play icon -->
+                                                <svg class="play-icon" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                                                    <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zM188.3 147.1c7.6-4.2 16.8-4.1 24.3 .5l144 88c7.1 4.4 11.5 12.1 11.5 20.5s-4.4 16.1-11.5 20.5l-144 88c-7.4 4.5-16.7 4.7-24.3 .5s-12.3-12.2-12.3-20.9V168c0-8.7 4.7-16.7 12.3-20.9z"/>
+                                                </svg>
+                                                <!-- Pause icon -->
+                                                <svg class="pause-icon" style="display:none;" width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                                                    <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm224-72V328c0 13.3-10.7 24-24 24s-24-10.7-24-24V184c0-13.3 10.7-24 24-24s24 10.7 24 24zm112 0V328c0 13.3-10.7 24-24 24s-24-10.7-24-24V184c0-13.3 10.7-24 24-24s24 10.7 24 24z"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Center controls -->
+                                        <div class="center-controls">
+                                            <span class="time-display">0:00 / 0:00</span>
+                                        </div>
+                                        
+                                        <!-- Right controls - ALL IN ONE LINE -->
+                                        <div class="right-controls">
+                                            <!-- Speed control -->
+                                            <div class="speed-control">
+                                                <button class="control-btn speed-btn" title="Playback Speed">1x</button>
+                                            </div>
+                                            
+                                            <!-- Volume button - dark black square box -->
+                                            <button class="control-btn volume-btn" title="Volume">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                            
+                                            <!-- Fullscreen button - dark black square box -->
+                                            <button class="control-btn fullscreen-btn" title="Fullscreen">
+                                                <i class="fas fa-expand"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="video-loading">
+                                    <div class="video-loading-spinner"></div>
+                                    <span>Loading video...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // ===== EVENT HANDLERS =====
+            handlePageNumberClick(page) {
+                if (page !== this.stateManager.getCurrentPage()) {
+                    this.stateManager.setCurrentPage(page);
+                    this.renderLecturesPage();
+                }
+            }
+            
+            handleLectureCardClick(lectureId) {
+                const lecture = this.stateManager.getLectureById(lectureId);
+                if (lecture) {
+                    this.stateManager.setCurrentLecture(lecture);
+                    this.renderLectureDetailPage();
+                }
+            }
+            
+            handleBackButtonClick() {
+                const currentPage = this.stateManager.getCurrentPageName();
+                
+                if (currentPage === 'lecture-detail') {
+                    // Clean up video players before going back
+                    cleanupVideoPlayers();
+                    this.renderLecturesPage();
+                }
+            }
+            
+            // ===== HELPER METHODS =====
+            getAuthErrorMessage(error) {
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        return 'Invalid email address.';
+                    case 'auth/user-disabled':
+                        return 'This account has been disabled.';
+                    case 'auth/user-not-found':
+                        return 'No account found with this email.';
+                    case 'auth/wrong-password':
+                        return 'Incorrect password.';
+                    case 'auth/email-already-in-use':
+                        return 'An account with this email already exists.';
+                    case 'auth/weak-password':
+                        return 'Password is too weak.';
+                    case 'auth/network-request-failed':
+                        return 'Network error. Please check your connection.';
+                    default:
+                        return error.message || 'Authentication failed. Please try again.';
+                }
+            }
+        }
+        
+        // ===== INITIALIZE APP =====
+        let app;
+        
+        window.addEventListener('load', () => {
+            app = new ConceptBlitzApp();
+        });
+        
+        // Make app available globally for debugging
+        window.ConceptBlitzApp = ConceptBlitzApp;
+    </script>
+</body>
+</html>
